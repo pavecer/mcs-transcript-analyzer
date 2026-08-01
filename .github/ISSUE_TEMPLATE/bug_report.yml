@@ -1,0 +1,71 @@
+name: Bug report
+description: Something behaves incorrectly
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **Do not paste transcript content, user identifiers, tenant or environment GUIDs, or tokens.**
+        Redact or use synthetic examples.
+
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you expected, and what you got instead.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: component
+    attributes:
+      label: Component
+      options:
+        - Python sync (sync_transcripts.py)
+        - Plugin / Custom API
+        - Scheduled flow
+        - Model-driven app / forms / views
+        - Code app
+        - PCF JSON viewer
+        - Flow run detail fetch
+        - Provisioning / schema
+    validations:
+      required: true
+
+  - type: dropdown
+    id: channel
+    attributes:
+      label: Channel of the affected session
+      description: Relevant because DialogTracing is only emitted in design mode.
+      options:
+        - msteams
+        - m365copilot
+        - pva-studio (test mode)
+        - not applicable
+    validations:
+      required: true
+
+  - type: textarea
+    id: syncstate
+    attributes:
+      label: Sync state
+      description: |
+        From `pvci_syncstates` — `pvci_lastrunstatus`, `pvci_recordsprocessed`, and a
+        redacted `pvci_lasterror`.
+      render: text
+
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Ran `python3 scripts/transcript_insights/sync_transcripts.py --config ... --full`
+        2. Opened the ... tab
+        3. ...
+
+  - type: textarea
+    id: env
+    attributes:
+      label: Versions
+      description: Output of `python3 --version`, `node --version`, `dotnet --version`, `pac` banner.
+      render: text

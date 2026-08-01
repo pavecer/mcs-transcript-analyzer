@@ -1,0 +1,28 @@
+name: Feature request
+description: Suggest an improvement
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem does this solve
+      description: The investigation or reporting question you cannot currently answer.
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed approach
+      description: |
+        If it needs new transcript data, say which activity type, `valueType` or event name
+        carries it — and whether that signal exists outside design mode.
+
+  - type: checkboxes
+    id: constraints
+    attributes:
+      label: Constraints considered
+      options:
+        - label: Works on production channels (not only `pva-studio` / design mode)
+        - label: Keeps the sync additive by default
+        - label: Can be implemented in both Python and the C# plugin

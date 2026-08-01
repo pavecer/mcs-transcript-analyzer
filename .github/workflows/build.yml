@@ -1,0 +1,79 @@
+name: build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  python:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r scripts/transcript_insights/requirements.txt
+      - name: Compile
+        run: python -m compileall -q scripts/transcript_insights
+
+  plugin:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+      # net462 builds on Linux via Microsoft.NETFramework.ReferenceAssemblies.
+      - name: Build (warnings are errors)
+        run: dotnet build plugin/plugin.csproj -c Release -warnaserror
+
+  pcf:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: pcf/JsonViewer
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm install
+      - run: npm run build
+
+  codeapp:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: codeapp
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm install
+      - run: npx tsc -b
+      - run: npx eslint .
+
+  secrets:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Reject committed secrets, captures and env config
+        run: |
+          set -e
+          fail=0
+          if git ls-files | grep -E '\.har$|^evidence/'; then
+            echo "::error::HAR captures must not be committed (they contain user identifiers)"; fail=1
+          fi
+          if git ls-files | grep -E 'config/transcript_solution_config\.(dev|sandbox)\.json$'; then
+            echo "::error::Environment-specific config must not be committed"; fail=1
+          fi
+          if git ls-files | grep -E '(^|/)\.env$|msal_token_cache'; then
+            echo "::error::Credential files must not be committed"; fail=1
+          fi
+          exit $fail

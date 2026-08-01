@@ -1,0 +1,149 @@
+{
+  "solution": {
+    "displayName": "PV Conversation Insights",
+    "uniqueName": "pvConversationInsights",
+    "publisher": {
+      "displayName": "PV Conversation Insights Publisher",
+      "uniqueName": "pvConversationInsightsPublisher",
+      "prefix": "pvci"
+    },
+    "version": "1.0.0.0"
+  },
+  "tables": [
+    {
+      "schemaName": "pvci_TranscriptSession",
+      "primaryColumn": "pvci_Name",
+      "columns": {
+        "pvci_TranscriptId": "string",
+        "pvci_BotId": "string",
+        "pvci_BotName": "string",
+        "pvci_TenantId": "string",
+        "pvci_UserAadObjectId": "string",
+        "pvci_UserUpn": "string",
+        "pvci_UserDisplayName": "string",
+        "pvci_Channel": "string",
+        "pvci_StartDateTimeUtc": "datetime",
+        "pvci_EndDateTimeUtc": "datetime",
+        "pvci_DurationSeconds": "int",
+        "pvci_ActivityCount": "int",
+        "pvci_MessageCount": "int",
+        "pvci_EventCount": "int",
+        "pvci_UserTurnCount": "int",
+        "pvci_AgentTurnCount": "int",
+        "pvci_LastAgentMessage": "text",
+        "pvci_IsTestMode": "bool",
+        "pvci_MultiUserAnomaly": "bool",
+        "pvci_FirstResponseMs": "int",
+        "pvci_AvgResponseMs": "int",
+        "pvci_MaxResponseMs": "int",
+        "pvci_ToolCallCount": "int",
+        "pvci_ToolErrorCount": "int",
+        "pvci_ToolTotalMs": "int",
+        "pvci_MaxToolMs": "int",
+        "pvci_ToolCallsJson": "text",
+        "pvci_FlowRunsJson": "text",
+        "pvci_FlowRunCount": "int",
+        "pvci_FlowRunFailureCount": "int",
+        "pvci_FlowRunMaxMs": "int",
+        "pvci_SessionOutcome": "string",
+        "pvci_OutcomeReason": "string",
+        "pvci_IsResolvedImplied": "string",
+        "pvci_TurnCount": "int",
+        "pvci_PlanEventsJson": "text",
+        "pvci_ActivitiesJson": "text",
+        "pvci_ConversationJson": "text",
+        "pvci_MetadataJson": "text",
+        "pvci_PayloadTruncated": "bool",
+        "pvci_TranscriptCreatedOn": "datetime",
+        "pvci_IngestedOn": "datetime"
+      },
+      "lookups": [
+        {
+          "schemaName": "pvci_UserId",
+          "displayName": "User",
+          "referencedTable": "systemuser",
+          "relationshipName": "pvci_systemuser_transcriptsession"
+        }
+      ]
+    },
+    {
+      "schemaName": "pvci_TranscriptTurn",
+      "primaryColumn": "pvci_Name",
+      "columns": {
+        "pvci_TranscriptId": "string",
+        "pvci_ActivityType": "string",
+        "pvci_Role": "int",
+        "pvci_AadObjectId": "string",
+        "pvci_EventName": "string",
+        "pvci_ChannelId": "string",
+        "pvci_TimestampUtc": "datetime",
+        "pvci_LatencyMs": "int",
+        "pvci_ValueJson": "text"
+      },
+      "lookups": [
+        {
+          "schemaName": "pvci_SessionId",
+          "displayName": "Session",
+          "referencedTable": "pvci_transcriptsession",
+          "relationshipName": "pvci_transcriptsession_transcriptturn"
+        }
+      ]
+    },
+    {
+      "schemaName": "pvci_TranscriptIdentityMap",
+      "primaryColumn": "pvci_Name",
+      "columns": {
+        "pvci_DisplayName": "string",
+        "pvci_SystemUserId": "string",
+        "pvci_LastSeenOn": "datetime",
+        "pvci_SessionCount": "int"
+      }
+    },
+    {
+      "schemaName": "pvci_FlowRunDetail",
+      "primaryColumn": "pvci_Name",
+      "columns": {
+        "pvci_RunName": "string",
+        "pvci_FlowApiId": "string",
+        "pvci_WorkflowEntityId": "string",
+        "pvci_FlowDisplayName": "string",
+        "pvci_Status": "string",
+        "pvci_StartTime": "datetime",
+        "pvci_EndTime": "datetime",
+        "pvci_DurationMs": "int",
+        "pvci_ActionCount": "int",
+        "pvci_FailedActionCount": "int",
+        "pvci_SkippedActionCount": "int",
+        "pvci_TriggerJson": "text",
+        "pvci_ActionsJson": "text",
+        "pvci_ErrorSummary": "text",
+        "pvci_TranscriptId": "string",
+        "pvci_PayloadTruncated": "bool",
+        "pvci_FetchedOn": "datetime"
+      }
+    },
+    {
+      "schemaName": "pvci_SyncState",
+      "primaryColumn": "pvci_Name",
+      "columns": {
+        "pvci_LastSyncedCreatedOn": "datetime",
+        "pvci_LastRunOn": "datetime",
+        "pvci_LastRunStatus": "string",
+        "pvci_RecordsProcessed": "int",
+        "pvci_LastError": "text"
+      }
+    }
+  ],
+  "ingestionProfiles": [
+    {
+      "name": "monitor_transcript_ingestion",
+      "source": "monitor",
+      "endpoint": "/api/botmanagement/v1/transcript"
+    },
+    {
+      "name": "dataverse_conversationtranscripts_enrichment",
+      "source": "dataverse_v9_1",
+      "endpoint": "/api/data/v9.1/conversationtranscripts"
+    }
+  ]
+}

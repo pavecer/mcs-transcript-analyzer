@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<manifest>
+  <control namespace="PvciControls" constructor="JsonViewer" version="0.0.1"
+           display-name-key="JSON Viewer" description-key="Collapsible, searchable JSON viewer for large text fields"
+           control-type="standard">
+    <external-service-usage enabled="false">
+    </external-service-usage>
+
+    <property name="jsonValue" display-name-key="JSON Field"
+              description-key="Multiline text field containing JSON"
+              of-type="Multiple" usage="bound" required="true" />
+
+    <property name="startCollapsedDepth" display-name-key="Auto-collapse below depth"
+              description-key="Nodes deeper than this start collapsed"
+              of-type="Whole.None" usage="input" required="false" />
+
+    <property name="viewerHeight" display-name-key="Height (px)"
+              description-key="Viewer height in pixels"
+              of-type="Whole.None" usage="input" required="false" />
+
+    <resources>
+      <code path="index.ts" order="1"/>
+      <css path="css/JsonViewer.css" order="1" />
+    </resources>
+  </control>
+</manifest>

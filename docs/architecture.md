@@ -1,0 +1,129 @@
+# Architecture
+
+## Components
+
+| Component | Runs where | Purpose |
+|---|---|---|
+| `pvci_SyncConversationTranscripts` | Dataverse sandbox plugin | Incremental sync. No token needed — reads via `IOrganizationService` |
+| Scheduled cloud flow | Power Automate | Calls the Custom API hourly in a drain loop |
+| `sync_transcripts.py` | Local / CI | Same logic, uncapped — bulk backfill and re-derivation |
+| `fetch_flow_run_details.py` | Local / CI | Pulls per-action inputs and outputs from the Power Automate API |
+| PCF `JsonViewer` | Model-driven forms | Collapsible, searchable JSON rendering |
+| Code app | Browser (preview) | Replay timeline, trends, tool and flow drill-down |
+
+## Data model
+
+```
+pvci_transcriptsession          one row per transcript
+  ├─ pvci_UserId  →  systemuser (lookup, resolved from from.aadObjectId)
+  ├─ latency:   FirstResponseMs · AvgResponseMs · MaxResponseMs
+  ├─ tools:     ToolCallCount · ToolErrorCount · ToolTotalMs · MaxToolMs
+  ├─ flows:     FlowRunCount · FlowRunFailureCount · FlowRunMaxMs
+  ├─ outcome:   SessionOutcome · OutcomeReason · IsResolvedImplied · TurnCount
+  ├─ flags:     IsTestMode · MultiUserAnomaly · PayloadTruncated
+  └─ payloads:  ActivitiesJson · ConversationJson · PlanEventsJson
+                MetadataJson · ToolCallsJson · FlowRunsJson
+
+pvci_transcriptturn             one row per activity
+  └─ pvci_SessionId → pvci_transcriptsession
+     ActivityType · Speaker · Role · EventName · TimestampUtc · TurnText
+     LatencyMs (on the first agent reply) · ValueJson
+
+pvci_transcriptidentitymap      one row per distinct end user
+pvci_syncstate                  watermark, last run status, last error
+pvci_flowrundetail              one row per fetched Power Automate run
+```
+
+## Sync semantics
+
+**Additive by default.** A transcript is immutable once Copilot Studio finalises it. An
+already-ingested transcript is skipped *before* parsing — no re-parse, no rewrite, no turn
+churn. This keeps turn row GUIDs stable, which matters for links and `createdon` audit.
+
+**Watermark with a deliberate overlap.** The query uses `createdon ge <watermark>`, not `gt`.
+Strict `gt` would permanently skip a row sharing the boundary second. Re-examining the boundary
+is cheap because upsert keys on `pvci_transcriptid`.
+
+**Failure isolation.** Each transcript is processed in its own try/except. On failure the
+watermark *freezes*, so the failed transcript is retried next run rather than being skipped
+forever. Status is recorded as `success` / `partial` / `failed` with errors in
+`pvci_lasterror`.
+
+**Turn replacement is insert-then-delete.** When reprocessing, new turns are written before
+stale ones are removed, so a crash never leaves a session with zero turns.
+
+**Throttling.** The Python client retries `429` / `502` / `503` / `504` up to five times,
+honouring `Retry-After` with exponential backoff.
+
+## Parsing the transcript
+
+`content` is a JSON string containing a Bot Framework activity array. Only four fields are
+guaranteed on every activity: `from`, `timestamp`, `timestampMs`, `type`.
+
+> `timestamp` is **Unix epoch seconds**, not ISO 8601. `timestampMs` gives millisecond
+> precision and is what all latency figures use.
+
+Derived per session:
+
+| Value | Source |
+|---|---|
+| End user | the single distinct `from.aadObjectId` where `role == 1` |
+| Channel | the single distinct `channelId` |
+| Test mode | `ConversationInfo.isDesignMode` |
+| Outcome | the `SessionInfo` trace |
+| Reply latency | user utterance → first agent reply, via `timestampMs` |
+| Tool calls | `DialogTracing` actions of type `Invoke*`, paired start/end |
+| Reasoning | `DynamicPlan*` events |
+
+"Exactly one user per transcript" is asserted, not assumed — a violation sets
+`MultiUserAnomaly` rather than silently taking the first.
+
+## Latency
+
+Only **answered** turns count. A user turn with no reply contributes nothing rather than zero,
+which would understate the agent's slowness. Unanswered turns surface separately as the
+answered-vs-total ratio in Trends.
+
+Trends charts **p95 of each session's slowest reply**, not the mean, because means hide the
+outliers you are looking for.
+
+## Flow run correlation
+
+`flowrun.conversationid` is **null**, so there is no join key. Correlation is by time overlap
+(±20s), with candidates ranked by how closely they start to the span.
+
+Two window sources, in order of precision:
+
+| Source | Precision | Availability |
+|---|---|---|
+| `DialogTracing` → `InvokeFlowAction` | Exact start/end | **Design mode only** |
+| `DynamicPlanStepTriggered` → `…Finished` | Coarse window | All channels |
+
+Production channels emit **zero** `DialogTracing` activities, so they always use the plan-step
+fallback. When a step has no `Finished` event the window runs to the next step or 90s,
+whichever is sooner — a cap, not a measurement. Each entry is badged with its source and a
+confidence of `high` / `multiple` / `none`.
+
+ESS-style agents call an orchestrator that invokes child flows, so several genuine runs can
+overlap one step. All are kept and ranked rather than guessing one.
+
+The Flow API addresses flows by a **different id** than Dataverse. The bridge is the Flow API's
+`workflowEntityId` property, which equals the Dataverse `workflowid`; the map is built at
+runtime, nothing is hardcoded.
+
+## Design decisions worth knowing
+
+**A hand-written JSON parser in the plugin.** ~250 lines of dependency-free C# instead of
+Newtonsoft. Avoids NuGet plugin-package deployment and sandbox assembly-load risk; the cost is
+that the parser is ours to maintain. It is deliberately minimal — no streaming, no big numbers.
+
+**Noise filtering on by default.** `trace` activities and `DialogTracing` events are ~79% of
+volume and are skipped. `IncludeTraces` keeps them at roughly 4× the row count.
+
+**Two UI surfaces, not one.** The model-driven app is GA and standard-licensed — the
+supportable option. The code app is preview and premium, but can do things forms cannot, such
+as interleaving messages and reasoning in one chronological replay.
+
+**Payload size guards.** Memo columns cap at 1,048,576 characters; writes are capped at 900,000
+with pretty-print falling back to compact and then truncation, flagged by `PayloadTruncated`.
+The largest observed activity payload was ~140 KB.

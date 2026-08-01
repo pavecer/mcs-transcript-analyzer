@@ -1,0 +1,54 @@
+# ---- Secrets and environment-specific config -------------------------------
+.env
+.env.*
+!.env.example
+.msal_token_cache.json
+config/transcript_solution_config.dev.json
+config/transcript_solution_config.sandbox.json
+config/transcript_solution_config.json
+
+# ---- Captured traffic / evidence -------------------------------------------
+# HAR captures contain conversation text and user identifiers. Keep them local.
+evidence/
+*.har
+
+# ---- Generated output -------------------------------------------------------
+output/
+
+# ---- Python -----------------------------------------------------------------
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+
+# ---- Node / Vite ------------------------------------------------------------
+node_modules/
+dist/
+.vite/
+*.tsbuildinfo
+
+# ---- Power Apps code app ----------------------------------------------------
+# power.config.json binds to a specific environment and app id - each dev runs
+# `power-apps init` to create their own. .power/ is generated schema metadata
+# that the generated services import, so it must stay tracked.
+codeapp/power.config.json
+
+# ---- PCF --------------------------------------------------------------------
+pcf/**/out/
+pcf/**/generated/
+*.pcfproj.user
+
+# ---- .NET plugin ------------------------------------------------------------
+[Bb]in/
+[Oo]bj/
+*.user
+*.nupkg
+
+# ---- Editors / OS -----------------------------------------------------------
+.DS_Store
+Thumbs.db
+.idea/
+*.swp
+.vscode/settings.json
