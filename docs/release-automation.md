@@ -49,7 +49,7 @@ Create a single-tenant Entra application and service principal. Add a federated 
 | Setting | Value |
 | --- | --- |
 | Issuer | `https://token.actions.githubusercontent.com` |
-| Subject | `repo:pavecer/mcs-transcript-analyzer:ref:refs/heads/main` |
+| Subject | `repo:pavecer@37548236/mcs-transcript-analyzer@1319587093:ref:refs/heads/main` |
 | Audience | `api://AzureADTokenExchange` |
 
 No client secret is required or permitted for this workflow. Example Azure CLI sequence:
@@ -72,7 +72,7 @@ az ad app federated-credential create --id "$app_object_id" --parameters @- <<'J
 {
   "name": "github-main",
   "issuer": "https://token.actions.githubusercontent.com",
-  "subject": "repo:pavecer/mcs-transcript-analyzer:ref:refs/heads/main",
+  "subject": "repo:pavecer@37548236/mcs-transcript-analyzer@1319587093:ref:refs/heads/main",
   "description": "Daily managed solution packaging from main",
   "audiences": ["api://AzureADTokenExchange"]
 }
