@@ -1,0 +1,201 @@
+name: refresh release packages
+
+on:
+  schedule:
+    - cron: "17 3 * * *"
+  workflow_dispatch:
+    inputs:
+      force:
+        description: Rebuild packages even when deployable inputs have not changed
+        required: false
+        type: boolean
+        default: false
+      export_only:
+        description: Export live solutions without deploying the committed code app
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+  id-token: write
+  pages: write
+
+concurrency:
+  group: refresh-release-packages
+  cancel-in-progress: false
+
+env:
+  CORE_SOLUTION: pvConversationInsights
+  CODEAPP_SOLUTION: pvConversationInsightsCodeApp
+  POWER_PLATFORM_CLIENT_ID: ${{ vars.POWER_PLATFORM_CLIENT_ID }}
+  POWER_PLATFORM_TENANT_ID: ${{ vars.POWER_PLATFORM_TENANT_ID }}
+  POWER_PLATFORM_ENVIRONMENT_ID: ${{ vars.POWER_PLATFORM_ENVIRONMENT_ID }}
+  POWER_PLATFORM_ENVIRONMENT_URL: ${{ vars.POWER_PLATFORM_ENVIRONMENT_URL }}
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    outputs:
+      changed: ${{ steps.changes.outputs.changed }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Detect committed package changes
+        id: changes
+        shell: bash
+        run: |
+          source_sha=$(git log -1 --format=%H -- \
+            codeapp plugin pcf solution scripts/transcript_insights)
+          packaged_sha=$(python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          path = Path("site/downloads/release-manifest.json")
+          print(json.loads(path.read_text())["sourceCommit"] if path.exists() else "")
+          PY
+          )
+          force="${{ inputs.force || 'false' }}"
+          if [[ "$force" != "true" && "$source_sha" == "$packaged_sha" ]]; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "No committed package inputs changed since $packaged_sha."
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            echo "source_sha=$source_sha" >> "$GITHUB_OUTPUT"
+            echo "Refreshing packages for $source_sha (previously $packaged_sha)."
+          fi
+
+      - name: Require OIDC configuration
+        if: steps.changes.outputs.changed == 'true'
+        shell: bash
+        run: |
+          missing=0
+          for name in \
+            POWER_PLATFORM_CLIENT_ID \
+            POWER_PLATFORM_TENANT_ID \
+            POWER_PLATFORM_ENVIRONMENT_ID \
+            POWER_PLATFORM_ENVIRONMENT_URL; do
+            if [[ -z "${!name}" ]]; then
+              echo "::error::Repository variable $name is not configured."
+              missing=1
+            fi
+          done
+          exit "$missing"
+
+      - uses: actions/setup-node@v4
+        if: steps.changes.outputs.changed == 'true'
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: codeapp/package-lock.json
+
+      - uses: actions/setup-dotnet@v4
+        if: steps.changes.outputs.changed == 'true'
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: Install Power Platform CLI
+        if: steps.changes.outputs.changed == 'true'
+        run: dotnet tool install --global Microsoft.PowerApps.CLI.Tool
+
+      - name: Build committed code app
+        if: steps.changes.outputs.changed == 'true'
+        working-directory: codeapp
+        run: |
+          npm ci
+          npm run build
+
+      - name: Configure code app target
+        if: steps.changes.outputs.changed == 'true'
+        run: |
+          python3 - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          release = json.loads(Path("config/release-packages.json").read_text())
+          config = json.loads(Path("codeapp/power.config.sample.json").read_text())
+          config["appId"] = release["codeApp"]["appId"]
+          config["environmentId"] = os.environ["POWER_PLATFORM_ENVIRONMENT_ID"]
+          Path("codeapp/power.config.json").write_text(json.dumps(config, indent=2) + "\n")
+          PY
+
+      - name: Authenticate to Power Platform with GitHub OIDC
+        if: steps.changes.outputs.changed == 'true'
+        run: |
+          pac auth create \
+            --name github-oidc \
+            --applicationId "$POWER_PLATFORM_CLIENT_ID" \
+            --tenant "$POWER_PLATFORM_TENANT_ID" \
+            --githubFederated \
+            --environment "$POWER_PLATFORM_ENVIRONMENT_URL"
+          pac org who
+
+      - name: Deploy committed preview code app
+        if: steps.changes.outputs.changed == 'true' && inputs.export_only != true
+        working-directory: codeapp
+        run: >-
+          pac code push
+          --environment "$POWER_PLATFORM_ENVIRONMENT_URL"
+          --solutionName "$CODEAPP_SOLUTION"
+
+      - name: Export managed release packages
+        if: steps.changes.outputs.changed == 'true'
+        shell: bash
+        run: |
+          core_file=$(python3 -c 'import json; print(json.load(open("config/release-packages.json"))["core"]["filename"])')
+          codeapp_file=$(python3 -c 'import json; print(json.load(open("config/release-packages.json"))["codeApp"]["filename"])')
+          pac solution export \
+            --environment "$POWER_PLATFORM_ENVIRONMENT_URL" \
+            --name "$CORE_SOLUTION" \
+            --path "site/downloads/$core_file" \
+            --managed --overwrite
+          pac solution export \
+            --environment "$POWER_PLATFORM_ENVIRONMENT_URL" \
+            --name "$CODEAPP_SOLUTION" \
+            --path "site/downloads/$codeapp_file" \
+            --managed --overwrite
+
+      - name: Validate and checkpoint packages
+        if: steps.changes.outputs.changed == 'true'
+        run: |
+          python3 scripts/update_release_manifest.py \
+            --source-commit "${{ steps.changes.outputs.source_sha }}"
+          python3 scripts/validate_site.py
+
+      - name: Commit generated release artifacts
+        if: steps.changes.outputs.changed == 'true'
+        shell: bash
+        run: |
+          git add site/downloads
+          if git diff --cached --quiet; then
+            echo "Exports are byte-for-byte unchanged; nothing to publish."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "Refresh downloadable solution packages"
+          git push
+
+      - uses: actions/configure-pages@v5
+        if: steps.changes.outputs.changed == 'true'
+
+      - name: Upload refreshed Pages artifact
+        if: steps.changes.outputs.changed == 'true'
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+  deploy-pages:
+    if: needs.refresh.outputs.changed == 'true'
+    needs: refresh
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy refreshed packages to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

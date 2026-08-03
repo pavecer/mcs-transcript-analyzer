@@ -288,6 +288,20 @@
     .trust-check span { color: var(--cp-text-muted); font-size: 14px; line-height: 1.5; }
     .trust-check a { font-weight: 650; }
     .hash { margin: 13px 0 0; color: var(--cp-text-soft); font-family: Consolas, "Courier New", Courier, monospace; font-size: 11px; overflow-wrap: anywhere; }
+    .preview-release {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(320px, 0.85fr);
+      gap: 54px;
+      align-items: start;
+      margin-top: 72px;
+      padding-top: 64px;
+      border-top: 1px solid var(--cp-border);
+    }
+    .preview-copy h3 { margin: 8px 0 14px; font-size: 30px; }
+    .preview-copy p { color: var(--cp-text-muted); }
+    .preview-copy ul { padding-left: 20px; color: var(--cp-text-muted); }
+    .preview-package { position: static; border-top-color: var(--cp-warning); }
+    .preview-badge { color: var(--cp-warning); font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; }
 
     .command { display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-top: 18px; padding: 14px 16px; border: 1px solid var(--cp-border); background: var(--cp-surface-soft); border-radius: 6px; }
     .command code { overflow-wrap: anywhere; font-size: 13px; }
@@ -327,6 +341,7 @@
       .arch-arrow { transform: rotate(90deg); min-height: 34px; }
       .install-layout { grid-template-columns: 1fr; }
       .package { position: static; }
+      .preview-release { grid-template-columns: 1fr; }
       .limitations { grid-template-columns: 1fr; }
     }
     @media (max-width: 600px) {
@@ -486,8 +501,8 @@
                 <span>I have <a href="https://github.com/pavecer/mcs-transcript-analyzer" target="_blank" rel="noopener noreferrer">reviewed the source</a>, trust this package, and will test it in a sandbox first.</span>
               </label>
             </div>
-            <button class="button primary" id="download-package" type="button" data-download-target="downloads/pvConversationInsights-managed-1.0.0.0.zip" disabled><i data-lucide="download" aria-hidden="true"></i>Download solution ZIP</button>
-            <p class="hash">SHA-256: <span id="package-hash">661bc7bcab215ceda142a1ffcc527dc4d1a73e440af64d23d6c4460a98af4f0f</span></p>
+            <button class="button primary" id="download-package" type="button" data-artifact="core" disabled><i data-lucide="download" aria-hidden="true"></i>Download solution ZIP</button>
+            <p class="hash">SHA-256: <span id="package-hash">loading…</span></p>
           </aside>
         </div>
 
@@ -499,6 +514,35 @@
         <div class="command" data-reveal>
           <code>pac solution import --path pvConversationInsights-managed-1.0.0.0.zip --activate-plugins</code>
           <button class="icon-button" id="copy-command" type="button" title="Copy import command" aria-label="Copy import command"><i data-lucide="copy" aria-hidden="true"></i></button>
+        </div>
+
+        <div class="preview-release" id="preview-download">
+          <div class="preview-copy">
+            <span class="section-kicker">Optional preview</span>
+            <h3>Conversation Insights Explorer code app</h3>
+            <p>The React code app adds conversation replay, trends, tool and flow drill-down, and a visual execution map. It is packaged separately so production users can install the supported model-driven solution without taking a dependency on preview technology.</p>
+            <ul>
+              <li>Import the core managed solution first.</li>
+              <li>Code apps and their ALM support are currently preview features.</li>
+              <li>Premium licensing and tenant preview availability may be required.</li>
+              <li>Validate behavior, security roles, and data access in a sandbox.</li>
+            </ul>
+          </div>
+          <aside class="package preview-package" aria-label="Preview code app download details">
+            <span class="preview-badge">Preview · unsupported</span>
+            <h3>Conversation Insights Explorer</h3>
+            <div class="package-meta">Managed code-app solution · version 1.0.0.0</div>
+            <div class="trust-panel">
+              <div class="trust-head"><i data-lucide="triangle-alert" aria-hidden="true"></i><strong>Understand the preview risk</strong></div>
+              <p>This package uses Power Apps code apps and preview ALM capabilities. Preview features can change, have limited support, or become unavailable.</p>
+              <label class="trust-check" for="trust-codeapp">
+                <input id="trust-codeapp" type="checkbox" aria-controls="download-codeapp">
+                <span>I understand this is an unsupported preview, have reviewed the <a href="https://github.com/pavecer/mcs-transcript-analyzer/tree/main/codeapp" target="_blank" rel="noopener noreferrer">code app source</a>, and will test it in a sandbox first.</span>
+              </label>
+            </div>
+            <button class="button primary" id="download-codeapp" type="button" data-artifact="codeApp" disabled><i data-lucide="download" aria-hidden="true"></i>Download preview ZIP</button>
+            <p class="hash">SHA-256: <span id="codeapp-package-hash">loading…</span></p>
+          </aside>
         </div>
       </div>
     </section>
@@ -530,18 +574,40 @@
     lucide.createIcons({ attrs: { "stroke-width": 1.8 } });
     document.getElementById("year").textContent = new Date().getFullYear();
 
-    const trustPackage = document.getElementById("trust-package");
-    const downloadPackage = document.getElementById("download-package");
-    trustPackage.addEventListener("change", () => {
-      downloadPackage.disabled = !trustPackage.checked;
-    });
-    downloadPackage.addEventListener("click", () => {
-      if (downloadPackage.disabled) return;
-      const link = document.createElement("a");
-      link.href = downloadPackage.dataset.downloadTarget;
-      link.download = "pvConversationInsights-managed-1.0.0.0.zip";
-      link.click();
-    });
+    const artifacts = {};
+    function wireDownloadGate(checkboxId, buttonId) {
+      const checkbox = document.getElementById(checkboxId);
+      const button = document.getElementById(buttonId);
+      checkbox.addEventListener("change", () => {
+        button.disabled = !checkbox.checked;
+      });
+      button.addEventListener("click", () => {
+        if (button.disabled) return;
+        const artifact = artifacts[button.dataset.artifact];
+        if (!artifact) return;
+        const link = document.createElement("a");
+        link.href = `downloads/${artifact.filename}`;
+        link.download = artifact.filename;
+        link.click();
+      });
+    }
+    wireDownloadGate("trust-package", "download-package");
+    wireDownloadGate("trust-codeapp", "download-codeapp");
+
+    fetch("downloads/release-manifest.json")
+      .then((response) => {
+        if (!response.ok) throw new Error("Release manifest unavailable");
+        return response.json();
+      })
+      .then((manifest) => {
+        Object.assign(artifacts, manifest.artifacts);
+        document.getElementById("package-hash").textContent = artifacts.core.sha256;
+        document.getElementById("codeapp-package-hash").textContent = artifacts.codeApp.sha256;
+      })
+      .catch(() => {
+        document.getElementById("package-hash").textContent = "see release manifest";
+        document.getElementById("codeapp-package-hash").textContent = "see release manifest";
+      });
 
     const command = "pac solution import --path pvConversationInsights-managed-1.0.0.0.zip --activate-plugins";
     document.getElementById("copy-command").addEventListener("click", async (event) => {

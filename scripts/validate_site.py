@@ -3,24 +3,19 @@
 
 from __future__ import annotations
 
-import hashlib
-import re
+import json
 import struct
 import sys
 from html.parser import HTMLParser
 from pathlib import Path
 from urllib.parse import urlparse
-from xml.etree import ElementTree as ET
-from zipfile import ZipFile
+
+from update_release_manifest import MANIFEST_PATH, inspect_package, read_config
 
 
 ROOT = Path(__file__).resolve().parents[1]
 SITE = ROOT / "site"
 INDEX = SITE / "index.html"
-EXPECTED_SOLUTION = "pvConversationInsights"
-EXPECTED_VERSION = "1.0.0.0"
-PACKAGE_NAME = f"{EXPECTED_SOLUTION}-managed-{EXPECTED_VERSION}.zip"
-PACKAGE = SITE / "downloads" / PACKAGE_NAME
 PREVIEW = SITE / "assets" / "conversation-insights-preview.png"
 
 
@@ -41,19 +36,23 @@ def fail(message: str) -> None:
     raise SystemExit(1)
 
 
-def validate_html(html: str, checksum: str) -> None:
+def validate_html(html: str, config: dict[str, dict[str, str]]) -> None:
     required = [
         'id="capabilities"',
         'id="architecture"',
         'id="install"',
-        PACKAGE_NAME,
-        EXPECTED_VERSION,
-        checksum,
+        'id="preview-download"',
+        config["core"]["filename"],
+        "downloads/release-manifest.json",
         'id="trust-package"',
         'id="download-package"',
         "Import only what you trust",
-        "downloadPackage.disabled = !trustPackage.checked",
-        "The preview code app is not part of this ZIP.",
+        'id="trust-codeapp"',
+        'id="download-codeapp"',
+        "Understand the preview risk",
+        'wireDownloadGate("trust-package", "download-package")',
+        'wireDownloadGate("trust-codeapp", "download-codeapp")',
+        "Preview features can change, have limited support, or become unavailable.",
     ]
     missing = [value for value in required if value not in html]
     if missing:
@@ -72,46 +71,22 @@ def validate_html(html: str, checksum: str) -> None:
             fail(f"broken local reference in site/index.html: {reference}")
 
 
-def validate_package() -> str:
-    if not PACKAGE.is_file():
-        fail(f"missing managed solution package: {PACKAGE.relative_to(ROOT)}")
+def validate_packages(config: dict[str, dict[str, str]]) -> None:
+    try:
+        actual = {
+            "core": inspect_package("core", config["core"]),
+            "codeApp": inspect_package("codeApp", config["codeApp"]),
+        }
+    except (FileNotFoundError, KeyError, RuntimeError, ValueError) as exc:
+        fail(str(exc))
 
-    checksum = hashlib.sha256(PACKAGE.read_bytes()).hexdigest()
-    with ZipFile(PACKAGE) as bundle:
-        corrupt = bundle.testzip()
-        if corrupt:
-            fail(f"corrupt file in solution package: {corrupt}")
-        try:
-            manifest = ET.fromstring(bundle.read("solution.xml"))
-        except KeyError:
-            fail("solution package has no solution.xml")
-
-        unique_name = manifest.findtext(".//UniqueName")
-        version = manifest.findtext(".//Version")
-        managed = manifest.findtext(".//Managed")
-        if (unique_name, version, managed) != (EXPECTED_SOLUTION, EXPECTED_VERSION, "1"):
-            fail(
-                "unexpected solution identity: "
-                f"name={unique_name!r}, version={version!r}, managed={managed!r}"
-            )
-
-        controls = [
-            item for item in manifest.findall(".//RootComponent")
-            if item.attrib.get("type") == "66"
-            and item.attrib.get("schemaName") == "pvci_PvciControls.JsonViewer"
-        ]
-        if len(controls) != 1:
-            fail("JSON Viewer PCF must be included exactly once as a root component")
-
-        missing_controls = [
-            item for item in manifest.findall(".//MissingDependency")
-            if item.find("Required") is not None
-            and item.find("Required").attrib.get("type") == "66"
-        ]
-        if missing_controls:
-            fail("solution package still has an unresolved PCF dependency")
-
-    return checksum
+    if not MANIFEST_PATH.is_file():
+        fail(f"missing release manifest: {MANIFEST_PATH.relative_to(ROOT)}")
+    manifest = json.loads(MANIFEST_PATH.read_text(encoding="utf-8"))
+    for key, package in actual.items():
+        published = manifest.get("artifacts", {}).get(key)
+        if published != package:
+            fail(f"release manifest is stale for {key}; run scripts/update_release_manifest.py")
 
 
 def validate_preview() -> None:
@@ -129,13 +104,14 @@ def validate_preview() -> None:
 def main() -> None:
     if not INDEX.is_file():
         fail("site/index.html is missing")
-    checksum = validate_package()
+    config = read_config()
+    validate_packages(config)
     validate_preview()
     html = INDEX.read_text(encoding="utf-8")
-    validate_html(html, checksum)
+    validate_html(html, config)
     print(
-        f"PASS: Pages site, {EXPECTED_SOLUTION} {EXPECTED_VERSION}, "
-        f"package checksum, PCF dependency, and local references are valid"
+        "PASS: Pages site, core and preview managed packages, release manifest, "
+        "trust gates, package components, and local references are valid"
     )
 
 

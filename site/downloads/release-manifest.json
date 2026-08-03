@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "sourceCommit": "de836459e764b237a4571a8a21293c515424cd3f",
+  "generatedAtUtc": "2026-08-03T14:01:53+00:00",
+  "artifacts": {
+    "core": {
+      "filename": "pvConversationInsights-managed-1.0.0.0.zip",
+      "managed": true,
+      "sha256": "661bc7bcab215ceda142a1ffcc527dc4d1a73e440af64d23d6c4460a98af4f0f",
+      "solutionUniqueName": "pvConversationInsights",
+      "version": "1.0.0.0"
+    },
+    "codeApp": {
+      "filename": "pvConversationInsightsCodeApp-managed-1.0.0.0.zip",
+      "managed": true,
+      "sha256": "4d7c932b0a412c9a948ba64ef4480d96b11af9289417b674686b8a2381000cc7",
+      "solutionUniqueName": "pvConversationInsightsCodeApp",
+      "version": "1.0.0.0"
+    }
+  }
+}
