@@ -59,6 +59,13 @@ jobs:
       - run: npx tsc -b
       - run: npx eslint .
 
+  site:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate Pages site and install package
+        run: python3 scripts/validate_site.py
+
   secrets:
     runs-on: ubuntu-latest
     steps:

@@ -1,0 +1,511 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="MCS Transcript Analyzer brings Copilot Studio conversation identity, latency, reasoning, tool calls, and flow runs into Dataverse.">
+  <title>MCS Transcript Analyzer</title>
+  <script>
+    (() => {
+      const param = new URLSearchParams(window.location.search).get("scoutTheme");
+      const theme =
+        param || (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+      document.documentElement.setAttribute("data-theme", theme);
+    })();
+  </script>
+  <style>
+    :root {
+      color-scheme: light;
+      --cp-bg: #f7f4ef;
+      --cp-bg-elevated: #fcfbf8;
+      --cp-surface: #ffffff;
+      --cp-surface-soft: #f5f5f5;
+      --cp-border: #dedede;
+      --cp-border-strong: #919191;
+      --cp-text: #242424;
+      --cp-text-muted: #5c5c5c;
+      --cp-text-soft: #6f6f6f;
+      --cp-accent: #b11f4b;
+      --cp-accent-hover: #9a1a41;
+      --cp-accent-soft: rgba(177, 31, 75, 0.08);
+      --cp-accent-fg: #ffffff;
+      --cp-success: #16a34a;
+      --cp-danger: #dc2626;
+      --cp-warning: #f59e0b;
+      --cp-link: #0078d4;
+      --cp-shadow: 0 18px 48px rgba(0, 0, 0, 0.12);
+      --cp-overlay: rgba(255, 255, 255, 0.8);
+      --cp-panel: rgba(255, 255, 255, 0.86);
+      --cp-panel-strong: rgba(255, 255, 255, 0.96);
+      --cp-sheen: rgba(255, 255, 255, 0.55);
+      --cp-highlight: rgba(177, 31, 75, 0.12);
+    }
+    html[data-theme="dark"] {
+      color-scheme: dark;
+      --cp-bg: #3d3b3a;
+      --cp-bg-elevated: #343231;
+      --cp-surface: #292929;
+      --cp-surface-soft: #2e2e2e;
+      --cp-border: #474747;
+      --cp-border-strong: #5f5f5f;
+      --cp-text: #dedede;
+      --cp-text-muted: #919191;
+      --cp-text-soft: #b0b0b0;
+      --cp-accent: #fd8ea1;
+      --cp-accent-hover: #fb7b91;
+      --cp-accent-soft: rgba(253, 142, 161, 0.14);
+      --cp-accent-fg: #1a1a1a;
+      --cp-success: #4ade80;
+      --cp-danger: #f87171;
+      --cp-warning: #fbbf24;
+      --cp-link: #4da6ff;
+      --cp-shadow: 0 18px 48px rgba(0, 0, 0, 0.32);
+      --cp-overlay: rgba(41, 41, 41, 0.88);
+      --cp-panel: rgba(41, 41, 41, 0.72);
+      --cp-panel-strong: rgba(41, 41, 41, 0.96);
+      --cp-sheen: rgba(255, 255, 255, 0.04);
+      --cp-highlight: rgba(253, 142, 161, 0.12);
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background: var(--cp-bg);
+      color: var(--cp-text);
+      font-family: "Segoe UI", Aptos, Calibri, -apple-system, BlinkMacSystemFont, sans-serif;
+      font-size: 16px;
+      line-height: 1.6;
+    }
+    a { color: var(--cp-link); }
+    img { display: block; max-width: 100%; }
+    button, a { -webkit-tap-highlight-color: var(--cp-highlight); }
+    :focus-visible { outline: 3px solid var(--cp-accent); outline-offset: 3px; }
+    .skip-link {
+      position: fixed;
+      top: 12px;
+      left: 12px;
+      z-index: 100;
+      transform: translateY(-160%);
+      background: var(--cp-accent);
+      color: var(--cp-accent-fg);
+      padding: 8px 12px;
+    }
+    .skip-link:focus { transform: translateY(0); }
+    .shell { width: min(1160px, calc(100% - 40px)); margin: 0 auto; }
+    .site-nav {
+      position: absolute;
+      inset: 0 0 auto;
+      z-index: 10;
+      border-bottom: 1px solid var(--cp-border);
+      background: var(--cp-panel);
+      -webkit-backdrop-filter: blur(14px);
+      backdrop-filter: blur(14px);
+    }
+    .nav-inner {
+      min-height: 68px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+    .wordmark {
+      color: var(--cp-text);
+      font-weight: 700;
+      text-decoration: none;
+      letter-spacing: 0;
+    }
+    .nav-links { display: flex; align-items: center; gap: 24px; }
+    .nav-links a { color: var(--cp-text-muted); text-decoration: none; font-size: 14px; }
+    .nav-links a:hover { color: var(--cp-text); }
+    .nav-links .nav-github { display: inline-flex; align-items: center; gap: 7px; }
+
+    .hero {
+      position: relative;
+      isolation: isolate;
+      min-height: min(860px, 92vh);
+      display: flex;
+      align-items: center;
+      overflow: hidden;
+      border-bottom: 1px solid var(--cp-border);
+      background: var(--cp-bg-elevated);
+    }
+    .hero-media {
+      position: absolute;
+      z-index: -2;
+      inset: 0 0 0 34%;
+      width: 66%;
+      height: 100%;
+      object-fit: cover;
+      object-position: left center;
+    }
+    .hero::before {
+      content: "";
+      position: absolute;
+      z-index: -1;
+      inset: 0 38% 0 0;
+      background: var(--cp-bg-elevated);
+      box-shadow: 70px 0 90px var(--cp-bg-elevated);
+    }
+    .hero-content { width: min(660px, 58%); padding: 142px 0 96px; }
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 9px;
+      color: var(--cp-accent);
+      font-size: 13px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    .eyebrow::before { content: ""; width: 28px; height: 2px; background: var(--cp-accent); }
+    h1, h2, h3 { line-height: 1.12; letter-spacing: 0; }
+    h1 { margin: 18px 0 22px; font-size: clamp(46px, 6vw, 82px); max-width: 720px; }
+    .hero-copy { max-width: 600px; color: var(--cp-text-muted); font-size: clamp(18px, 2vw, 22px); line-height: 1.55; }
+    .actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 34px; }
+    .button {
+      min-height: 46px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 9px;
+      border: 1px solid var(--cp-border-strong);
+      border-radius: 6px;
+      padding: 10px 17px;
+      color: var(--cp-text);
+      background: var(--cp-surface);
+      font-weight: 650;
+      text-decoration: none;
+      cursor: pointer;
+    }
+    .button:hover { background: var(--cp-surface-soft); }
+    .button.primary { border-color: var(--cp-accent); background: var(--cp-accent); color: var(--cp-accent-fg); }
+    .button.primary:hover { background: var(--cp-accent-hover); }
+    .button.small { min-height: 38px; padding: 7px 12px; font-size: 14px; }
+    .version-note { margin-top: 16px; color: var(--cp-text-soft); font-size: 13px; }
+    .version-note strong { color: var(--cp-text); }
+
+    .signal-strip { background: var(--cp-accent); color: var(--cp-accent-fg); }
+    .signals { display: grid; grid-template-columns: repeat(4, 1fr); }
+    .signal { padding: 22px 20px; border-right: 1px solid var(--cp-highlight); }
+    .signal:last-child { border-right: 0; }
+    .signal strong { display: block; font-size: 22px; }
+    .signal span { font-size: 13px; opacity: 0.9; }
+
+    .section { padding: 92px 0; }
+    .section.alt { background: var(--cp-bg-elevated); border-block: 1px solid var(--cp-border); }
+    .section-head { display: grid; grid-template-columns: 0.8fr 1.2fr; gap: 72px; align-items: end; margin-bottom: 52px; }
+    .section-kicker { color: var(--cp-accent); font-weight: 700; font-size: 13px; text-transform: uppercase; letter-spacing: 0.08em; }
+    h2 { margin: 10px 0 0; font-size: clamp(32px, 4vw, 52px); }
+    .section-intro { margin: 0; color: var(--cp-text-muted); font-size: 19px; }
+
+    .feature-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: var(--cp-border); border: 1px solid var(--cp-border); }
+    .feature {
+      min-height: 220px;
+      padding: 28px;
+      background: var(--cp-surface);
+    }
+    .feature-icon { color: var(--cp-accent); width: 24px; height: 24px; }
+    .feature h3 { margin: 50px 0 10px; font-size: 20px; }
+    .feature p { margin: 0; color: var(--cp-text-muted); font-size: 15px; }
+
+    .comparison { width: 100%; border-collapse: collapse; background: var(--cp-surface); border: 1px solid var(--cp-border); }
+    .comparison th, .comparison td { padding: 17px 20px; text-align: left; border-bottom: 1px solid var(--cp-border); }
+    .comparison th { color: var(--cp-text-muted); font-size: 13px; text-transform: uppercase; letter-spacing: 0.05em; }
+    .comparison tr:last-child td { border-bottom: 0; }
+    .comparison td:first-child { font-weight: 650; }
+    .yes { color: var(--cp-success); font-weight: 700; }
+    .no { color: var(--cp-danger); font-weight: 700; }
+    .table-scroll { overflow-x: auto; }
+
+    .architecture { display: grid; grid-template-columns: 1fr auto 1fr auto 1.25fr; gap: 14px; align-items: stretch; }
+    .arch-node { padding: 24px; border: 1px solid var(--cp-border); border-radius: 8px; background: var(--cp-surface); }
+    .arch-node .node-label { color: var(--cp-accent); font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; }
+    .arch-node h3 { margin: 9px 0; font-size: 19px; }
+    .arch-node p { margin: 0; color: var(--cp-text-muted); font-size: 14px; }
+    .arch-arrow { display: grid; place-items: center; color: var(--cp-accent); }
+    .arch-detail { margin-top: 24px; padding-left: 20px; border-left: 3px solid var(--cp-accent); color: var(--cp-text-muted); }
+
+    .install-layout { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(320px, 0.85fr); gap: 54px; align-items: start; }
+    .steps { counter-reset: install; display: grid; gap: 0; }
+    .step { counter-increment: install; position: relative; padding: 0 0 36px 62px; }
+    .step::before {
+      content: counter(install);
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 38px;
+      height: 38px;
+      display: grid;
+      place-items: center;
+      border: 1px solid var(--cp-accent);
+      border-radius: 50%;
+      color: var(--cp-accent);
+      font-weight: 700;
+      background: var(--cp-bg-elevated);
+    }
+    .step:not(:last-child)::after { content: ""; position: absolute; left: 18px; top: 39px; bottom: 0; width: 1px; background: var(--cp-border); }
+    .step h3 { margin: 0 0 5px; font-size: 19px; }
+    .step p { margin: 0; color: var(--cp-text-muted); }
+    .step code, .command code { font-family: Consolas, "Courier New", Courier, monospace; }
+    .package {
+      position: sticky;
+      top: 24px;
+      padding: 28px;
+      border: 1px solid var(--cp-border);
+      border-top: 4px solid var(--cp-accent);
+      border-radius: 8px;
+      background: var(--cp-surface);
+      box-shadow: var(--cp-shadow);
+    }
+    .package h3 { margin: 0 0 8px; font-size: 25px; }
+    .package-meta { color: var(--cp-text-muted); font-size: 14px; }
+    .package-list { padding: 18px 0; margin: 18px 0; list-style: none; border-block: 1px solid var(--cp-border); }
+    .package-list li { display: flex; gap: 9px; align-items: flex-start; margin: 8px 0; }
+    .package-list i { color: var(--cp-success); margin-top: 4px; }
+    .package .button { width: 100%; }
+    .hash { margin: 13px 0 0; color: var(--cp-text-soft); font-family: Consolas, "Courier New", Courier, monospace; font-size: 11px; overflow-wrap: anywhere; }
+
+    .command { display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-top: 18px; padding: 14px 16px; border: 1px solid var(--cp-border); background: var(--cp-surface-soft); border-radius: 6px; }
+    .command code { overflow-wrap: anywhere; font-size: 13px; }
+    .icon-button { flex: 0 0 38px; width: 38px; height: 38px; display: grid; place-items: center; border: 1px solid var(--cp-border); border-radius: 6px; background: var(--cp-surface); color: var(--cp-text); cursor: pointer; }
+    .icon-button:hover { border-color: var(--cp-border-strong); }
+
+    .limitations { display: grid; grid-template-columns: repeat(3, 1fr); gap: 30px; }
+    .limitation { border-top: 2px solid var(--cp-border-strong); padding-top: 18px; }
+    .limitation h3 { margin: 0 0 9px; font-size: 18px; }
+    .limitation p { margin: 0; color: var(--cp-text-muted); font-size: 15px; }
+    .notice { margin-top: 38px; padding: 20px 22px; border-left: 4px solid var(--cp-warning); background: var(--cp-surface-soft); }
+    .notice strong { display: block; margin-bottom: 4px; }
+
+    footer { padding: 38px 0; border-top: 1px solid var(--cp-border); background: var(--cp-bg-elevated); }
+    .footer-inner { display: flex; justify-content: space-between; align-items: center; gap: 24px; color: var(--cp-text-muted); font-size: 14px; }
+    .footer-links { display: flex; gap: 20px; }
+
+    .hero-content { animation: hero-enter 650ms ease-out both; }
+    @keyframes hero-enter {
+      from { opacity: 0; transform: translateY(18px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @media (max-width: 900px) {
+      .nav-links a:not(.nav-github) { display: none; }
+      .hero { min-height: 820px; align-items: flex-end; }
+      .hero-media { inset: 68px 0 auto 0; width: 100%; height: 45%; object-position: center top; }
+      .hero::before { inset: 40% 0 0; box-shadow: 0 -60px 80px var(--cp-bg-elevated); }
+      .hero-content { width: 100%; padding: 430px 0 60px; }
+      h1 { font-size: clamp(42px, 11vw, 68px); }
+      .signals { grid-template-columns: repeat(2, 1fr); }
+      .signal:nth-child(2) { border-right: 0; }
+      .signal:nth-child(-n+2) { border-bottom: 1px solid var(--cp-highlight); }
+      .section-head { grid-template-columns: 1fr; gap: 18px; }
+      .feature-grid { grid-template-columns: repeat(2, 1fr); }
+      .architecture { grid-template-columns: 1fr; }
+      .arch-arrow { transform: rotate(90deg); min-height: 34px; }
+      .install-layout { grid-template-columns: 1fr; }
+      .package { position: static; }
+      .limitations { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 600px) {
+      .shell { width: min(100% - 28px, 1160px); }
+      .nav-inner { min-height: 60px; }
+      .hero { min-height: 760px; }
+      .hero-media { top: 60px; height: 34%; }
+      .hero::before { inset: 31% 0 0; }
+      .hero-content { padding: 330px 0 48px; }
+      .hero-copy { font-size: 18px; }
+      .actions .button { width: 100%; }
+      .signals { grid-template-columns: 1fr 1fr; }
+      .signal { padding: 17px 14px; }
+      .signal strong { font-size: 18px; }
+      .section { padding: 66px 0; }
+      .feature-grid { grid-template-columns: 1fr; }
+      .feature { min-height: 180px; }
+      .feature h3 { margin-top: 30px; }
+      .comparison th, .comparison td { min-width: 170px; padding: 13px 14px; }
+      .step { padding-left: 52px; }
+      .command { align-items: flex-start; }
+      .footer-inner { align-items: flex-start; flex-direction: column; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      .hero-content { animation: none; }
+    }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <nav class="site-nav" aria-label="Primary navigation">
+    <div class="shell nav-inner">
+      <a class="wordmark" href="#top">MCS Transcript Analyzer</a>
+      <div class="nav-links">
+        <a href="#capabilities">Capabilities</a>
+        <a href="#architecture">Architecture</a>
+        <a href="#install">Install</a>
+        <a class="nav-github" href="https://github.com/pavecer/mcs-transcript-analyzer" aria-label="View source on GitHub">
+          <i data-lucide="github" aria-hidden="true"></i><span>GitHub</span>
+        </a>
+      </div>
+    </div>
+  </nav>
+
+  <main id="main">
+    <section class="hero" id="top">
+      <img class="hero-media" src="assets/conversation-insights-preview.png" alt="An anonymized preview of the Conversation Insights session replay interface">
+      <div class="shell">
+        <div class="hero-content" data-reveal>
+          <span class="eyebrow">Copilot Studio observability</span>
+          <h1>MCS Transcript Analyzer</h1>
+          <p class="hero-copy">See who spoke to your agent, how long each response took, what the orchestrator chose, and which flows or tools failed. All inside your Dataverse environment.</p>
+          <div class="actions">
+            <a class="button primary" href="downloads/pvConversationInsights-managed-1.0.0.0.zip" download>
+              <i data-lucide="download" aria-hidden="true"></i>Download managed solution
+            </a>
+            <a class="button" href="#install"><i data-lucide="list-checks" aria-hidden="true"></i>Installation guide</a>
+          </div>
+          <p class="version-note"><strong>Version 1.0.0.0</strong> · Managed Dataverse solution · MIT licensed</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="signal-strip" aria-label="Solution summary">
+      <div class="shell signals">
+        <div class="signal"><strong>Identity</strong><span>Resolve the real end user</span></div>
+        <div class="signal"><strong>Latency</strong><span>Measure every reply</span></div>
+        <div class="signal"><strong>Reasoning</strong><span>Inspect orchestration events</span></div>
+        <div class="signal"><strong>Flow runs</strong><span>Correlate automation failures</span></div>
+      </div>
+    </section>
+
+    <section class="section" id="capabilities">
+      <div class="shell">
+        <div class="section-head" data-reveal>
+          <div><span class="section-kicker">What you can investigate</span><h2>From complaint to evidence</h2></div>
+          <p class="section-intro">The standard Monitor export summarizes a session. MCS Transcript Analyzer preserves the activity stream and turns it into a support-ready investigation surface.</p>
+        </div>
+        <div class="feature-grid" data-reveal>
+          <article class="feature"><i class="feature-icon" data-lucide="user-round-check" aria-hidden="true"></i><h3>End-user attribution</h3><p>Resolve <code>from.aadObjectId</code> to the corresponding Dataverse system user.</p></article>
+          <article class="feature"><i class="feature-icon" data-lucide="timer" aria-hidden="true"></i><h3>Response latency</h3><p>Track first, average, and slowest replies, plus the delay on each conversation turn.</p></article>
+          <article class="feature"><i class="feature-icon" data-lucide="route" aria-hidden="true"></i><h3>Agent reasoning</h3><p>Inspect DynamicPlan events to understand which topic or action the orchestrator selected.</p></article>
+          <article class="feature"><i class="feature-icon" data-lucide="wrench" aria-hidden="true"></i><h3>Tool-call diagnostics</h3><p>Review connector and AI Builder invocations, duration, output, and exceptions where available.</p></article>
+          <article class="feature"><i class="feature-icon" data-lucide="workflow" aria-hidden="true"></i><h3>Flow correlation</h3><p>Match Power Automate runs to session windows and surface failed or unusually slow actions.</p></article>
+          <article class="feature"><i class="feature-icon" data-lucide="shield-check" aria-hidden="true"></i><h3>Operational control</h3><p>Keep an additive watermark, separate test sessions, and inspect health from one sync-state record.</p></article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section alt">
+      <div class="shell">
+        <div class="section-head" data-reveal>
+          <div><span class="section-kicker">Why this data source</span><h2>More than Monitor CSV</h2></div>
+          <p class="section-intro">The solution reads the Dataverse <code>conversationtranscripts</code> activity payload, which retains details that are absent from the analytics export.</p>
+        </div>
+        <div class="table-scroll" data-reveal>
+          <table class="comparison">
+            <thead><tr><th>Evidence</th><th>Monitor export</th><th>MCS Transcript Analyzer</th></tr></thead>
+            <tbody>
+              <tr><td>End-user identity</td><td><span class="no">Not included</span></td><td><span class="yes">Resolved from Entra object ID</span></td></tr>
+              <tr><td>Conversation activity stream</td><td>Session summary</td><td><span class="yes">Full Bot Framework activity JSON</span></td></tr>
+              <tr><td>Orchestration events</td><td><span class="no">Not included</span></td><td><span class="yes">DynamicPlan trace</span></td></tr>
+              <tr><td>Per-turn latency</td><td><span class="no">Not included</span></td><td><span class="yes">Calculated in milliseconds</span></td></tr>
+              <tr><td>Automated incremental sync</td><td>Manual export</td><td><span class="yes">Custom API and scheduled flow</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="architecture">
+      <div class="shell">
+        <div class="section-head" data-reveal>
+          <div><span class="section-kicker">Architecture</span><h2>Runs where the data lives</h2></div>
+          <p class="section-intro">A sandboxed Dataverse plugin incrementally parses finalized transcripts. A recurrence flow drains the backlog without an external host or stored access token.</p>
+        </div>
+        <div class="architecture" data-reveal aria-label="Solution data flow">
+          <article class="arch-node"><span class="node-label">Source</span><h3>Copilot Studio transcripts</h3><p>Bot Framework activities stored in Dataverse after each session.</p></article>
+          <div class="arch-arrow"><i data-lucide="arrow-right" aria-hidden="true"></i></div>
+          <article class="arch-node"><span class="node-label">Processing</span><h3>Custom API + plugin</h3><p>Parses identity, turns, latency, plans, tool calls, and outcomes.</p></article>
+          <div class="arch-arrow"><i data-lucide="arrow-right" aria-hidden="true"></i></div>
+          <article class="arch-node"><span class="node-label">Investigation</span><h3>Conversation Insights</h3><p>Dataverse tables, model-driven app, forms, views, and searchable JSON.</p></article>
+        </div>
+        <p class="arch-detail" data-reveal><strong>Additive by default.</strong> Finalized transcripts are treated as immutable. Reprocessing is an explicit operation, and the watermark freezes when a batch fails so a bad record cannot be silently skipped.</p>
+      </div>
+    </section>
+
+    <section class="section alt" id="install">
+      <div class="shell">
+        <div class="section-head" data-reveal>
+          <div><span class="section-kicker">Install</span><h2>Import the solution</h2></div>
+          <p class="section-intro">Use a sandbox first. You need a Dataverse environment with Copilot Studio transcripts enabled and permission to import solutions.</p>
+        </div>
+        <div class="install-layout">
+          <div class="steps" data-reveal>
+            <article class="step"><h3>Download the managed ZIP</h3><p>Keep the archive intact. Power Apps imports the ZIP directly; do not extract it.</p></article>
+            <article class="step"><h3>Import in Power Apps</h3><p>Open <strong>Solutions</strong>, choose <strong>Import solution</strong>, upload the ZIP, and complete the import wizard.</p></article>
+            <article class="step"><h3>Bind the connection</h3><p>Associate the <code>pvci_dataversesync</code> connection reference with a Dataverse connection in the target environment.</p></article>
+            <article class="step"><h3>Activate and run the sync flow</h3><p>Turn on the scheduled sync flow and run it once to load existing finalized transcripts. Future batches run hourly.</p></article>
+            <article class="step"><h3>Assign access</h3><p>Grant the intended support users access to the model-driven app and the least-privilege Dataverse roles required by your organization.</p></article>
+          </div>
+          <aside class="package" data-reveal aria-label="Download package details">
+            <h3>PV Conversation Insights</h3>
+            <div class="package-meta">Managed solution · version 1.0.0.0</div>
+            <ul class="package-list">
+              <li><i data-lucide="check" aria-hidden="true"></i><span>Dataverse schema, forms, and views</span></li>
+              <li><i data-lucide="check" aria-hidden="true"></i><span>Model-driven investigation app</span></li>
+              <li><i data-lucide="check" aria-hidden="true"></i><span>Custom API and sandboxed plugin</span></li>
+              <li><i data-lucide="check" aria-hidden="true"></i><span>Scheduled Power Automate sync flow</span></li>
+            </ul>
+            <a class="button primary" href="downloads/pvConversationInsights-managed-1.0.0.0.zip" download><i data-lucide="download" aria-hidden="true"></i>Download solution ZIP</a>
+            <p class="hash">SHA-256: <span id="package-hash">661bc7bcab215ceda142a1ffcc527dc4d1a73e440af64d23d6c4460a98af4f0f</span></p>
+          </aside>
+        </div>
+
+        <div class="notice" data-reveal>
+          <strong>The preview code app is not part of this ZIP.</strong>
+          The managed package installs the supported model-driven experience. The richer React code app remains a preview and must be deployed separately from the repository.
+        </div>
+
+        <div class="command" data-reveal>
+          <code>pac solution import --path pvConversationInsights-managed-1.0.0.0.zip --activate-plugins</code>
+          <button class="icon-button" id="copy-command" type="button" title="Copy import command" aria-label="Copy import command"><i data-lucide="copy" aria-hidden="true"></i></button>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="shell">
+        <div class="section-head" data-reveal>
+          <div><span class="section-kicker">Known boundaries</span><h2>Read before production</h2></div>
+          <p class="section-intro">The solution makes observed platform behavior visible, but it cannot manufacture telemetry that Copilot Studio or Power Automate did not retain.</p>
+        </div>
+        <div class="limitations" data-reveal>
+          <article class="limitation"><h3>Detailed traces vary by channel</h3><p><code>DialogTracing</code> is emitted in maker-portal design mode, not production Teams or Microsoft 365 Copilot channels. Production analysis uses coarser DynamicPlan events.</p></article>
+          <article class="limitation"><h3>Flow matching is time-based</h3><p>Power Automate flow runs do not carry the transcript conversation ID. Correlation uses overlapping time windows and reports ambiguous matches.</p></article>
+          <article class="limitation"><h3>Transcript data is personal data</h3><p>Restrict table privileges, define retention, and enable auditing according to your privacy and compliance requirements.</p></article>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="shell footer-inner">
+      <span>© <span id="year"></span> MCS Transcript Analyzer · MIT licensed · Not affiliated with Microsoft</span>
+      <div class="footer-links"><a href="https://github.com/pavecer/mcs-transcript-analyzer/blob/main/docs/operations.md">Operations</a><a href="https://github.com/pavecer/mcs-transcript-analyzer/blob/main/SECURITY.md">Security</a></div>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/lucide@0.468.0/dist/umd/lucide.min.js"></script>
+  <script>
+    lucide.createIcons({ attrs: { "stroke-width": 1.8 } });
+    document.getElementById("year").textContent = new Date().getFullYear();
+
+    const command = "pac solution import --path pvConversationInsights-managed-1.0.0.0.zip --activate-plugins";
+    document.getElementById("copy-command").addEventListener("click", async (event) => {
+      await navigator.clipboard.writeText(command);
+      event.currentTarget.setAttribute("title", "Copied");
+      event.currentTarget.setAttribute("aria-label", "Import command copied");
+    });
+
+  </script>
+</body>
+</html>

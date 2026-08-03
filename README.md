@@ -8,6 +8,8 @@ Built because the Copilot Studio Monitor CSV export drops the two things you nee
 a customer says *"the agent answered wrong"*: **who** was talking, and **why** the agent did
 what it did.
 
+**[View the solution presentation and download the managed installer](https://pavecer.github.io/mcs-transcript-analyzer/)**
+
 ---
 
 ## What you get
@@ -49,6 +51,11 @@ See [docs/monitor-endpoint-findings.md](docs/monitor-endpoint-findings.md) for t
 ---
 
 ## Quick start
+
+For a normal installation, download the managed solution from the
+[project website](https://pavecer.github.io/mcs-transcript-analyzer/#install) and import it in
+Power Apps under **Solutions > Import solution**. The source deployment below is intended for
+contributors and environments where you want to rebuild every component.
 
 **Prerequisites:** Python 3.10+, Node 22+, .NET SDK 8+, [Power Platform CLI](https://aka.ms/PowerPlatformCLI),
 Azure CLI, and a Dataverse environment where you hold System Customizer.

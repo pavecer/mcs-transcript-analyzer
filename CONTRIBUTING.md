@@ -67,6 +67,24 @@ in the maker portal, or the definition and the environment will drift.
 
 Column deletion is destructive and is deliberately **not** automated.
 
+## GitHub Pages and release package
+
+Every user-visible feature must update the public presentation in [`site/`](site/). This is part
+of the feature, not a later documentation task. Update the capability copy and limitations,
+refresh the anonymized product preview when the UI changes, bump the four-part solution version,
+and export a new managed solution ZIP.
+
+Follow [`site/README.md`](site/README.md) for the full release checklist. Before opening the PR,
+run:
+
+```bash
+python3 scripts/validate_site.py
+```
+
+The ZIP must be imported into a clean sandbox before release. Confirm that all custom components,
+including the JSON Viewer PCF, are embedded in the solution rather than left as dependencies on
+the source environment.
+
 ## Commit messages
 
 Short imperative subject, and explain *why* in the body when the reason is not obvious from the
