@@ -49,6 +49,10 @@ def validate_html(html: str, checksum: str) -> None:
         PACKAGE_NAME,
         EXPECTED_VERSION,
         checksum,
+        'id="trust-package"',
+        'id="download-package"',
+        "Import only what you trust",
+        "downloadPackage.disabled = !trustPackage.checked",
         "The preview code app is not part of this ZIP.",
     ]
     missing = [value for value in required if value not in html]

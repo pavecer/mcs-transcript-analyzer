@@ -181,6 +181,14 @@
     .button:hover { background: var(--cp-surface-soft); }
     .button.primary { border-color: var(--cp-accent); background: var(--cp-accent); color: var(--cp-accent-fg); }
     .button.primary:hover { background: var(--cp-accent-hover); }
+    .button:disabled {
+      border-color: var(--cp-border);
+      background: var(--cp-border);
+      color: var(--cp-text-soft);
+      cursor: not-allowed;
+      opacity: 0.72;
+    }
+    .button:disabled:hover { background: var(--cp-border); }
     .button.small { min-height: 38px; padding: 7px 12px; font-size: 14px; }
     .version-note { margin-top: 16px; color: var(--cp-text-soft); font-size: 13px; }
     .version-note strong { color: var(--cp-text); }
@@ -264,6 +272,21 @@
     .package-list li { display: flex; gap: 9px; align-items: flex-start; margin: 8px 0; }
     .package-list i { color: var(--cp-success); margin-top: 4px; }
     .package .button { width: 100%; }
+    .trust-panel {
+      margin: 18px 0;
+      padding: 18px;
+      border: 1px solid var(--cp-border);
+      border-radius: 8px;
+      background: var(--cp-surface-soft);
+    }
+    .trust-head { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+    .trust-head i { flex: 0 0 22px; color: var(--cp-warning); }
+    .trust-head strong { font-size: 17px; }
+    .trust-panel > p { margin: 0 0 14px; color: var(--cp-text-muted); font-size: 14px; }
+    .trust-check { display: grid; grid-template-columns: 20px 1fr; gap: 10px; align-items: start; cursor: pointer; }
+    .trust-check input { width: 18px; height: 18px; margin: 3px 0 0; accent-color: var(--cp-accent); }
+    .trust-check span { color: var(--cp-text-muted); font-size: 14px; line-height: 1.5; }
+    .trust-check a { font-weight: 650; }
     .hash { margin: 13px 0 0; color: var(--cp-text-soft); font-family: Consolas, "Courier New", Courier, monospace; font-size: 11px; overflow-wrap: anywhere; }
 
     .command { display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-top: 18px; padding: 14px 16px; border: 1px solid var(--cp-border); background: var(--cp-surface-soft); border-radius: 6px; }
@@ -358,8 +381,8 @@
           <h1>MCS Transcript Analyzer</h1>
           <p class="hero-copy">See who spoke to your agent, how long each response took, what the orchestrator chose, and which flows or tools failed. All inside your Dataverse environment.</p>
           <div class="actions">
-            <a class="button primary" href="downloads/pvConversationInsights-managed-1.0.0.0.zip" download>
-              <i data-lucide="download" aria-hidden="true"></i>Download managed solution
+            <a class="button primary" href="#install">
+              <i data-lucide="shield-check" aria-hidden="true"></i>Review and download
             </a>
             <a class="button" href="#install"><i data-lucide="list-checks" aria-hidden="true"></i>Installation guide</a>
           </div>
@@ -455,7 +478,15 @@
               <li><i data-lucide="check" aria-hidden="true"></i><span>Custom API and sandboxed plugin</span></li>
               <li><i data-lucide="check" aria-hidden="true"></i><span>Scheduled Power Automate sync flow</span></li>
             </ul>
-            <a class="button primary" href="downloads/pvConversationInsights-managed-1.0.0.0.zip" download><i data-lucide="download" aria-hidden="true"></i>Download solution ZIP</a>
+            <div class="trust-panel">
+              <div class="trust-head"><i data-lucide="shield-alert" aria-hidden="true"></i><strong>Import only what you trust</strong></div>
+              <p>This solution adds tables, an app, a flow, and plugin code that run with permissions granted in your environment.</p>
+              <label class="trust-check" for="trust-package">
+                <input id="trust-package" type="checkbox" aria-controls="download-package">
+                <span>I have <a href="https://github.com/pavecer/mcs-transcript-analyzer" target="_blank" rel="noopener noreferrer">reviewed the source</a>, trust this package, and will test it in a sandbox first.</span>
+              </label>
+            </div>
+            <button class="button primary" id="download-package" type="button" data-download-target="downloads/pvConversationInsights-managed-1.0.0.0.zip" disabled><i data-lucide="download" aria-hidden="true"></i>Download solution ZIP</button>
             <p class="hash">SHA-256: <span id="package-hash">661bc7bcab215ceda142a1ffcc527dc4d1a73e440af64d23d6c4460a98af4f0f</span></p>
           </aside>
         </div>
@@ -498,6 +529,19 @@
   <script>
     lucide.createIcons({ attrs: { "stroke-width": 1.8 } });
     document.getElementById("year").textContent = new Date().getFullYear();
+
+    const trustPackage = document.getElementById("trust-package");
+    const downloadPackage = document.getElementById("download-package");
+    trustPackage.addEventListener("change", () => {
+      downloadPackage.disabled = !trustPackage.checked;
+    });
+    downloadPackage.addEventListener("click", () => {
+      if (downloadPackage.disabled) return;
+      const link = document.createElement("a");
+      link.href = downloadPackage.dataset.downloadTarget;
+      link.download = "pvConversationInsights-managed-1.0.0.0.zip";
+      link.click();
+    });
 
     const command = "pac solution import --path pvConversationInsights-managed-1.0.0.0.zip --activate-plugins";
     document.getElementById("copy-command").addEventListener("click", async (event) => {
