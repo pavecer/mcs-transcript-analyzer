@@ -48,17 +48,19 @@ user information, environment provenance, metrics, outcomes, and bounded JSON pa
 | `pvci_botid` | Text | Stable agent ID from `metadata.BotId` |
 | `pvci_botname` | Text | Display name resolved from native `bot` |
 | `pvci_tenantid` | Text | `metadata.AADTenantId`; retained for audit, not used as a picker |
-| `pvci_environmentid` | Text | Source Dataverse organization/environment ID |
+| `pvci_environmentid` | Text | Power Platform environment GUID |
 | `pvci_environmentname` | Text | Source environment friendly name |
 | `pvci_datasource` | Text | Source, tenant, environment, and organization lineage stamp |
 | `pvci_transcriptcreatedon` | Date/time | Native transcript creation time |
 | `pvci_ingestedon` | Date/time | Last derived-session write time |
 | `pvci_correlationstatus` | Text | `exact`, `heuristic`, or `unmatched` user resolution |
 
-The plugin resolves environment data from its `IPluginExecutionContext` and
-`organization.friendlyname`. Python uses the configured `environmentId`, accepts an optional
-`environmentName` override, and queries `organization` for missing values. Environment identifies
-where the transcript was read; tenant and agent identity come from transcript telemetry.
+The plugin reads the Power Platform GUID from `IPluginExecutionContext6.EnvironmentId` and the
+friendly name from `organization.friendlyname`. Python requires the same Power Platform GUID in
+the configured `environmentId`, accepts an optional `environmentName` override, and queries
+`organization` only for a missing friendly name. Dataverse organization name remains in the
+`org:` lineage segment; it is never substituted for `pvci_environmentid`. Environment identifies
+where the transcript was read, while tenant and agent identity come from transcript telemetry.
 
 ### User and conversation
 
@@ -176,7 +178,7 @@ upsert is idempotent and `gt` could miss records created in the same timestamp t
 | `conversationtranscript` | Metadata and Bot Framework activity stream |
 | `systemuser` | Resolve end-user identity |
 | `bot` | Resolve agent display name |
-| `organization` | Resolve environment ID and friendly name |
+| `organization` | Resolve the friendly name and Dataverse organization lineage |
 | `flowrun` | Correlate Power Automate runs |
 | `workflow` | Bridge Dataverse workflow and Flow API identifiers |
 

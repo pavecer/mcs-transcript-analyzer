@@ -19,7 +19,7 @@ lineage, and retention reference.
 ```
 pvci_transcriptsession          one row per transcript
   ├─ pvci_UserId  →  systemuser (lookup, resolved from from.aadObjectId)
-  ├─ environment: EnvironmentId · EnvironmentName · DataSource lineage stamp
+  ├─ environment: Power Platform EnvironmentId · EnvironmentName · DataSource lineage stamp
   ├─ latency:   FirstResponseMs · AvgResponseMs · MaxResponseMs
   ├─ tools:     ToolCallCount · ToolErrorCount · ToolTotalMs · MaxToolMs
   ├─ flows:     FlowRunCount · FlowRunFailureCount · FlowRunMaxMs

@@ -64,14 +64,15 @@ def load_source_context(config_path: str) -> dict[str, str]:
 
 def resolve_source_context(dv: "Dv", config_path: str) -> dict[str, str]:
     source_ctx = load_source_context(config_path)
-    if source_ctx["environment_id"] and source_ctx["environment_name"]:
+    if not source_ctx["environment_id"]:
+        raise RuntimeError(
+            "environmentId is required and must be the Power Platform environment GUID from the maker portal URL."
+        )
+    if source_ctx["environment_name"]:
         return source_ctx
 
-    rows = dv.get_all("organizations?$select=organizationid,friendlyname,name&$top=1")
+    rows = dv.get_all("organizations?$select=friendlyname,name&$top=1")
     organization = rows[0] if rows else {}
-    source_ctx["environment_id"] = source_ctx["environment_id"] or str(
-        organization.get("organizationid", "")
-    )
     source_ctx["environment_name"] = source_ctx["environment_name"] or str(
         organization.get("friendlyname") or organization.get("name") or ""
     )

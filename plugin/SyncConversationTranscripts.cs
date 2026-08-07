@@ -178,6 +178,7 @@ namespace PvciTranscripts
                 "pvci_transcriptid",
                 transcriptId,
                 "pvci_transcriptsessionid",
+                "pvci_tenantid",
                 "pvci_environmentid",
                 "pvci_environmentname",
                 "pvci_datasource");
@@ -889,6 +890,11 @@ namespace PvciTranscripts
             IOrganizationService service,
             IPluginExecutionContext context)
         {
+            var context6 = context as IPluginExecutionContext6;
+            if (context6 == null || string.IsNullOrWhiteSpace(context6.EnvironmentId))
+                throw new InvalidPluginExecutionException(
+                    "The plugin execution context did not provide a Power Platform environment ID.");
+
             string friendlyName = null;
             string organizationName = context.OrganizationName;
             try
@@ -900,14 +906,14 @@ namespace PvciTranscripts
                 friendlyName = organization.GetAttributeValue<string>("friendlyname");
                 organizationName = organization.GetAttributeValue<string>("name") ?? organizationName;
             }
-            catch
+            catch (FaultException<OrganizationServiceFault>)
             {
-                // The execution context still provides a stable ID and organization name.
+                // Friendly-name enrichment is optional; environment ID remains authoritative.
             }
             return new SourceEnvironment
             {
-                Id = context.OrganizationId.ToString(),
-                Name = friendlyName ?? organizationName ?? context.OrganizationId.ToString(),
+                Id = context6.EnvironmentId,
+                Name = friendlyName ?? organizationName ?? context6.EnvironmentId,
                 OrganizationName = organizationName,
             };
         }
@@ -932,7 +938,7 @@ namespace PvciTranscripts
             Entity existing,
             SourceEnvironment source)
         {
-            string stamp = BuildSourceStamp(source, null);
+            string stamp = BuildSourceStamp(source, existing.GetAttributeValue<string>("pvci_tenantid"));
             bool changed = existing.GetAttributeValue<string>("pvci_environmentid") != source.Id
                 || existing.GetAttributeValue<string>("pvci_environmentname") != source.Name
                 || string.IsNullOrWhiteSpace(existing.GetAttributeValue<string>("pvci_datasource"));

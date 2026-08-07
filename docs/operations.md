@@ -11,7 +11,7 @@ cp config/transcript_solution_config.sample.json config/transcript_solution_conf
 | Key | Notes |
 |---|---|
 | `tenantId` | Entra tenant GUID |
-| `environmentId` | Power Platform environment GUID (from the maker portal URL) |
+| `environmentId` | Required Power Platform environment GUID from the maker portal URL; stored in `pvci_environmentid` |
 | `environmentName` | Optional friendly-name override; sync otherwise reads `organization.friendlyname` |
 | `dataverseUrl` | `https://<org>.crm<N>.dynamics.com` — no trailing slash |
 | `oauth.dataverseScope` | `<dataverseUrl>/.default` |
@@ -142,7 +142,7 @@ lineage stamp in `pvci_datasource`:
 ### Backfill environment names after upgrading
 
 After importing a version that adds the environment columns, run one full scan. Existing sessions
-are patched with environment ID, friendly name, and lineage only; turns and transcript payloads are
+are patched with Power Platform environment ID, friendly name, and lineage only; turns and transcript payloads are
 not rewritten, so `Reprocess` must remain false.
 
 ```bash
