@@ -40,6 +40,7 @@ namespace PvciTranscripts
             var tracing = (ITracingService)serviceProvider.GetService(typeof(ITracingService));
             var factory = (IOrganizationServiceFactory)serviceProvider.GetService(typeof(IOrganizationServiceFactory));
             IOrganizationService service = factory.CreateOrganizationService(context.UserId);
+            SourceEnvironment sourceEnvironment = ResolveSourceEnvironment(service, context);
 
             bool fullSync = GetInput(context, "FullSync", false);
             int maxRecords = GetInput(context, "MaxRecords", DefaultMaxRecords);
@@ -83,7 +84,7 @@ namespace PvciTranscripts
                 try
                 {
                     SyncResult r = SyncOne(service, tracing, transcript, userCache, botNameCache,
-                                           includeTraces, reprocess, flowRuns);
+                                           includeTraces, reprocess, flowRuns, sourceEnvironment);
                     processed++;
                     turns += r.Turns;
                     if (r.Skipped) skipped++;
@@ -129,6 +130,13 @@ namespace PvciTranscripts
             public bool MultiUser;
         }
 
+        private class SourceEnvironment
+        {
+            public string Id;
+            public string Name;
+            public string OrganizationName;
+        }
+
         // --- query -----------------------------------------------------------
 
         private static IEnumerable<Entity> QueryTranscripts(IOrganizationService service, DateTime? since, int maxRecords)
@@ -157,15 +165,25 @@ namespace PvciTranscripts
             Dictionary<string, string> botNameCache,
             bool includeTraces,
             bool reprocess,
-            List<Entity> flowRuns)
+            List<Entity> flowRuns,
+            SourceEnvironment sourceEnvironment)
         {
             string transcriptId = transcript.Id.ToString();
 
             // Transcripts are immutable once Copilot Studio writes them, so an already-ingested
             // one is skipped entirely: no re-parse, no rewrite, no turn churn.
-            Entity existing = FindByString(service, SessionEntity, "pvci_transcriptid", transcriptId, "pvci_transcriptsessionid");
+            Entity existing = FindByString(
+                service,
+                SessionEntity,
+                "pvci_transcriptid",
+                transcriptId,
+                "pvci_transcriptsessionid",
+                "pvci_environmentid",
+                "pvci_environmentname",
+                "pvci_datasource");
             if (existing != null && !reprocess)
             {
+                BackfillEnvironment(service, existing, sourceEnvironment);
                 tracing.Trace("skip (already ingested) {0}", transcriptId);
                 return new SyncResult { Skipped = true };
             }
@@ -318,6 +336,8 @@ namespace PvciTranscripts
             session["pvci_botid"] = Trim(Json.Str(metadata, "BotId"), TextLimit);
             session["pvci_botname"] = Trim(botDisplayName, TextLimit);
             session["pvci_tenantid"] = Trim(Json.Str(metadata, "AADTenantId"), TextLimit);
+            session["pvci_environmentid"] = Trim(sourceEnvironment.Id, TextLimit);
+            session["pvci_environmentname"] = Trim(sourceEnvironment.Name, TextLimit);
             session["pvci_useraadobjectid"] = Trim(userAad, TextLimit);
             session["pvci_channel"] = Trim(channelName, TextLimit);
             if (start.HasValue) session["pvci_startdatetimeutc"] = start.Value;
@@ -364,7 +384,7 @@ namespace PvciTranscripts
             session["pvci_metadatajson"] = metadataJson;
             session["pvci_transcriptcreatedon"] = createdOn;
             session["pvci_ingestedon"] = DateTime.UtcNow;
-            session["pvci_datasource"] = "plugin_v9.x_conversationtranscripts";
+            session["pvci_datasource"] = BuildSourceStamp(sourceEnvironment, Json.Str(metadata, "AADTenantId"));
             session["pvci_correlationstatus"] = systemUser != null ? "exact" : (string.IsNullOrEmpty(userAad) ? "unmatched" : "heuristic");
             if (systemUser != null)
                 session["pvci_userid"] = new EntityReference("systemuser", systemUser.Id);
@@ -865,9 +885,78 @@ namespace PvciTranscripts
             return displayName;
         }
 
-        private static Entity FindByString(IOrganizationService service, string entity, string field, string value, string idField)
+        private static SourceEnvironment ResolveSourceEnvironment(
+            IOrganizationService service,
+            IPluginExecutionContext context)
         {
-            var query = new QueryExpression(entity) { ColumnSet = new ColumnSet(idField), TopCount = 1 };
+            string friendlyName = null;
+            string organizationName = context.OrganizationName;
+            try
+            {
+                Entity organization = service.Retrieve(
+                    "organization",
+                    context.OrganizationId,
+                    new ColumnSet("friendlyname", "name"));
+                friendlyName = organization.GetAttributeValue<string>("friendlyname");
+                organizationName = organization.GetAttributeValue<string>("name") ?? organizationName;
+            }
+            catch
+            {
+                // The execution context still provides a stable ID and organization name.
+            }
+            return new SourceEnvironment
+            {
+                Id = context.OrganizationId.ToString(),
+                Name = friendlyName ?? organizationName ?? context.OrganizationId.ToString(),
+                OrganizationName = organizationName,
+            };
+        }
+
+        private static string BuildSourceStamp(SourceEnvironment source, string tenantId)
+        {
+            var parts = new List<string> { "plugin_v9.x_conversationtranscripts" };
+            if (!string.IsNullOrWhiteSpace(tenantId)) parts.Add("tenant:" + StampValue(tenantId));
+            if (!string.IsNullOrWhiteSpace(source.Id)) parts.Add("env:" + StampValue(source.Id));
+            if (!string.IsNullOrWhiteSpace(source.Name)) parts.Add("envName:" + StampValue(source.Name));
+            if (!string.IsNullOrWhiteSpace(source.OrganizationName)) parts.Add("org:" + StampValue(source.OrganizationName));
+            return string.Join("|", parts.ToArray());
+        }
+
+        private static string StampValue(string value)
+        {
+            return value.Replace("|", "/").Trim();
+        }
+
+        private static void BackfillEnvironment(
+            IOrganizationService service,
+            Entity existing,
+            SourceEnvironment source)
+        {
+            string stamp = BuildSourceStamp(source, null);
+            bool changed = existing.GetAttributeValue<string>("pvci_environmentid") != source.Id
+                || existing.GetAttributeValue<string>("pvci_environmentname") != source.Name
+                || string.IsNullOrWhiteSpace(existing.GetAttributeValue<string>("pvci_datasource"));
+            if (!changed) return;
+
+            var update = new Entity(SessionEntity, existing.Id);
+            update["pvci_environmentid"] = Trim(source.Id, TextLimit);
+            update["pvci_environmentname"] = Trim(source.Name, TextLimit);
+            if (string.IsNullOrWhiteSpace(existing.GetAttributeValue<string>("pvci_datasource")))
+                update["pvci_datasource"] = stamp;
+            service.Update(update);
+        }
+
+        private static Entity FindByString(
+            IOrganizationService service,
+            string entity,
+            string field,
+            string value,
+            string idField,
+            params string[] additionalColumns)
+        {
+            var columns = new List<string> { idField };
+            columns.AddRange(additionalColumns);
+            var query = new QueryExpression(entity) { ColumnSet = new ColumnSet(columns.ToArray()), TopCount = 1 };
             query.Criteria.AddCondition(field, ConditionOperator.Equal, value);
             EntityCollection result = service.RetrieveMultiple(query);
             return result.Entities.Count > 0 ? result.Entities[0] : null;

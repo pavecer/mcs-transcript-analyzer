@@ -107,7 +107,8 @@ Useful options:
 Each synced session is stamped into `pvci_datasource` with source context:
 `dataverse_v9.1|tenant:<id>|env:<id>|envName:<name>|org:<host>`.
 
-Optional config key for better UI labels:
+Optional config override for the environment label (otherwise read from
+`organization.friendlyname`):
 
 ```json
 {
