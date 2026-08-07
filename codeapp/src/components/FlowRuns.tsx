@@ -16,6 +16,7 @@ interface RunDetail {
   pvci_actionsjson?: string;
   pvci_errorsummary?: string;
   pvci_payloadtruncated?: boolean;
+  pvci_fetchedon?: string;
 }
 
 interface FlowRun {
@@ -61,6 +62,7 @@ export function FlowRuns({ json, loading }: { json?: string; loading?: boolean }
   const [detail, setDetail] = useState<RunDetail | null>(null);
   const [detailState, setDetailState] = useState<"idle" | "loading" | "missing" | "error">("idle");
   const workspaceRef = useRef<HTMLElement>(null);
+  const detailRequestRef = useRef(0);
 
   if (loading) return <div className="muted pad">Loading flow correlation…</div>;
   if (!items.length) return <div className="muted pad">No flow actions were invoked in this session.</div>;
@@ -73,7 +75,8 @@ export function FlowRuns({ json, loading }: { json?: string; loading?: boolean }
   };
 
   const analyze = async (runName: string) => {
-    if (selectedRun === runName && detail) {
+    const requestId = ++detailRequestRef.current;
+    if (selectedRun === runName) {
       setSelectedRun(null);
       setDetail(null);
       setDetailState("idle");
@@ -88,18 +91,27 @@ export function FlowRuns({ json, loading }: { json?: string; loading?: boolean }
           "pvci_runname", "pvci_flowdisplayname", "pvci_status", "pvci_durationms",
           "pvci_actioncount", "pvci_failedactioncount", "pvci_skippedactioncount",
           "pvci_triggerjson", "pvci_actionsjson", "pvci_errorsummary", "pvci_payloadtruncated",
+          "pvci_fetchedon",
         ],
         filter: `pvci_runname eq '${escapeODataString(runName)}'`,
         top: 1,
       });
+      if (detailRequestRef.current !== requestId) return;
       const row = ((res.data ?? []) as unknown as RunDetail[])[0];
-      if (!row) setDetailState("missing");
+      if (!row || !row.pvci_fetchedon || !row.pvci_actionsjson) {
+        setDetailState("missing");
+      }
       else {
         setDetail(row);
         setDetailState("idle");
-        requestAnimationFrame(() => workspaceRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }));
+        requestAnimationFrame(() => {
+          if (detailRequestRef.current === requestId) {
+            workspaceRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+          }
+        });
       }
     } catch {
+      if (detailRequestRef.current !== requestId) return;
       setDetailState("error");
     }
   };
@@ -205,7 +217,11 @@ export function FlowRuns({ json, loading }: { json?: string; loading?: boolean }
         <section className="flow-analysis-workspace" ref={workspaceRef}>
           {detailState === "loading" && <div className="muted pad">Loading execution map…</div>}
           {detailState === "error" && <div className="error">Could not load this flow run.</div>}
-          {detailState === "missing" && <div className="muted pad">Run detail is pending enrichment.</div>}
+          {detailState === "missing" && (
+            <div className="muted pad">
+              Run detail is pending enrichment. The execution map will appear after action history is collected.
+            </div>
+          )}
           {detail && <RunDetailBody detail={detail} />}
         </section>
       )}
