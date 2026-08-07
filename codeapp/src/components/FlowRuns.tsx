@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { JsonTree } from "./JsonTree";
+import { ProcessMap, type FlowActionEntry } from "./ProcessMap";
 import { Pvci_flowrundetailsService } from "../generated/services/Pvci_flowrundetailsService";
 import { fmtMs, latencyBand, safeParse } from "../lib/model";
 
@@ -15,17 +16,6 @@ interface RunDetail {
   pvci_actionsjson?: string;
   pvci_errorsummary?: string;
   pvci_payloadtruncated?: boolean;
-}
-
-interface ActionEntry {
-  name?: string;
-  status?: string;
-  start?: string;
-  end?: string;
-  code?: string;
-  error?: unknown;
-  inputs?: unknown;
-  outputs?: unknown;
 }
 
 interface FlowRun {
@@ -54,9 +44,19 @@ interface FlowCorrelation {
   runs?: FlowRun[];
 }
 
+function fmtStartDelta(ms?: number): string {
+  if (ms === undefined) return "—";
+  const sign = ms > 0 ? "+" : ms < 0 ? "−" : "";
+  return `${sign}${fmtMs(Math.abs(Math.round(ms)))}`;
+}
+
 export function FlowRuns({ json, loading }: { json?: string; loading?: boolean }) {
   const items = (safeParse(json) as unknown as FlowCorrelation[] | undefined) ?? [];
   const [open, setOpen] = useState<Set<number>>(new Set());
+  const [selectedRun, setSelectedRun] = useState<string | null>(null);
+  const [detail, setDetail] = useState<RunDetail | null>(null);
+  const [detailState, setDetailState] = useState<"idle" | "loading" | "missing" | "error">("idle");
+  const workspaceRef = useRef<HTMLElement>(null);
 
   if (loading) return <div className="muted pad">Loading flow correlation…</div>;
   if (!items.length) return <div className="muted pad">No flow actions were invoked in this session.</div>;
@@ -68,13 +68,55 @@ export function FlowRuns({ json, loading }: { json?: string; loading?: boolean }
     setOpen(next);
   };
 
+  const analyze = async (runName: string) => {
+    if (selectedRun === runName && detail) {
+      setSelectedRun(null);
+      setDetail(null);
+      setDetailState("idle");
+      return;
+    }
+    setSelectedRun(runName);
+    setDetail(null);
+    setDetailState("loading");
+    try {
+      const res = await Pvci_flowrundetailsService.getAll({
+        select: [
+          "pvci_runname", "pvci_flowdisplayname", "pvci_status", "pvci_durationms",
+          "pvci_actioncount", "pvci_failedactioncount", "pvci_skippedactioncount",
+          "pvci_triggerjson", "pvci_actionsjson", "pvci_errorsummary", "pvci_payloadtruncated",
+        ],
+        filter: `pvci_runname eq '${runName}'`,
+        top: 1,
+      });
+      const row = ((res.data ?? []) as unknown as RunDetail[])[0];
+      if (!row) setDetailState("missing");
+      else {
+        setDetail(row);
+        setDetailState("idle");
+        requestAnimationFrame(() => workspaceRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }));
+      }
+    } catch {
+      setDetailState("error");
+    }
+  };
+
   return (
     <div className="tools">
       <div className="muted small pad-sm">
         Flow runs are matched by time overlap — Power Automate does not stamp the conversation id on a run.
         <br />
         <span className="conf flow_action">action</span> = exact invoke trace (test mode only) ·{" "}
-        <span className="conf plan_step">plan step</span> = orchestrator step window (production channels)
+        <span className="conf plan_step">plan step</span> = orchestrator step window, not flow runtime (production channels)
+      </div>
+
+      <div className="timing-help" tabIndex={0} aria-label="Timing explanation">
+        <span className="timing-help-trigger">Explain this timing</span>
+        <div className="timing-help-card" role="note">
+          <p><strong>step window</strong> is the orchestrator step span (start to finish of that plan step).</p>
+          <p><strong>run time</strong> is the backend Power Automate run duration for one matched run.</p>
+          <p><strong>start delta</strong> is run start minus step start (timing correlation, not queue telemetry).</p>
+          <p>Values can overlap in time, so do not add them together as a total.</p>
+        </div>
       </div>
 
       {items.map((fc, i) => {
@@ -83,7 +125,15 @@ export function FlowRuns({ json, loading }: { json?: string; loading?: boolean }
         return (
           <div key={`${fc.action_id}-${i}`} className={`toolcall ${fc.exception ? "bad" : latencyBand(fc.span_ms)}`}>
             <div className="toolcall-head" onClick={() => toggle(i)}>
-              <span className={`dur ${latencyBand(fc.span_ms)}`}>{fmtMs(fc.span_ms)}</span>
+              <span
+                className={`dur correlation-duration ${latencyBand(fc.span_ms)}`}
+                title={fc.source === "plan_step"
+                  ? "Elapsed time from DynamicPlanStepTriggered to DynamicPlanStepFinished. This overlaps backend flow execution and is not a sum of run durations."
+                  : "Elapsed time between exact flow invocation trace events."}
+              >
+                <strong>{fmtMs(fc.span_ms)}</strong>
+                <small>{fc.source === "plan_step" ? "step window" : "invoke span"}</small>
+              </span>
               <span className="ttype">{fc.topic || fc.action_id}</span>
               <span className={`conf ${fc.source ?? "flow_action"}`}>
                 {fc.source === "plan_step" ? "plan step" : "action"}
@@ -102,7 +152,9 @@ export function FlowRuns({ json, loading }: { json?: string; loading?: boolean }
                 <table className="runtable">
                   <thead>
                     <tr>
-                      <th /><th>started</th><th>status</th><th>duration</th><th>offset</th><th>flow</th><th /></tr>
+                      <th /><th>started</th><th>status</th><th>run time</th>
+                      <th title="Run start minus plan-step/invocation start. Correlation timing only; not measured queue or backend wait time.">start delta</th>
+                      <th>flow</th><th /></tr>
                   </thead>
                   <tbody>
                     {runs.map((r) => {
@@ -113,9 +165,23 @@ export function FlowRuns({ json, loading }: { json?: string; loading?: boolean }
                           <td className="mono">{(r.started_utc ?? "").replace("T", " ").replace("Z", "")}</td>
                           <td className={ok ? "ok" : "fail"}>{r.status}</td>
                           <td className="mono">{fmtMs(r.duration_ms)}</td>
-                          <td className="mono muted">{r.offset_ms !== undefined ? `+${Math.round(r.offset_ms)}ms` : "—"}</td>
+                          <td
+                            className="mono muted"
+                            title="Run start minus plan-step/invocation start. This is correlation timing, not measured backend waiting time."
+                          >
+                            {fmtStartDelta(r.offset_ms)}
+                          </td>
                           <td className="mono muted" title={r.workflow_id}>{(r.workflow_id ?? "").slice(0, 8)}</td>
-                          <td>{r.run_name && <RunDetailToggle runName={r.run_name} />}</td>
+                          <td>
+                            {r.run_name && (
+                              <button
+                                className={`analyze-run${selectedRun === r.run_name ? " on" : ""}`}
+                                onClick={() => void analyze(r.run_name!)}
+                              >
+                                {selectedRun === r.run_name ? "Close map" : "Analyze"}
+                              </button>
+                            )}
+                          </td>
                         </tr>
                       );
                     })}
@@ -130,131 +196,62 @@ export function FlowRuns({ json, loading }: { json?: string; loading?: boolean }
           </div>
         );
       })}
+
+      {selectedRun && (
+        <section className="flow-analysis-workspace" ref={workspaceRef}>
+          {detailState === "loading" && <div className="muted pad">Loading execution map…</div>}
+          {detailState === "error" && <div className="error">Could not load this flow run.</div>}
+          {detailState === "missing" && <div className="muted pad">Run detail is pending enrichment.</div>}
+          {detail && <RunDetailBody detail={detail} />}
+        </section>
+      )}
     </div>
   );
 }
 
-function RunDetailToggle({ runName }: { runName: string }) {
-  const [open, setOpen] = useState(false);
-  const [detail, setDetail] = useState<RunDetail | null>(null);
-  const [state, setState] = useState<"idle" | "loading" | "missing" | "error">("idle");
-
-  const load = async () => {
-    if (open) {
-      setOpen(false);
-      return;
-    }
-    setOpen(true);
-    if (detail || state === "loading") return;
-    setState("loading");
-    try {
-      const res = await Pvci_flowrundetailsService.getAll({
-        select: [
-          "pvci_runname", "pvci_flowdisplayname", "pvci_status", "pvci_durationms",
-          "pvci_actioncount", "pvci_failedactioncount", "pvci_skippedactioncount",
-          "pvci_triggerjson", "pvci_actionsjson", "pvci_errorsummary", "pvci_payloadtruncated",
-        ],
-        filter: `pvci_runname eq '${runName}'`,
-        top: 1,
-      });
-      const row = ((res.data ?? []) as unknown as RunDetail[])[0];
-      if (!row) setState("missing");
-      else {
-        setDetail(row);
-        setState("idle");
-      }
-    } catch {
-      setState("error");
-    }
-  };
-
-  return (
-    <>
-      <button className="link" onClick={() => void load()}>{open ? "hide detail" : "detail"}</button>
-      {open && (
-        <div className="rundetail">
-          {state === "loading" && <div className="muted small">Loading run detail…</div>}
-          {state === "error" && <div className="muted small">Could not load run detail.</div>}
-          {state === "missing" && (
-            <div className="muted small">
-              Not fetched yet — run <code>fetch_flow_run_details.py</code> to pull inputs and outputs.
-            </div>
-          )}
-          {detail && <RunDetailBody detail={detail} />}
-        </div>
-      )}
-    </>
-  );
-}
-
 function RunDetailBody({ detail }: { detail: RunDetail }) {
-  const actions = (safeParse(detail.pvci_actionsjson) as unknown as ActionEntry[] | undefined) ?? [];
+  const actions = (safeParse(detail.pvci_actionsjson) as unknown as FlowActionEntry[] | undefined) ?? [];
   const trigger = safeParse(detail.pvci_triggerjson);
-  const [showSkipped, setShowSkipped] = useState(false);
-  const [sel, setSel] = useState<number | null>(null);
-
-  const visible = actions
-    .map((a, i) => ({ a, i }))
-    .filter(({ a }) => showSkipped || a.status !== "Skipped");
+  const [showContext, setShowContext] = useState(false);
 
   return (
     <div>
-      <div className="muted small pad-sm">
-        {detail.pvci_flowdisplayname} · {detail.pvci_status} · {fmtMs(detail.pvci_durationms)} ·{" "}
-        {detail.pvci_actioncount} actions ({detail.pvci_skippedactioncount} skipped
-        {detail.pvci_failedactioncount ? `, ${detail.pvci_failedactioncount} failed` : ""})
-        {detail.pvci_payloadtruncated && <span className="flag warn"> payload truncated</span>}
+      <div className="flow-run-overview">
+        <div>
+          <span className={`inspector-status ${(detail.pvci_status ?? "").toLowerCase() === "succeeded" ? "success" : "failed"}`}>
+            {detail.pvci_status ?? "Unknown"}
+          </span>
+          <h3>{detail.pvci_flowdisplayname ?? "Flow execution"}</h3>
+        </div>
+        <dl>
+          <div><dt>Duration</dt><dd>{fmtMs(detail.pvci_durationms)}</dd></div>
+          <div><dt>Executed</dt><dd>{(detail.pvci_actioncount ?? 0) - (detail.pvci_skippedactioncount ?? 0)}</dd></div>
+          <div><dt>Skipped</dt><dd>{detail.pvci_skippedactioncount ?? 0}</dd></div>
+          <div><dt>Failed</dt><dd>{detail.pvci_failedactioncount ?? 0}</dd></div>
+        </dl>
+        {detail.pvci_payloadtruncated && <span className="flag warn">payload truncated</span>}
       </div>
 
-      {detail.pvci_errorsummary && <div className="toolcall-error">{detail.pvci_errorsummary}</div>}
-
       <div className="timeline-bar">
-        <button className={showSkipped ? "on" : ""} onClick={() => setShowSkipped(!showSkipped)}>
-          Show skipped ({actions.filter((a) => a.status === "Skipped").length})
-        </button>
         {trigger != null && (
-          <button className={sel === -1 ? "on" : ""} onClick={() => setSel(sel === -1 ? null : -1)}>
-            Trigger
+          <button className={showContext ? "on" : ""} onClick={() => setShowContext(!showContext)}>
+            Run context
           </button>
         )}
       </div>
 
-      {sel === -1 && trigger != null && (
+      {showContext && trigger != null && (
         <div className="inline-json"><JsonTree value={trigger as never} initialCollapseDepth={3} /></div>
       )}
 
-      <div className="actionlist">
-        {visible.map(({ a, i }) => {
-          const ok = a.status === "Succeeded";
-          const skipped = a.status === "Skipped";
-          return (
-            <div key={`${a.name}-${i}`} className={`actionrow ${skipped ? "skip" : ok ? "ok" : "fail"}`}>
-              <div className="actionrow-head" onClick={() => setSel(sel === i ? null : i)}>
-                <span className={`dot ${skipped ? "skip" : ok ? "ok" : "fail"}`} />
-                <span className="aname">{a.name}</span>
-                <span className="muted small">{a.status}</span>
-                <span className="caret">{sel === i ? "▼" : "▶"}</span>
-              </div>
-              {sel === i && (
-                <div className="io">
-                  <div>
-                    <h4>Inputs</h4>
-                    {a.inputs === undefined || a.inputs === null
-                      ? <div className="muted small">none</div>
-                      : <div className="inline-json"><JsonTree value={a.inputs as never} initialCollapseDepth={2} /></div>}
-                  </div>
-                  <div>
-                    <h4>Outputs</h4>
-                    {a.outputs === undefined || a.outputs === null
-                      ? <div className="muted small">none</div>
-                      : <div className="inline-json"><JsonTree value={a.outputs as never} initialCollapseDepth={2} /></div>}
-                  </div>
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
+      <ProcessMap actions={actions} />
+
+      {detail.pvci_errorsummary && (
+        <details className="technical-errors">
+          <summary>Technical error summary</summary>
+          <pre>{detail.pvci_errorsummary}</pre>
+        </details>
+      )}
     </div>
   );
 }

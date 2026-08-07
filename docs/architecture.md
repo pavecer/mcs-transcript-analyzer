@@ -32,6 +32,9 @@ pvci_transcriptturn             one row per activity
 pvci_transcriptidentitymap      one row per distinct end user
 pvci_syncstate                  watermark, last run status, last error
 pvci_flowrundetail              one row per fetched Power Automate run
+
+`pvci_datasource` now carries source stamping for cross-environment analysis:
+`dataverse_v9.1|tenant:<id>|env:<id>|envName:<name>|org:<host>`.
 ```
 
 ## Sync semantics
@@ -99,6 +102,17 @@ Two window sources, in order of precision:
 | `DialogTracing` → `InvokeFlowAction` | Exact start/end | **Design mode only** |
 | `DynamicPlanStepTriggered` → `…Finished` | Coarse window | All channels |
 
+These measurements must not be added together:
+
+- **Step window** (`span_ms`, source `plan_step`) is elapsed time from
+  `DynamicPlanStepTriggered` to `DynamicPlanStepFinished`. It includes Copilot orchestration around
+  the backend call and overlaps any matched flow runs; it is not flow runtime or a sum of runs.
+- **Invoke span** (`span_ms`, source `flow_action`) is the exact design-mode invocation trace span.
+- **Run time** (`duration_ms`) is the Power Automate run's own start-to-end duration.
+- **Start delta** (`offset_ms`) is `flow run start - step/invocation start`. It ranks correlation
+  candidates. A positive value means the run started later; it is not a measured queue, network,
+  backend-wait, or orchestrator-processing duration.
+
 Production channels emit **zero** `DialogTracing` activities, so they always use the plan-step
 fallback. When a step has no `Finished` event the window runs to the next step or 90s,
 whichever is sooner — a cap, not a measurement. Each entry is badged with its source and a
@@ -110,6 +124,15 @@ overlap one step. All are kept and ranked rather than guessing one.
 The Flow API addresses flows by a **different id** than Dataverse. The bridge is the Flow API's
 `workflowEntityId` property, which equals the Dataverse `workflowid`; the map is built at
 runtime, nothing is hardcoded.
+
+The sync paths also materialize one pending `pvci_flowrundetail` row per matched run. This is a
+durable enrichment queue: row existence means the run was correlated, while `pvci_fetchedon`
+means trigger, response, action, and repetition payloads were successfully collected. Native
+`flowrun` parent/error fields are retained so orchestrator-child chains remain visible before
+enrichment.
+
+Full payload collection is a separate security boundary. It needs the Flow service audience and
+short-lived SAS downloads; see [Full Power Automate run detail](flow-run-detail-findings.md).
 
 ## Design decisions worth knowing
 
@@ -124,6 +147,14 @@ volume and are skipped. `IncludeTraces` keeps them at roughly 4× the row count.
 supportable option. The code app is preview and premium, but can do things forms cannot, such
 as interleaving messages and reasoning in one chronological replay.
 
+The code app also supports ESS-scoped cross-environment diagnostics via tenant/environment
+filters derived from `pvci_datasource` source stamps.
+
 **Payload size guards.** Memo columns cap at 1,048,576 characters; writes are capped at 900,000
 with pretty-print falling back to compact and then truncation, flagged by `PayloadTruncated`.
 The largest observed activity payload was ~140 KB.
+
+**Agent names are enriched.** Transcript metadata `BotName` is the Copilot Studio schema name
+(`msdyn_...`), not display text. Both sync paths resolve it through `bot.schemaname` and store
+`bot.name` in `pvci_botname`, falling back to the schema name only when bot metadata is unavailable.
+The UI filters by stable `pvci_botid` while displaying the enriched name.

@@ -12,6 +12,7 @@ cp config/transcript_solution_config.sample.json config/transcript_solution_conf
 |---|---|
 | `tenantId` | Entra tenant GUID |
 | `environmentId` | Power Platform environment GUID (from the maker portal URL) |
+| `environmentName` | Optional friendly label used by cross-environment UI filters |
 | `dataverseUrl` | `https://<org>.crm<N>.dynamics.com` — no trailing slash |
 | `oauth.dataverseScope` | `<dataverseUrl>/.default` |
 | `botId` | Copilot Studio agent id — only used by the Monitor probe scripts |
@@ -61,18 +62,63 @@ any environment.
 
 ## Routine operation
 
-Once the flow is active, nothing manual is required. It calls the Custom API hourly and loops
-until a batch returns fewer records than `MaxRecords`, so a backlog clears in one run.
+Once the transcript sync flow is active, it calls the Custom API hourly and loops until a batch
+returns fewer records than `MaxRecords`, so a transcript backlog clears in one run. Each correlated
+flow run also creates a pending `pvci_flowrundetail` row.
 
-Run details are the exception — the Power Automate API needs a different token audience than
-Dataverse, so a plugin cannot fetch them:
+Full run bodies are a separate operation because the Power Automate API needs a different token
+audience than Dataverse, so a sandbox plugin cannot fetch them:
 
 ```bash
 python3 scripts/transcript_insights/fetch_flow_run_details.py --config $CFG
 ```
 
-Schedule this separately (cron, CI, or an Azure Function). Flow runs age out of Power Automate
-independently of Dataverse, so late fetches return nothing.
+The fetcher enriches pending placeholders and skips only rows with `pvci_fetchedon`. Schedule it
+separately (cron, CI, or an Azure Function). Flow runs age out of Power Automate independently of
+Dataverse, so late fetches return nothing.
+
+The Flow Runs tab presents enriched records as a process map. It hides skipped branches initially,
+centers the first likely root failure, and keeps raw inputs/outputs behind the selected action's
+inspector. Use **Show skipped branches** when you need to compare the path taken with an alternate
+branch. Selecting **Analyze** opens the map in a dedicated full-width workspace below the run list.
+Successful runs keep the inspector closed so the map receives the whole pane; selecting a node opens
+the inspector, and its close button restores the full canvas. Failed runs open directly on the root
+failure and its explanation.
+
+Timing labels in the correlation card are deliberately separate: **step window** is the Copilot
+plan-step envelope, **run time** is the Power Automate execution duration, and **start delta** is
+only the difference between their start timestamps used for matching. Do not add these values or
+treat start delta as measured backend waiting time.
+
+To reproduce one run:
+
+```bash
+python3 scripts/transcript_insights/fetch_flow_run_details.py --config $CFG \
+    --run-name <flow-run-name> --refresh
+```
+
+PVE Dev's group-inherited ACP now allows `HTTP with Microsoft Entra ID (preauthorized)` and the
+environment's synced policy copy contains the rule. Runtime enforcement is still using an older
+policy cache and returns HTTP `442`; processor packaging continues after that cache refreshes. See
+[Full Power Automate run detail](flow-run-detail-findings.md) for the evidence and deployment
+choices.
+
+## VS Code Power Platform admin skill
+
+The installed Power Platform plugins provide product-specific flow and Dataverse administration,
+but no general governance skill. A personal cross-workspace skill is installed at:
+
+```text
+~/.copilot/skills/power-platform-admin/SKILL.md
+```
+
+It is user-invocable as `/power-platform-admin` and can also be discovered automatically for PPAC,
+environment groups, managed environments, ACP, DLP, connector policies, HTTP `442`, and policy
+propagation requests. Its governance reference documents the PAC and Power Platform REST workflow,
+including the requirement to evaluate classic DLP and ACP together and to publish group rules.
+
+The skill is personal rather than a solution component; it is available to future VS Code agent
+sessions on this machine but is not exported in the Power Platform solution ZIP.
 
 ## Manual sync
 
@@ -81,6 +127,16 @@ python3 scripts/transcript_insights/sync_transcripts.py --config $CFG           
 python3 scripts/transcript_insights/sync_transcripts.py --config $CFG --full     # rescan, still additive
 python3 scripts/transcript_insights/sync_transcripts.py --config $CFG --full --reprocess   # re-derive
 ```
+
+Tenant-wide multi-environment run:
+
+```bash
+.venv/bin/python scripts/transcript_insights/sync_multi_environment.py \
+    --configs config/transcript_solution_config.dev.json config/transcript_solution_config.sandbox.json
+```
+
+Each synced session carries source stamping in `pvci_datasource`:
+`dataverse_v9.1|tenant:<id>|env:<id>|envName:<name>|org:<host>`.
 
 Use `--reprocess` after changing parser logic. It rewrites sessions and replaces their turns,
 which issues new turn GUIDs.
@@ -123,6 +179,7 @@ Afterwards, in the target environment:
 2. Re-activate the flow.
 3. Run the initial `--full` load.
 4. Redeploy the code app (`npx power-apps init` + `push`) — it lives outside the solution.
+5. Configure either a DLP-approved Flow API connection or the headless run-detail worker.
 
 ## Troubleshooting
 

@@ -15,11 +15,13 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import sys
 import time
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
+from urllib.parse import urlparse
 
 import requests
 
@@ -29,6 +31,7 @@ from dv_token import get_token_from_config  # noqa: E402
 SESSIONS = "pvci_transcriptsessions"
 TURNS = "pvci_transcriptturns"
 IDENTITY = "pvci_transcriptidentitymaps"
+FLOW_DETAILS = "pvci_flowrundetails"
 SYNCSTATE = "pvci_syncstates"
 
 SYNC_ROW_NAME = "default"
@@ -43,6 +46,33 @@ RETRY_STATUS = {429, 502, 503, 504}
 
 # Flow runs carry no conversation id, so correlation is by time overlap only.
 FLOWRUN_TOLERANCE_S = 20
+
+
+def load_source_context(config_path: str) -> dict[str, str]:
+    cfg = json.loads(Path(config_path).read_text(encoding="utf-8"))
+    dv_url = cfg.get("dataverseUrl", "")
+    org = urlparse(dv_url).netloc or dv_url.replace("https://", "").replace("http://", "")
+    out = {
+        "tenant_id": str(cfg.get("tenantId", "") or ""),
+        "environment_id": str(cfg.get("environmentId", "") or ""),
+        "environment_name": str(cfg.get("environmentName", "") or ""),
+        "org": org,
+        "source": "dataverse_v9.1_conversationtranscripts",
+    }
+    return out
+
+
+def build_source_stamp(source_ctx: dict[str, str]) -> str:
+    parts = [source_ctx.get("source", "dataverse_v9.1_conversationtranscripts")]
+    if source_ctx.get("tenant_id"):
+        parts.append(f"tenant:{source_ctx['tenant_id']}")
+    if source_ctx.get("environment_id"):
+        parts.append(f"env:{source_ctx['environment_id']}")
+    if source_ctx.get("environment_name"):
+        parts.append(f"envName:{source_ctx['environment_name']}")
+    if source_ctx.get("org"):
+        parts.append(f"org:{source_ctx['org']}")
+    return "|".join(parts)
 
 
 class Dv:
@@ -345,6 +375,12 @@ def correlate_flow_runs(spans: list[dict[str, Any]], runs: list[dict[str, Any]])
                 "ended_utc": r.get("endtime"),
                 "duration_ms": r.get("duration"),
                 "error_code": r.get("errorcode"),
+                "error_message": r.get("errormessage"),
+                "parent_run_id": r.get("parentrunid"),
+                "calling_product_run_id": r.get("callingproductrunid"),
+                "is_primary": r.get("isprimary"),
+                "workflow_name": r.get("workflowname"),
+                "conversation_id": r.get("conversationid"),
                 "offset_ms": int(started * 1000 - span["start_ms"]),
             })
 
@@ -368,11 +404,39 @@ def correlate_flow_runs(spans: list[dict[str, Any]], runs: list[dict[str, Any]])
 
 
 def fetch_flow_runs(dv: Dv, since_iso: str | None) -> list[dict[str, Any]]:
+    fields = [
+        "flowrunid",
+        "name",
+        "status",
+        "starttime",
+        "endtime",
+        "duration",
+        "workflowid",
+        "workflowname",
+        "errorcode",
+        "errormessage",
+        "parentrunid",
+        "callingproductrunid",
+        "isprimary",
+        "conversationid",
+    ]
     flt = f"&$filter=starttime ge {since_iso}" if since_iso else ""
-    rows = dv.get_all(
-        "flowruns?$select=flowrunid,name,status,starttime,endtime,duration,workflowid,errorcode"
-        f"{flt}&$orderby=starttime desc"
-    )
+
+    while True:
+        try:
+            rows = dv.get_all(
+                f"flowruns?$select={','.join(fields)}{flt}&$orderby=starttime desc"
+            )
+            break
+        except RuntimeError as exc:
+            text = str(exc)
+            match = re.search(r"Could not find a property named '([^']+)'", text)
+            missing = match.group(1) if match else None
+            if not missing or missing not in fields:
+                raise
+            fields.remove(missing)
+            print(f"  warning: flowrun column '{missing}' not available in this environment; retrying without it", flush=True)
+
     unparsed = 0
     for r in rows:
         try:
@@ -498,20 +562,63 @@ def resolve_user(dv: Dv, aad: str | None, cache: dict[str, dict[str, Any] | None
     return cache[aad]
 
 
+def resolve_bot_name(dv: Dv, schema_name: str | None, cache: dict[str, str]) -> str | None:
+    if not schema_name:
+        return schema_name
+    if schema_name in cache:
+        return cache[schema_name]
+    escaped = schema_name.replace("'", "''")
+    try:
+        body = dv.get(
+            "bots?$select=name"
+            f"&$filter=schemaname eq '{escaped}' and componentstate eq 0&$top=1"
+        )
+        values = body.get("value", [])
+        display_name = values[0].get("name") if values else None
+    except RuntimeError:
+        display_name = None
+    cache[schema_name] = display_name or schema_name
+    return cache[schema_name]
+
+
 def find_by(dv: Dv, entity_set: str, field: str, value: str, idfield: str) -> str | None:
     body = dv.get(f"{entity_set}?$select={idfield}&$filter={field} eq '{value}'&$top=1")
     vals = body.get("value", [])
     return vals[0][idfield] if vals else None
 
 
+def ensure_flow_run_placeholders(
+    dv: Dv,
+    matched_runs: list[dict[str, Any]],
+    transcript_id: str,
+) -> None:
+    for run in matched_runs:
+        run_name = run.get("run_name")
+        if not run_name:
+            continue
+        existing = find_by(dv, FLOW_DETAILS, "pvci_runname", run_name, "pvci_flowrundetailid")
+        if existing:
+            continue
+        payload = {
+            "pvci_name": s1000(f"Pending · {run_name}"),
+            "pvci_runname": s1000(run_name),
+            "pvci_workflowentityid": s1000(run.get("workflow_id")),
+            "pvci_status": s1000(run.get("status")),
+            "pvci_transcriptid": s1000(transcript_id),
+        }
+        dv.post(FLOW_DETAILS, {key: value for key, value in payload.items() if value is not None})
+
+
 def _sync_one(
     dv: Dv,
     row: dict[str, Any],
     user_cache: dict[str, dict[str, Any] | None],
+    bot_name_cache: dict[str, str],
     stats: dict[str, Any],
     include_traces: bool,
     reprocess: bool,
     flow_runs: list[dict[str, Any]],
+    source_ctx: dict[str, str],
 ) -> str:
     transcript_id = row["conversationtranscriptid"]
 
@@ -525,6 +632,7 @@ def _sync_one(
 
     p = parse_transcript(row)
     su = resolve_user(dv, p["user_aad"], user_cache)
+    bot_display_name = resolve_bot_name(dv, p["bot_name"], bot_name_cache)
 
     display = (su or {}).get("fullname") or (p["user_aad"] or "unknown")[:8]
     name = f"{display} · {p['channel'] or '?'} · {iso(p['start']) or p['created_on']}"
@@ -545,7 +653,7 @@ def _sync_one(
         "pvci_name": s1000(name),
         "pvci_transcriptid": s1000(p["transcript_id"]),
         "pvci_botid": s1000(p["bot_id"]),
-        "pvci_botname": s1000(p["bot_name"]),
+        "pvci_botname": s1000(bot_display_name),
         "pvci_tenantid": s1000(p["tenant_id"]),
         "pvci_useraadobjectid": s1000(p["user_aad"]),
         "pvci_userupn": s1000((su or {}).get("domainname")),
@@ -586,7 +694,7 @@ def _sync_one(
         "pvci_payloadtruncated": bool(trunc_a or trunc_c),
         "pvci_transcriptcreatedon": p["created_on"],
         "pvci_ingestedon": iso(datetime.now(timezone.utc)),
-        "pvci_datasource": "dataverse_v9.1_conversationtranscripts",
+        "pvci_datasource": build_source_stamp(source_ctx),
         "pvci_correlationstatus": "exact" if su else ("heuristic" if p["user_aad"] else "unmatched"),
     }
     if su:
@@ -610,6 +718,8 @@ def _sync_one(
     else:
         session_id = dv.post(SESSIONS, payload)
         stats["sessions_created"] += 1
+
+    ensure_flow_run_placeholders(dv, matched_runs, p["transcript_id"])
 
     idx = 0
     last_user_ms: int | None = None
@@ -664,7 +774,7 @@ def _sync_one(
 
 
 def sync(dv: Dv, cfg_path: str, since: str | None, full: bool, include_traces: bool,
-         limit: int | None, reprocess: bool = False) -> dict[str, Any]:
+         limit: int | None, reprocess: bool = False, source_ctx: dict[str, str] | None = None) -> dict[str, Any]:
     # `ge` not `gt`: same-second records at the boundary would otherwise be skipped forever.
     # Re-processing the boundary row is harmless because upsert is keyed on pvci_transcriptid.
     flt = "" if full or not since else f"&$filter=createdon ge {since}"
@@ -682,7 +792,11 @@ def sync(dv: Dv, cfg_path: str, since: str | None, full: bool, include_traces: b
     flow_runs = fetch_flow_runs(dv, None) if rows else []
     print(f"flow runs in window: {len(flow_runs)} (earliest transcript {earliest})")
 
+    if source_ctx is None:
+        source_ctx = load_source_context(cfg_path)
+
     user_cache: dict[str, dict[str, Any] | None] = {}
+    bot_name_cache: dict[str, str] = {}
     stats = {"transcripts": 0, "sessions_created": 0, "sessions_updated": 0, "sessions_skipped": 0,
              "turns": 0, "users": 0, "anomalies": 0}
     errors: list[str] = []
@@ -692,7 +806,9 @@ def sync(dv: Dv, cfg_path: str, since: str | None, full: bool, include_traces: b
     for row in rows:
         transcript_id = row["conversationtranscriptid"]
         try:
-            processed = _sync_one(dv, row, user_cache, stats, include_traces, reprocess, flow_runs)
+            processed = _sync_one(
+                dv, row, user_cache, bot_name_cache, stats, include_traces, reprocess, flow_runs, source_ctx
+            )
             # Only advance while every prior transcript succeeded, so a failure is retried next run.
             if not watermark_frozen:
                 watermark = row.get("createdon") or watermark
@@ -758,6 +874,7 @@ def main() -> None:
 
     token, dv_url = get_token_from_config(args.config)
     dv = Dv(f"{dv_url}/api/data/v9.1", token)
+    source_ctx = load_source_context(args.config)
 
     since = args.since
     if not since and not args.full:
@@ -768,7 +885,16 @@ def main() -> None:
     mode = "FULL" if args.full else (f"INCREMENTAL since {since}" if since else "INITIAL")
     print(f"sync mode: {mode}")
 
-    stats = sync(dv, args.config, since, args.full, args.include_traces, args.limit, args.reprocess)
+    stats = sync(
+        dv,
+        args.config,
+        since,
+        args.full,
+        args.include_traces,
+        args.limit,
+        args.reprocess,
+        source_ctx,
+    )
     print("\n" + json.dumps(stats, indent=2))
 
 

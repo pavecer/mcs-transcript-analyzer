@@ -18,6 +18,7 @@ namespace PvciTranscripts
         private const string SessionEntity = "pvci_transcriptsession";
         private const string TurnEntity = "pvci_transcriptturn";
         private const string IdentityEntity = "pvci_transcriptidentitymap";
+        private const string FlowRunDetailEntity = "pvci_flowrundetail";
         private const string SyncStateEntity = "pvci_syncstate";
         private const string SyncStateRow = "default";
 
@@ -72,6 +73,7 @@ namespace PvciTranscripts
                 since.HasValue ? since.Value.ToString("o") : "(none)");
 
             var userCache = new Dictionary<string, Entity>(StringComparer.OrdinalIgnoreCase);
+            var botNameCache = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             List<Entity> flowRuns = QueryFlowRuns(service, tracing);
 
             foreach (Entity transcript in QueryTranscripts(service, since, maxRecords))
@@ -79,7 +81,8 @@ namespace PvciTranscripts
                 Guid transcriptId = transcript.Id;
                 try
                 {
-                    SyncResult r = SyncOne(service, tracing, transcript, userCache, includeTraces, reprocess, flowRuns);
+                    SyncResult r = SyncOne(service, tracing, transcript, userCache, botNameCache,
+                                           includeTraces, reprocess, flowRuns);
                     processed++;
                     turns += r.Turns;
                     if (r.Skipped) skipped++;
@@ -150,6 +153,7 @@ namespace PvciTranscripts
             ITracingService tracing,
             Entity transcript,
             Dictionary<string, Entity> userCache,
+            Dictionary<string, string> botNameCache,
             bool includeTraces,
             bool reprocess,
             List<Entity> flowRuns)
@@ -172,6 +176,8 @@ namespace PvciTranscripts
             object metadata = Json.Parse(metadataRaw);
             object content = Json.Parse(contentRaw);
             List<object> activities = Json.Arr(Json.Get(content, "activities")) ?? new List<object>();
+            string botSchemaName = Json.Str(metadata, "BotName");
+            string botDisplayName = ResolveBotName(service, botSchemaName, botNameCache);
 
             var userIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             var channels = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -309,7 +315,7 @@ namespace PvciTranscripts
             session["pvci_name"] = Trim(display + " · " + (channelName ?? "?") + " · " + FormatIso(start ?? createdOn), TextLimit);
             session["pvci_transcriptid"] = Trim(transcriptId, TextLimit);
             session["pvci_botid"] = Trim(Json.Str(metadata, "BotId"), TextLimit);
-            session["pvci_botname"] = Trim(Json.Str(metadata, "BotName"), TextLimit);
+            session["pvci_botname"] = Trim(botDisplayName, TextLimit);
             session["pvci_tenantid"] = Trim(Json.Str(metadata, "AADTenantId"), TextLimit);
             session["pvci_useraadobjectid"] = Trim(userAad, TextLimit);
             session["pvci_channel"] = Trim(channelName, TextLimit);
@@ -384,6 +390,8 @@ namespace PvciTranscripts
                 wasCreated = true;
             }
 
+            EnsureFlowRunPlaceholders(service, flowCorrelation, transcriptId);
+
             int turnCount = 0;
             int idx = 0;
             long? lastUserMs = null;
@@ -449,6 +457,34 @@ namespace PvciTranscripts
         }
 
         // --- helpers ---------------------------------------------------------
+
+        private static void EnsureFlowRunPlaceholders(
+            IOrganizationService service,
+            List<object> flowCorrelation,
+            string transcriptId)
+        {
+            foreach (object correlation in flowCorrelation)
+            {
+                List<object> runs = Json.Arr(Json.Get(correlation, "runs"));
+                if (runs == null) continue;
+
+                foreach (object run in runs)
+                {
+                    string runName = Json.Str(run, "run_name");
+                    if (string.IsNullOrEmpty(runName)) continue;
+                    if (FindByString(service, FlowRunDetailEntity, "pvci_runname", runName,
+                                     "pvci_flowrundetailid") != null) continue;
+
+                    var detail = new Entity(FlowRunDetailEntity);
+                    detail["pvci_name"] = Trim("Pending · " + runName, TextLimit);
+                    detail["pvci_runname"] = Trim(runName, TextLimit);
+                    detail["pvci_workflowentityid"] = Trim(Json.Str(run, "workflow_id"), TextLimit);
+                    detail["pvci_status"] = Trim(Json.Str(run, "status"), TextLimit);
+                    detail["pvci_transcriptid"] = Trim(transcriptId, TextLimit);
+                    service.Create(detail);
+                }
+            }
+        }
 
         private static bool IsUser(object activity)
         {
@@ -550,7 +586,9 @@ namespace PvciTranscripts
                 var query = new QueryExpression("flowrun")
                 {
                     ColumnSet = new ColumnSet("flowrunid", "name", "status", "starttime", "endtime",
-                                             "duration", "workflowid", "errorcode"),
+                                             "duration", "workflowid", "workflowname", "errorcode",
+                                             "errormessage", "parentrunid", "callingproductrunid",
+                                             "isprimary", "conversationid"),
                     PageInfo = new PagingInfo { Count = 500, PageNumber = 1 },
                 };
                 query.AddOrder("starttime", OrderType.Descending);
@@ -699,6 +737,8 @@ namespace PvciTranscripts
                     double epoch = (st - new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc)).TotalSeconds;
                     if (epoch < lo || epoch > hi) continue;
 
+                    OptionSetValue isPrimary = run.GetAttributeValue<OptionSetValue>("isprimary");
+
                     matches.Add(new Dictionary<string, object>(StringComparer.Ordinal)
                     {
                         { "flow_run_id", run.Id.ToString() },
@@ -709,6 +749,12 @@ namespace PvciTranscripts
                         { "ended_utc", run.Contains("endtime") ? FormatIso(run.GetAttributeValue<DateTime>("endtime").ToUniversalTime()) : null },
                         { "duration_ms", run.Contains("duration") ? (double?)run.GetAttributeValue<long>("duration") : null },
                         { "error_code", run.GetAttributeValue<string>("errorcode") },
+                        { "error_message", run.GetAttributeValue<string>("errormessage") },
+                        { "parent_run_id", run.GetAttributeValue<string>("parentrunid") },
+                        { "calling_product_run_id", run.GetAttributeValue<string>("callingproductrunid") },
+                        { "is_primary", isPrimary != null ? (int?)isPrimary.Value : null },
+                        { "workflow_name", run.GetAttributeValue<string>("workflowname") },
+                        { "conversation_id", run.GetAttributeValue<string>("conversationid") },
                         { "offset_ms", (double)(epoch * 1000 - span.StartMs) },
                     });
                 }
@@ -785,6 +831,37 @@ namespace PvciTranscripts
             Entity user = found.Entities.Count > 0 ? found.Entities[0] : null;
             cache[aadObjectId] = user;
             return user;
+        }
+
+        private static string ResolveBotName(
+            IOrganizationService service,
+            string schemaName,
+            Dictionary<string, string> cache)
+        {
+            if (string.IsNullOrEmpty(schemaName)) return schemaName;
+            string cached;
+            if (cache.TryGetValue(schemaName, out cached)) return cached;
+
+            string displayName = schemaName;
+            try
+            {
+                var query = new QueryExpression("bot")
+                {
+                    ColumnSet = new ColumnSet("name"),
+                    TopCount = 1,
+                };
+                query.Criteria.AddCondition("schemaname", ConditionOperator.Equal, schemaName);
+                query.Criteria.AddCondition("componentstate", ConditionOperator.Equal, 0);
+                EntityCollection found = service.RetrieveMultiple(query);
+                if (found.Entities.Count > 0)
+                    displayName = found.Entities[0].GetAttributeValue<string>("name") ?? schemaName;
+            }
+            catch
+            {
+                // Bot metadata is optional enrichment; preserve transcript ingestion on access errors.
+            }
+            cache[schemaName] = displayName;
+            return displayName;
         }
 
         private static Entity FindByString(IOrganizationService service, string entity, string field, string value, string idField)

@@ -1,6 +1,7 @@
 {
   "tenantId": "1938ee32-a258-454c-b8db-3a928341bd69",
   "environmentId": "006cf8b9-27f8-e2f7-8a14-9be3642d8552",
+  "environmentName": "PVE Dev",
   "dataverseUrl": "https://ORG.crm4.dynamics.com",
   "copilotStudioGatewayBaseUrl": "https://powervamg.eu-il109.gateway.prod.island.powerapps.com",
   "botId": "602d4482-f7f3-4edb-ad3f-ba5159d6bb5c",
