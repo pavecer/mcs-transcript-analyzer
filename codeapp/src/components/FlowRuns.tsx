@@ -62,6 +62,7 @@ export function FlowRuns({ json, loading }: { json?: string; loading?: boolean }
   const [detail, setDetail] = useState<RunDetail | null>(null);
   const [detailState, setDetailState] = useState<"idle" | "loading" | "missing" | "error">("idle");
   const workspaceRef = useRef<HTMLElement>(null);
+  const detailRequestRef = useRef(0);
 
   if (loading) return <div className="muted pad">Loading flow correlation…</div>;
   if (!items.length) return <div className="muted pad">No flow actions were invoked in this session.</div>;
@@ -74,6 +75,7 @@ export function FlowRuns({ json, loading }: { json?: string; loading?: boolean }
   };
 
   const analyze = async (runName: string) => {
+    const requestId = ++detailRequestRef.current;
     if (selectedRun === runName) {
       setSelectedRun(null);
       setDetail(null);
@@ -94,6 +96,7 @@ export function FlowRuns({ json, loading }: { json?: string; loading?: boolean }
         filter: `pvci_runname eq '${escapeODataString(runName)}'`,
         top: 1,
       });
+      if (detailRequestRef.current !== requestId) return;
       const row = ((res.data ?? []) as unknown as RunDetail[])[0];
       if (!row || !row.pvci_fetchedon || !row.pvci_actionsjson) {
         setDetailState("missing");
@@ -101,9 +104,14 @@ export function FlowRuns({ json, loading }: { json?: string; loading?: boolean }
       else {
         setDetail(row);
         setDetailState("idle");
-        requestAnimationFrame(() => workspaceRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }));
+        requestAnimationFrame(() => {
+          if (detailRequestRef.current === requestId) {
+            workspaceRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+          }
+        });
       }
     } catch {
+      if (detailRequestRef.current !== requestId) return;
       setDetailState("error");
     }
   };
