@@ -6,7 +6,12 @@ export interface SessionRow {
   pvci_userupn?: string;
   pvci_useraadobjectid?: string;
   pvci_channel?: string;
+  pvci_botid?: string;
   pvci_botname?: string;
+  pvci_tenantid?: string;
+  pvci_topicname?: string;
+  pvci_topicid?: string;
+  pvci_datasource?: string;
   pvci_startdatetimeutc?: string;
   pvci_enddatetimeutc?: string;
   pvci_durationseconds?: number;
@@ -68,6 +73,15 @@ export interface ToolCall {
   output?: unknown;
 }
 
+export interface SourceStamp {
+  raw: string;
+  kind: string;
+  tenantId?: string;
+  environmentId?: string;
+  environmentName?: string;
+  org?: string;
+}
+
 export function fmtMs(ms?: number | null): string {
   if (ms === undefined || ms === null) return "—";
   if (ms < 1000) return `${ms} ms`;
@@ -118,6 +132,39 @@ export function fmtDuration(seconds?: number): string {
   if (seconds < 60) return `${seconds}s`;
   const m = Math.floor(seconds / 60);
   return `${m}m ${seconds % 60}s`;
+}
+
+/** Parse source stamps like: dataverse_v9.1|tenant:...|env:...|envName:...|org:... */
+export function parseSourceStamp(raw?: string): SourceStamp | null {
+  if (!raw) return null;
+  const parts = raw.split("|").map((p) => p.trim()).filter(Boolean);
+  if (!parts.length) return null;
+  const out: SourceStamp = { raw, kind: parts[0] };
+  for (const part of parts.slice(1)) {
+    const idx = part.indexOf(":");
+    if (idx <= 0) continue;
+    const key = part.slice(0, idx).trim();
+    const value = part.slice(idx + 1).trim();
+    if (!value) continue;
+    if (key === "tenant") out.tenantId = value;
+    if (key === "env") out.environmentId = value;
+    if (key === "envName") out.environmentName = value;
+    if (key === "org") out.org = value;
+  }
+  return out;
+}
+
+export function sourceEnvironmentLabel(s: SessionRow): string {
+  const stamp = parseSourceStamp(s.pvci_datasource);
+  if (!stamp) return "unknown";
+  return stamp.environmentName ?? stamp.environmentId ?? stamp.org ?? "unknown";
+}
+
+export function isEssSession(s: SessionRow): boolean {
+  const tag = `${s.pvci_botname ?? ""} ${s.pvci_botid ?? ""} ${s.pvci_topicname ?? ""}`.toLowerCase();
+  return tag.includes("employee self-service")
+    || tag.includes("copilotforemployeeselfservice")
+    || /(^|[^a-z0-9])ess([^a-z0-9]|$)/.test(tag);
 }
 
 /** Topic/tool names out of a DynamicPlan payload, e.g. "...topic.ServiceNowITSMGetUserTickets". */

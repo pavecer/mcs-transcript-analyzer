@@ -14,6 +14,7 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
+from urllib.parse import quote
 
 import requests
 
@@ -59,10 +60,93 @@ def fetch_content(session: requests.Session, link: dict[str, Any] | None) -> Any
         return {"_error": str(exc)[:200]}
 
 
+def fetch_collection(
+    session: requests.Session,
+    url: str,
+    headers: dict[str, str],
+) -> tuple[list[dict[str, Any]], str | None]:
+    values: list[dict[str, Any]] = []
+    while url:
+        response = session.get(url, headers=headers, timeout=120)
+        if not response.ok:
+            return values, f"HTTP {response.status_code}: {response.text[:200]}"
+        body = response.json()
+        values.extend(body.get("value") or [])
+        url = body.get("nextLink") or body.get("@odata.nextLink") or ""
+    return values, None
+
+
+def action_entry(session: requests.Session, action: dict[str, Any]) -> dict[str, Any]:
+    properties = action.get("properties") or {}
+    entry: dict[str, Any] = {
+        "name": action.get("name"),
+        "status": properties.get("status"),
+        "start": properties.get("startTime"),
+        "end": properties.get("endTime"),
+        "code": properties.get("code"),
+    }
+    if properties.get("error"):
+        entry["error"] = properties["error"]
+    if properties.get("status") != "Skipped":
+        entry["inputs"] = fetch_content(session, properties.get("inputsLink"))
+        entry["outputs"] = fetch_content(session, properties.get("outputsLink"))
+    return entry
+
+
+def collect_action_definitions(
+    actions: dict[str, Any] | None,
+    parent: str | None = None,
+    branch: str | None = None,
+) -> dict[str, dict[str, Any]]:
+    collected: dict[str, dict[str, Any]] = {}
+    for name, definition in (actions or {}).items():
+        if not isinstance(definition, dict):
+            continue
+        inputs = definition.get("inputs") or {}
+        host = inputs.get("host") or {} if isinstance(inputs, dict) else {}
+        collected[name] = {
+            "type": definition.get("type"),
+            "run_after": definition.get("runAfter") or {},
+            "parent": parent,
+            "branch": branch,
+            "operation": host.get("operationId"),
+        }
+        collected.update(collect_action_definitions(definition.get("actions"), name, "body"))
+        collected.update(collect_action_definitions((definition.get("else") or {}).get("actions"), name, "else"))
+        for case_name, case in (definition.get("cases") or {}).items():
+            collected.update(collect_action_definitions(case.get("actions"), name, f"case:{case_name}"))
+        collected.update(collect_action_definitions((definition.get("default") or {}).get("actions"), name, "default"))
+    return collected
+
+
+def add_definition(entry: dict[str, Any], definition: dict[str, Any] | None) -> None:
+    if not definition:
+        return
+    for field in ("type", "run_after", "parent", "branch", "operation"):
+        if definition.get(field) is not None:
+            entry[field] = definition[field]
+
+
+def without_bodies(entry: dict[str, Any]) -> dict[str, Any]:
+    compact = {key: value for key, value in entry.items() if key not in ("inputs", "outputs")}
+    if entry.get("repetitions"):
+        compact["repetitions"] = [without_bodies(item) for item in entry["repetitions"]]
+    return compact
+
+
+def contains_truncated_body(entry: dict[str, Any]) -> bool:
+    for field in ("inputs", "outputs"):
+        value = entry.get(field)
+        if isinstance(value, dict) and value.get("_truncated"):
+            return True
+    return any(contains_truncated_body(item) for item in entry.get("repetitions") or [])
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--config", default="config/transcript_solution_config.dev.json")
     ap.add_argument("--limit", type=int, default=None, help="Cap how many runs to fetch")
+    ap.add_argument("--run-name", default=None, help="Fetch only this correlated run name")
     ap.add_argument("--refresh", action="store_true", help="Re-fetch runs already stored")
     args = ap.parse_args()
 
@@ -80,10 +164,13 @@ def main() -> None:
     fh = {"Authorization": f"Bearer {ft}", "Accept": "application/json"}
 
     with requests.Session() as s:
-        flows = s.get(
+        flows, flow_error = fetch_collection(
+            s,
             f"{FLOW_API}/providers/Microsoft.ProcessSimple/environments/{env_id}/flows?api-version={API_VERSION}",
-            headers=fh, timeout=120,
-        ).json().get("value", [])
+            fh,
+        )
+        if flow_error:
+            raise SystemExit(f"Could not list flows: {flow_error}")
         # The Flow API id differs from the Dataverse workflowid; workflowEntityId bridges them.
         by_entity: dict[str, dict[str, str]] = {}
         for f in flows:
@@ -92,6 +179,7 @@ def main() -> None:
             if entity:
                 by_entity[entity] = {"flowApiId": f["name"], "displayName": props.get("displayName") or ""}
         print(f"flows discovered: {len(flows)} ({len(by_entity)} with a Dataverse id)")
+        definition_cache: dict[str, dict[str, dict[str, Any]]] = {}
 
         sessions = s.get(
             f"{base}/pvci_transcriptsessions?$select=pvci_transcriptid,pvci_flowrunsjson"
@@ -111,14 +199,25 @@ def main() -> None:
         print(f"correlated runs to fetch: {len(wanted)}")
 
         existing = {
-            r["pvci_runname"]: r["pvci_flowrundetailid"]
-            for r in s.get(f"{base}/{DETAILS}?$select=pvci_runname,pvci_flowrundetailid",
+            r["pvci_runname"]: {
+                "id": r["pvci_flowrundetailid"],
+                "fetched_on": r.get("pvci_fetchedon"),
+            }
+            for r in s.get(f"{base}/{DETAILS}?$select=pvci_runname,pvci_flowrundetailid,pvci_fetchedon",
                            headers=dh, timeout=120).json().get("value", [])
         }
 
         done = skipped = failed = 0
-        for run_name, meta in list(wanted.items())[: args.limit]:
-            if run_name in existing and not args.refresh:
+        candidates = list(wanted.items())
+        if args.run_name:
+            candidates = [(args.run_name, wanted[args.run_name])] if args.run_name in wanted else []
+            if not candidates:
+                raise SystemExit(f"Run {args.run_name} is not present in correlated transcript data.")
+        if args.limit is not None:
+            candidates = candidates[:args.limit]
+
+        for run_name, meta in candidates:
+            if run_name in existing and existing[run_name]["fetched_on"] and not args.refresh:
                 skipped += 1
                 continue
 
@@ -130,6 +229,21 @@ def main() -> None:
 
             root = (f"{FLOW_API}/providers/Microsoft.ProcessSimple/environments/{env_id}"
                     f"/flows/{flow['flowApiId']}/runs/{run_name}")
+
+            flow_api_id = flow["flowApiId"]
+            if flow_api_id not in definition_cache:
+                definition_response = s.get(
+                    f"{FLOW_API}/providers/Microsoft.ProcessSimple/environments/{env_id}"
+                    f"/flows/{flow_api_id}?api-version={API_VERSION}",
+                    headers=fh, timeout=120,
+                )
+                if definition_response.ok:
+                    definition = (definition_response.json().get("properties") or {}).get("definition") or {}
+                    definition_cache[flow_api_id] = collect_action_definitions(definition.get("actions"))
+                else:
+                    definition_cache[flow_api_id] = {}
+            action_definitions = definition_cache[flow_api_id]
+
             rd = s.get(f"{root}?api-version={API_VERSION}", headers=fh, timeout=120)
             if not rd.ok:
                 print(f"  {run_name[:28]} - run detail HTTP {rd.status_code}")
@@ -137,26 +251,38 @@ def main() -> None:
                 continue
 
             props = rd.json().get("properties", {})
-            ad = s.get(f"{root}/actions?api-version={API_VERSION}", headers=fh, timeout=120)
-            actions = ad.json().get("value", []) if ad.ok else []
+            actions, action_error = fetch_collection(
+                s, f"{root}/actions?api-version={API_VERSION}", fh,
+            )
 
             detailed = []
             errors = []
+            if action_error:
+                errors.append(f"Action history: {action_error}")
             for act in actions:
                 p = act.get("properties") or {}
-                entry: dict[str, Any] = {
-                    "name": act.get("name"),
-                    "status": p.get("status"),
-                    "start": p.get("startTime"),
-                    "end": p.get("endTime"),
-                    "code": p.get("code"),
-                }
-                if p.get("error"):
-                    entry["error"] = p["error"]
+                entry = action_entry(s, act)
+                add_definition(entry, action_definitions.get(str(act.get("name") or "")))
+                if p.get("error") and p.get("status") not in ("Skipped", "Succeeded"):
                     errors.append(f"{act.get('name')}: {json.dumps(p['error'])[:300]}")
-                if p.get("status") != "Skipped":
-                    entry["inputs"] = fetch_content(s, p.get("inputsLink"))
-                    entry["outputs"] = fetch_content(s, p.get("outputsLink"))
+
+                action_name = quote(str(act.get("name") or ""), safe="")
+                repetitions, repetition_error = fetch_collection(
+                    s,
+                    f"{root}/actions/{action_name}/repetitions?api-version={API_VERSION}",
+                    fh,
+                )
+                if repetitions:
+                    entry["repetitions"] = [action_entry(s, repetition) for repetition in repetitions]
+                    for repetition in repetitions:
+                        rp = repetition.get("properties") or {}
+                        if rp.get("error") and rp.get("status") not in ("Skipped", "Succeeded"):
+                            errors.append(
+                                f"{act.get('name')}[{repetition.get('name')}]: "
+                                f"{json.dumps(rp['error'])[:300]}"
+                            )
+                elif repetition_error and not repetition_error.startswith("HTTP 404"):
+                    entry["repetitions_error"] = repetition_error
                 detailed.append(entry)
 
             trigger = props.get("trigger") or {}
@@ -168,14 +294,30 @@ def main() -> None:
                 "inputs": fetch_content(s, trigger.get("inputsLink")),
                 "outputs": fetch_content(s, trigger.get("outputsLink")),
             }
+            response = props.get("response") or {}
+            response_entry = {
+                "name": response.get("name"),
+                "status": response.get("status"),
+                "start": response.get("startTime"),
+                "end": response.get("endTime"),
+                "code": response.get("code"),
+                "outputs": fetch_content(s, response.get("outputsLink")),
+            } if response else None
+            run_context = {
+                "correlation": props.get("correlation"),
+                "trigger": trigger_entry,
+                "response": response_entry,
+            }
 
             actions_json = json.dumps(detailed, ensure_ascii=False, indent=1)
-            truncated = len(actions_json) > MEMO_LIMIT
-            if truncated:
+            aggregate_truncated = len(actions_json) > MEMO_LIMIT
+            body_truncated = any(contains_truncated_body(entry) for entry in detailed)
+            if aggregate_truncated:
                 actions_json = json.dumps(
-                    [{k: v for k, v in a.items() if k not in ("inputs", "outputs")} for a in detailed],
+                    [without_bodies(entry) for entry in detailed],
                     ensure_ascii=False, indent=1,
-                )[:MEMO_LIMIT]
+                )
+            truncated = aggregate_truncated or body_truncated
 
             start = props.get("startTime")
             end = props.get("endTime")
@@ -203,7 +345,7 @@ def main() -> None:
                 "pvci_actioncount": len(actions),
                 "pvci_failedactioncount": sum(1 for x in statuses if x not in ("Succeeded", "Skipped", None)),
                 "pvci_skippedactioncount": sum(1 for x in statuses if x == "Skipped"),
-                "pvci_triggerjson": json.dumps(trigger_entry, ensure_ascii=False, indent=1)[:MEMO_LIMIT],
+                "pvci_triggerjson": json.dumps(run_context, ensure_ascii=False, indent=1)[:MEMO_LIMIT],
                 "pvci_actionsjson": actions_json,
                 "pvci_errorsummary": ("\n".join(errors))[:100_000],
                 "pvci_transcriptid": meta["transcript_id"],
@@ -213,7 +355,10 @@ def main() -> None:
             payload = {k: v for k, v in payload.items() if v is not None}
 
             if run_name in existing:
-                r = s.patch(f"{base}/{DETAILS}({existing[run_name]})", headers=dh, json=payload, timeout=180)
+                r = s.patch(
+                    f"{base}/{DETAILS}({existing[run_name]['id']})",
+                    headers=dh, json=payload, timeout=180,
+                )
             else:
                 r = s.post(f"{base}/{DETAILS}", headers=dh, json=payload, timeout=180)
 

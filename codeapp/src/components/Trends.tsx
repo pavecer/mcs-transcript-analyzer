@@ -1,16 +1,44 @@
 import { useMemo, useState } from "react";
 import { ComboChart, HBar, type Bucket } from "./Chart";
-import { fmtMs, latencyBand, type SessionRow } from "../lib/model";
+import { fmtMs, isEssSession, latencyBand, parseSourceStamp, type SessionRow } from "../lib/model";
 
 type Grain = "hour" | "day";
+interface AgentOption { id: string; name: string }
 
 export function Trends({ sessions, loading }: { sessions: SessionRow[]; loading: boolean }) {
   const [agent, setAgent] = useState<string>("*");
   const [hideTest, setHideTest] = useState(true);
+  const [essOnly, setEssOnly] = useState(true);
+  const [tenant, setTenant] = useState("*");
+  const [environment, setEnvironment] = useState("*");
   const [grain, setGrain] = useState<Grain | "auto">("auto");
 
+  const tenantOptions = useMemo(
+    () => [...new Set(sessions.map((s) => s.pvci_tenantid).filter((v): v is string => Boolean(v)))].sort((a, b) => a.localeCompare(b)),
+    [sessions]
+  );
+
+  const environmentOptions = useMemo(() => {
+    const options = new Map<string, string>();
+    sessions.forEach((s) => {
+      const stamp = parseSourceStamp(s.pvci_datasource);
+      const key = stamp?.environmentId ?? stamp?.org ?? "unknown";
+      const label = stamp?.environmentName ?? stamp?.environmentId ?? stamp?.org ?? "unknown";
+      options.set(key, label);
+    });
+    return [...options.entries()].sort((a, b) => a[1].localeCompare(b[1]));
+  }, [sessions]);
+
   const agents = useMemo(
-    () => Array.from(new Set(sessions.map((s) => s.pvci_botname).filter(Boolean))) as string[],
+    () => {
+      const options = new Map<string, AgentOption>();
+      sessions.forEach((session) => {
+        const id = session.pvci_botid ?? session.pvci_botname;
+        if (!id) return;
+        options.set(id, { id, name: session.pvci_botname ?? "Unnamed agent" });
+      });
+      return [...options.values()].sort((left, right) => left.name.localeCompare(right.name));
+    },
     [sessions]
   );
 
@@ -18,10 +46,18 @@ export function Trends({ sessions, loading }: { sessions: SessionRow[]; loading:
     () =>
       sessions.filter((s) => {
         if (hideTest && s.pvci_istestmode) return false;
-        if (agent !== "*" && s.pvci_botname !== agent) return false;
+        if (essOnly && !isEssSession(s)) return false;
+        if (agent !== "*" && (s.pvci_botid ?? s.pvci_botname) !== agent) return false;
+        if (tenant !== "*" && (s.pvci_tenantid ?? "") !== tenant) return false;
+
+        if (environment !== "*") {
+          const stamp = parseSourceStamp(s.pvci_datasource);
+          const envKey = stamp?.environmentId ?? stamp?.org ?? "unknown";
+          if (envKey !== environment) return false;
+        }
         return Boolean(s.pvci_startdatetimeutc);
       }),
-    [sessions, agent, hideTest]
+    [sessions, agent, hideTest, essOnly, tenant, environment]
   );
 
   const effectiveGrain: Grain = useMemo(() => {
@@ -100,11 +136,24 @@ export function Trends({ sessions, loading }: { sessions: SessionRow[]; loading:
       <div className="trend-bar">
         <select value={agent} onChange={(e) => setAgent(e.target.value)} className="search">
           <option value="*">All agents ({agents.length})</option>
-          {agents.map((a) => (
-            <option key={a} value={a}>{a}</option>
+          {agents.map((option) => (
+            <option key={option.id} value={option.id}>{option.name}</option>
           ))}
         </select>
         <button className={hideTest ? "on" : ""} onClick={() => setHideTest(!hideTest)}>Hide test mode</button>
+        <button className={essOnly ? "on" : ""} onClick={() => setEssOnly(!essOnly)}>ESS only</button>
+        <select value={tenant} onChange={(e) => setTenant(e.target.value)} className="search">
+          <option value="*">All tenants</option>
+          {tenantOptions.map((option) => (
+            <option key={option} value={option}>{option}</option>
+          ))}
+        </select>
+        <select value={environment} onChange={(e) => setEnvironment(e.target.value)} className="search">
+          <option value="*">All environments</option>
+          {environmentOptions.map(([id, label]) => (
+            <option key={id} value={id}>{label}</option>
+          ))}
+        </select>
         {(["auto", "hour", "day"] as const).map((g) => (
           <button key={g} className={grain === g ? "on" : ""} onClick={() => setGrain(g)}>{g}</button>
         ))}

@@ -85,3 +85,32 @@ pip install -r scripts/transcript_insights/requirements.txt
 
 Environment configs: `config/transcript_solution_config.dev.json`,
 `config/transcript_solution_config.sandbox.json`.
+
+## Multi-environment sync (tenant-wide)
+
+Use `sync_multi_environment.py` to run the same ingest flow across multiple
+environment config files and produce one aggregate summary.
+
+```bash
+python3 scripts/transcript_insights/sync_multi_environment.py \
+  --configs config/transcript_solution_config.dev.json config/transcript_solution_config.sandbox.json
+```
+
+Useful options:
+
+| Flag | Effect |
+|---|---|
+| `--full` | Reprocess all configured environments |
+| `--since <iso>` | Override watermark for all environments |
+| `--limit N` | Cap transcripts per environment |
+
+Each synced session is stamped into `pvci_datasource` with source context:
+`dataverse_v9.1|tenant:<id>|env:<id>|envName:<name>|org:<host>`.
+
+Optional config key for better UI labels:
+
+```json
+{
+  "environmentName": "PVE Dev"
+}
+```

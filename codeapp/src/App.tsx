@@ -5,14 +5,28 @@ import { JsonTree } from "./components/JsonTree";
 import { Timeline } from "./components/Timeline";
 import { ToolCalls } from "./components/ToolCalls";
 import { FlowRuns } from "./components/FlowRuns";
+import { EssOps } from "./components/EssOps";
 import { Trends } from "./components/Trends";
-import { fmtDuration, fmtMs, fmtTime, latencyBand, safeParse, type SessionRow, type TurnRow } from "./lib/model";
+import {
+  fmtDuration,
+  fmtMs,
+  fmtTime,
+  isEssSession,
+  latencyBand,
+  parseSourceStamp,
+  safeParse,
+  sourceEnvironmentLabel,
+  type SessionRow,
+  type TurnRow,
+} from "./lib/model";
 import "./App.css";
 
 const SESSION_FIELDS = [
   "pvci_transcriptsessionid", "pvci_transcriptid", "pvci_name",
   "pvci_userdisplayname", "pvci_userupn", "pvci_useraadobjectid",
-  "pvci_channel", "pvci_botname",
+  "pvci_channel", "pvci_botid", "pvci_botname",
+  "pvci_tenantid", "pvci_topicname", "pvci_topicid",
+  "pvci_datasource",
   "pvci_startdatetimeutc", "pvci_enddatetimeutc", "pvci_durationseconds",
   "pvci_messagecount", "pvci_activitycount", "pvci_eventcount",
   "pvci_userturncount", "pvci_agentturncount",
@@ -38,9 +52,23 @@ const TURN_FIELDS = [
   "pvci_channelid", "pvci_timestamputc", "pvci_turntext", "pvci_valuejson", "pvci_latencyms",
 ];
 
-type Tab = "replay" | "tools" | "flows" | "conversation" | "reasoning" | "raw";
+type Tab = "essops" | "replay" | "tools" | "flows" | "conversation" | "reasoning" | "raw";
+type Theme = "light" | "dark";
+
+const THEME_STORAGE_KEY = "pvci-theme";
+
+function initialTheme(): Theme {
+  try {
+    const stored = localStorage.getItem(THEME_STORAGE_KEY);
+    if (stored === "light" || stored === "dark") return stored;
+  } catch {
+    // Storage can be unavailable in a restricted host; OS preference still works.
+  }
+  return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+}
 
 const TAB_LABEL: Record<Tab, string> = {
+  essops: "ESS Ops",
   replay: "Replay",
   tools: "Tool Calls",
   flows: "Flow Runs",
@@ -59,9 +87,22 @@ export default function App() {
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [hideTest, setHideTest] = useState(false);
+  const [essOnly, setEssOnly] = useState(true);
+  const [tenantFilter, setTenantFilter] = useState("*");
+  const [environmentFilter, setEnvironmentFilter] = useState("*");
   const [tab, setTab] = useState<Tab>("replay");
   const [jsonFilter, setJsonFilter] = useState("");
   const [view, setView] = useState<"sessions" | "trends">("sessions");
+  const [theme, setTheme] = useState<Theme>(initialTheme);
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+    try {
+      localStorage.setItem(THEME_STORAGE_KEY, theme);
+    } catch {
+      // The selected theme remains active for this session.
+    }
+  }, [theme]);
 
   useEffect(() => {
     void (async () => {
@@ -123,22 +164,61 @@ export default function App() {
     };
   }, [selected]);
 
+  const tenantOptions = useMemo(
+    () =>
+      [...new Set(sessions.map((s) => s.pvci_tenantid).filter((v): v is string => Boolean(v)))].sort((a, b) =>
+        a.localeCompare(b)
+      ),
+    [sessions]
+  );
+
+  const environmentOptions = useMemo(() => {
+    const options = new Map<string, string>();
+    sessions.forEach((s) => {
+      const stamp = parseSourceStamp(s.pvci_datasource);
+      const key = stamp?.environmentId ?? stamp?.org ?? "unknown";
+      const label = stamp?.environmentName ?? stamp?.environmentId ?? stamp?.org ?? "unknown";
+      options.set(key, label);
+    });
+    return [...options.entries()].sort((a, b) => a[1].localeCompare(b[1]));
+  }, [sessions]);
+
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     return sessions.filter((s) => {
       if (hideTest && s.pvci_istestmode) return false;
+      if (essOnly && !isEssSession(s)) return false;
+      if (tenantFilter !== "*" && (s.pvci_tenantid ?? "") !== tenantFilter) return false;
+
+      if (environmentFilter !== "*") {
+        const stamp = parseSourceStamp(s.pvci_datasource);
+        const envKey = stamp?.environmentId ?? stamp?.org ?? "unknown";
+        if (envKey !== environmentFilter) return false;
+      }
+
       if (!q) return true;
       return [s.pvci_userdisplayname, s.pvci_userupn, s.pvci_channel, s.pvci_initialusermessage, s.pvci_botname]
         .some((v) => (v ?? "").toLowerCase().includes(q));
     });
-  }, [sessions, search, hideTest]);
+  }, [sessions, search, hideTest, essOnly, tenantFilter, environmentFilter]);
 
   return (
     <div className="app">
       <aside className="sidebar">
         <div className="brand">
-          <h1>Conversation Insights</h1>
-          <span className="muted small">{sessions.length} sessions</span>
+          <div>
+            <h1>Conversation Insights</h1>
+            <span className="muted small">{sessions.length} sessions</span>
+          </div>
+          <button
+            className="theme-toggle"
+            type="button"
+            title={`Use ${theme === "dark" ? "light" : "dark"} mode`}
+            aria-label={`Use ${theme === "dark" ? "light" : "dark"} mode`}
+            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+          >
+            <span aria-hidden="true">{theme === "dark" ? "☀" : "☾"}</span>
+          </button>
         </div>
         <div className="viewswitch">
           <button className={view === "sessions" ? "on" : ""} onClick={() => setView("sessions")}>Sessions</button>
@@ -154,6 +234,22 @@ export default function App() {
           <input type="checkbox" checked={hideTest} onChange={(e) => setHideTest(e.target.checked)} />
           Hide test-mode sessions
         </label>
+        <label className="checkline">
+          <input type="checkbox" checked={essOnly} onChange={(e) => setEssOnly(e.target.checked)} />
+          ESS only
+        </label>
+        <select className="search" value={tenantFilter} onChange={(e) => setTenantFilter(e.target.value)}>
+          <option value="*">All tenants</option>
+          {tenantOptions.map((tenant) => (
+            <option key={tenant} value={tenant}>{tenant}</option>
+          ))}
+        </select>
+        <select className="search" value={environmentFilter} onChange={(e) => setEnvironmentFilter(e.target.value)}>
+          <option value="*">All environments</option>
+          {environmentOptions.map(([id, label]) => (
+            <option key={id} value={id}>{label}</option>
+          ))}
+        </select>
 
         <div className="session-list">
           {loadingSessions && <div className="muted pad">Loading…</div>}
@@ -213,6 +309,9 @@ export default function App() {
               <dl className="facts">
                 <Fact k="Channel" v={selected.pvci_channel} />
                 <Fact k="Agent" v={selected.pvci_botname} />
+                <Fact k="Tenant" v={selected.pvci_tenantid} />
+                <Fact k="Environment" v={sourceEnvironmentLabel(selected)} />
+                <Fact k="Session topic" v={selected.pvci_topicname ?? selected.pvci_topicid} />
                 <Fact k="Started" v={fmtTime(selected.pvci_startdatetimeutc)} />
                 <Fact k="Duration" v={fmtDuration(selected.pvci_durationseconds)} />
                 <Fact k="Turns" v={`${selected.pvci_userturncount ?? 0} user / ${selected.pvci_agentturncount ?? 0} agent`} />
@@ -237,7 +336,9 @@ export default function App() {
             </nav>
 
             <section className="pane">
-              {tab === "replay" ? (
+              {tab === "essops" ? (
+                <EssOps session={selected} turns={turns} loading={loadingTurns} />
+              ) : tab === "replay" ? (
                 <Timeline turns={turns} loading={loadingTurns} />
               ) : tab === "tools" ? (
                 <ToolCalls json={detail?.pvci_toolcallsjson} loading={loadingTurns} />

@@ -18,7 +18,7 @@ what it did.
 |---|---|
 | **Dataverse solution** | 6 tables, views, forms, a model-driven app, a Custom API, and a scheduled flow |
 | **Model-driven app** | GA, standard-licensed. Grids + tabbed forms with a JSON viewer PCF control |
-| **Code app** (preview) | React/Vite triage UI: conversation replay, latency trends, tool and flow drill-down |
+| **Code app** (preview) | React/Vite triage UI: replay, trends, visual flow failure map, persisted theme |
 | **Custom API + plugin** | In-platform incremental sync — no token, no external host |
 | **Python toolkit** | Bulk backfill, plugin registration, flow-run detail fetch |
 
@@ -28,7 +28,7 @@ what it did.
 - **Latency** — first / average / slowest reply, in milliseconds, and per turn
 - **Agent reasoning** — the `DynamicPlan*` trace showing which topic or tool was chosen, and why
 - **Tool calls** — connector and AI Builder invocations with duration, output and exceptions
-- **Flow runs** — correlated Power Automate runs, drillable to per-action inputs and outputs
+- **Flow runs** — correlated Power Automate runs, enrichable with action and loop-iteration inputs and outputs
 - **Outcome** — resolved / abandoned, reason, implied success, turn count
 - **Test-mode flag** — so maker-portal testing does not pollute production metrics
 
@@ -121,7 +121,7 @@ pvci_transcriptsession ──< pvci_transcriptturn
         │                        │
         ├── pvci_transcriptidentitymap   (aadObjectId → systemuser)
         ├── pvci_syncstate               (watermark + last run status)
-        └── pvci_flowrundetail           (per-action inputs/outputs, fetched by script)
+            └── pvci_flowrundetail           (durable queue + enriched run payloads)
 ```
 
 **Additive by default.** A transcript is immutable once Copilot Studio finalises it, so an
@@ -148,9 +148,11 @@ These are real and worth understanding before you rely on the numbers.
 2. **Flow correlation is time-based.** `flowrun.conversationid` is null, so runs are matched by
    time overlap (±20s) and ranked by closeness. Confidence is shown as `high` / `multiple` /
    `no run matched`. Under concurrent load, `multiple` gets noisier.
-3. **Flow run details need a separate token.** The Power Automate API uses a different audience
-   than Dataverse, so a plugin cannot call it. `fetch_flow_run_details.py` runs outside the
-   platform and is **not** covered by the scheduled flow.
+3. **Flow run details cross a separate security boundary.** The Power Automate API uses a
+   different audience than Dataverse, so the plugin creates durable pending rows but cannot fetch
+   their bodies. Enrichment needs either a DLP-approved HTTP/custom connector or the headless
+   `fetch_flow_run_details.py` worker. PVE Dev now allows the connector, but runtime policy cache
+   propagation must complete before the in-platform processor can be validated.
 4. **Retention.** Flow runs age out of Power Automate independently of Dataverse. Fetch details
    promptly or the drill-down will be empty.
 5. **Code apps are preview** and require premium licensing. The model-driven app is the
@@ -179,6 +181,7 @@ scripts/     Python toolkit — provisioning, sync, registration, fetch
 - [API reference](docs/api-reference.md) — the `conversationtranscripts` payload, field by field
 - [Architecture](docs/architecture.md) — data model, sync semantics, correlation strategy
 - [Operations](docs/operations.md) — deploy, run, schedule, troubleshoot
+- [Flow run detail findings](docs/flow-run-detail-findings.md) — tested APIs, payload depth, DLP and deployment options
 - [Monitor endpoint findings](docs/monitor-endpoint-findings.md) — why the CSV export is not used
 
 ## Contributing
