@@ -31,7 +31,7 @@ pvci_transcriptturn             one row per activity
 
 pvci_transcriptidentitymap      one row per distinct end user
 pvci_syncstate                  watermark, last run status, last error
-pvci_flowrundetail              one row per fetched Power Automate run
+pvci_flowrundetail              one row per correlated run; pending until payload enrichment
 
 `pvci_datasource` now carries source stamping for cross-environment analysis:
 `dataverse_v9.1|tenant:<id>|env:<id>|envName:<name>|org:<host>`.

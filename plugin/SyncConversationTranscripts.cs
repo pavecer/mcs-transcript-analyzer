@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.ServiceModel;
 using System.Text;
 using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Query;
@@ -856,7 +857,7 @@ namespace PvciTranscripts
                 if (found.Entities.Count > 0)
                     displayName = found.Entities[0].GetAttributeValue<string>("name") ?? schemaName;
             }
-            catch
+            catch (FaultException<OrganizationServiceFault>)
             {
                 // Bot metadata is optional enrichment; preserve transcript ingestion on access errors.
             }

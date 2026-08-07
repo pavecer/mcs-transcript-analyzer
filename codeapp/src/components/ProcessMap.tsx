@@ -97,12 +97,24 @@ interface GraphLayout {
   height: number;
 }
 
+function compareByStart(
+  left: { action: FlowActionEntry; index: number },
+  right: { action: FlowActionEntry; index: number },
+): number {
+  const leftMs = Date.parse(left.action.start ?? "");
+  const rightMs = Date.parse(right.action.start ?? "");
+  const leftValid = Number.isFinite(leftMs);
+  const rightValid = Number.isFinite(rightMs);
+  if (leftValid && rightValid && leftMs !== rightMs) return leftMs - rightMs;
+  if (leftValid !== rightValid) return leftValid ? -1 : 1;
+  return left.index - right.index;
+}
+
 function buildLayout(actions: FlowActionEntry[], showSkipped: boolean): GraphLayout {
   const indexed = actions.map((action, index) => ({ action, index }));
   const byName = new Map(indexed.flatMap(({ action }) => action.name ? [[action.name, action] as const] : []));
   const hasDefinitionGraph = actions.some((action) => Object.keys(action.run_after ?? {}).length || action.parent);
-  const chronological = [...indexed].sort((left, right) =>
-    Date.parse(left.action.start ?? "") - Date.parse(right.action.start ?? ""));
+  const chronological = [...indexed].sort(compareByStart);
   const previousByName = new Map<string, string>();
   if (!hasDefinitionGraph) {
     chronological.forEach(({ action }, index) => {
@@ -146,8 +158,7 @@ function buildLayout(actions: FlowActionEntry[], showSkipped: boolean): GraphLay
     entries.push(item);
     layers.set(layer, entries);
   });
-  layers.forEach((entries) => entries.sort((left, right) =>
-    Date.parse(left.action.start ?? "") - Date.parse(right.action.start ?? "")));
+  layers.forEach((entries) => entries.sort(compareByStart));
 
   const nodes: LayoutNode[] = [];
   layers.forEach((entries, layer) => {

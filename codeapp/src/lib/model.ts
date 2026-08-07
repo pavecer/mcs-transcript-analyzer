@@ -162,7 +162,9 @@ export function sourceEnvironmentLabel(s: SessionRow): string {
 
 export function isEssSession(s: SessionRow): boolean {
   const tag = `${s.pvci_botname ?? ""} ${s.pvci_botid ?? ""} ${s.pvci_topicname ?? ""}`.toLowerCase();
-  return tag.includes("employee self-service") || tag.includes("copilotforemployeeselfservice") || tag.includes("ess");
+  return tag.includes("employee self-service")
+    || tag.includes("copilotforemployeeselfservice")
+    || /(^|[^a-z0-9])ess([^a-z0-9]|$)/.test(tag);
 }
 
 /** Topic/tool names out of a DynamicPlan payload, e.g. "...topic.ServiceNowITSMGetUserTickets". */

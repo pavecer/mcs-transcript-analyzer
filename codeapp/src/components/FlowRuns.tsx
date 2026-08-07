@@ -50,6 +50,10 @@ function fmtStartDelta(ms?: number): string {
   return `${sign}${fmtMs(Math.abs(Math.round(ms)))}`;
 }
 
+function escapeODataString(value: string): string {
+  return value.replace(/'/g, "''");
+}
+
 export function FlowRuns({ json, loading }: { json?: string; loading?: boolean }) {
   const items = (safeParse(json) as unknown as FlowCorrelation[] | undefined) ?? [];
   const [open, setOpen] = useState<Set<number>>(new Set());
@@ -85,7 +89,7 @@ export function FlowRuns({ json, loading }: { json?: string; loading?: boolean }
           "pvci_actioncount", "pvci_failedactioncount", "pvci_skippedactioncount",
           "pvci_triggerjson", "pvci_actionsjson", "pvci_errorsummary", "pvci_payloadtruncated",
         ],
-        filter: `pvci_runname eq '${runName}'`,
+        filter: `pvci_runname eq '${escapeODataString(runName)}'`,
         top: 1,
       });
       const row = ((res.data ?? []) as unknown as RunDetail[])[0];

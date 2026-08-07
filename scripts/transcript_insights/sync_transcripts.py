@@ -57,13 +57,13 @@ def load_source_context(config_path: str) -> dict[str, str]:
         "environment_id": str(cfg.get("environmentId", "") or ""),
         "environment_name": str(cfg.get("environmentName", "") or ""),
         "org": org,
-        "source": "dataverse_v9.1_conversationtranscripts",
+        "source": "dataverse_v9.1",
     }
     return out
 
 
 def build_source_stamp(source_ctx: dict[str, str]) -> str:
-    parts = [source_ctx.get("source", "dataverse_v9.1_conversationtranscripts")]
+    parts = [source_ctx.get("source", "dataverse_v9.1")]
     if source_ctx.get("tenant_id"):
         parts.append(f"tenant:{source_ctx['tenant_id']}")
     if source_ctx.get("environment_id"):
@@ -582,7 +582,8 @@ def resolve_bot_name(dv: Dv, schema_name: str | None, cache: dict[str, str]) -> 
 
 
 def find_by(dv: Dv, entity_set: str, field: str, value: str, idfield: str) -> str | None:
-    body = dv.get(f"{entity_set}?$select={idfield}&$filter={field} eq '{value}'&$top=1")
+    escaped = value.replace("'", "''")
+    body = dv.get(f"{entity_set}?$select={idfield}&$filter={field} eq '{escaped}'&$top=1")
     vals = body.get("value", [])
     return vals[0][idfield] if vals else None
 
