@@ -11,8 +11,8 @@ cp config/transcript_solution_config.sample.json config/transcript_solution_conf
 | Key | Notes |
 |---|---|
 | `tenantId` | Entra tenant GUID |
-| `environmentId` | Power Platform environment GUID (from the maker portal URL) |
-| `environmentName` | Optional friendly label used by cross-environment UI filters |
+| `environmentId` | Required Power Platform environment GUID from the maker portal URL; stored in `pvci_environmentid` |
+| `environmentName` | Optional friendly-name override; sync otherwise reads `organization.friendlyname` |
 | `dataverseUrl` | `https://<org>.crm<N>.dynamics.com` — no trailing slash |
 | `oauth.dataverseScope` | `<dataverseUrl>/.default` |
 | `botId` | Copilot Studio agent id — only used by the Monitor probe scripts |
@@ -135,8 +135,23 @@ Tenant-wide multi-environment run:
     --configs config/transcript_solution_config.dev.json config/transcript_solution_config.sandbox.json
 ```
 
-Each synced session carries source stamping in `pvci_datasource`:
+Each synced session stores `pvci_environmentid` and `pvci_environmentname`, and also carries a
+lineage stamp in `pvci_datasource`:
 `dataverse_v9.1|tenant:<id>|env:<id>|envName:<name>|org:<host>`.
+
+### Backfill environment names after upgrading
+
+After importing a version that adds the environment columns, run one full scan. Existing sessions
+are patched with Power Platform environment ID, friendly name, and lineage only; turns and transcript payloads are
+not rewritten, so `Reprocess` must remain false.
+
+```bash
+python3 scripts/transcript_insights/sync_transcripts.py --config $CFG --full
+```
+
+For the in-platform path, invoke `pvci_SyncConversationTranscripts` with `FullSync: true`,
+`Reprocess: false`, and a batch size large enough for the current session count. The scheduled
+incremental flow then labels new sessions automatically.
 
 Use `--reprocess` after changing parser logic. It rewrites sessions and replaces their turns,
 which issues new turn GUIDs.

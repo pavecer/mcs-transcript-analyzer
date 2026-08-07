@@ -13,8 +13,8 @@ import {
   fmtTime,
   isEssSession,
   latencyBand,
-  parseSourceStamp,
   safeParse,
+  sourceEnvironmentKey,
   sourceEnvironmentLabel,
   type SessionRow,
   type TurnRow,
@@ -25,7 +25,8 @@ const SESSION_FIELDS = [
   "pvci_transcriptsessionid", "pvci_transcriptid", "pvci_name",
   "pvci_userdisplayname", "pvci_userupn", "pvci_useraadobjectid",
   "pvci_channel", "pvci_botid", "pvci_botname",
-  "pvci_tenantid", "pvci_topicname", "pvci_topicid",
+  "pvci_tenantid", "pvci_environmentid", "pvci_environmentname",
+  "pvci_topicname", "pvci_topicid",
   "pvci_datasource",
   "pvci_startdatetimeutc", "pvci_enddatetimeutc", "pvci_durationseconds",
   "pvci_messagecount", "pvci_activitycount", "pvci_eventcount",
@@ -88,7 +89,6 @@ export default function App() {
   const [search, setSearch] = useState("");
   const [hideTest, setHideTest] = useState(false);
   const [essOnly, setEssOnly] = useState(true);
-  const [tenantFilter, setTenantFilter] = useState("*");
   const [environmentFilter, setEnvironmentFilter] = useState("*");
   const [tab, setTab] = useState<Tab>("replay");
   const [jsonFilter, setJsonFilter] = useState("");
@@ -164,21 +164,10 @@ export default function App() {
     };
   }, [selected]);
 
-  const tenantOptions = useMemo(
-    () =>
-      [...new Set(sessions.map((s) => s.pvci_tenantid).filter((v): v is string => Boolean(v)))].sort((a, b) =>
-        a.localeCompare(b)
-      ),
-    [sessions]
-  );
-
   const environmentOptions = useMemo(() => {
     const options = new Map<string, string>();
     sessions.forEach((s) => {
-      const stamp = parseSourceStamp(s.pvci_datasource);
-      const key = stamp?.environmentId ?? stamp?.org ?? "unknown";
-      const label = stamp?.environmentName ?? stamp?.environmentId ?? stamp?.org ?? "unknown";
-      options.set(key, label);
+      options.set(sourceEnvironmentKey(s), sourceEnvironmentLabel(s));
     });
     return [...options.entries()].sort((a, b) => a[1].localeCompare(b[1]));
   }, [sessions]);
@@ -188,19 +177,16 @@ export default function App() {
     return sessions.filter((s) => {
       if (hideTest && s.pvci_istestmode) return false;
       if (essOnly && !isEssSession(s)) return false;
-      if (tenantFilter !== "*" && (s.pvci_tenantid ?? "") !== tenantFilter) return false;
 
       if (environmentFilter !== "*") {
-        const stamp = parseSourceStamp(s.pvci_datasource);
-        const envKey = stamp?.environmentId ?? stamp?.org ?? "unknown";
-        if (envKey !== environmentFilter) return false;
+        if (sourceEnvironmentKey(s) !== environmentFilter) return false;
       }
 
       if (!q) return true;
       return [s.pvci_userdisplayname, s.pvci_userupn, s.pvci_channel, s.pvci_initialusermessage, s.pvci_botname]
         .some((v) => (v ?? "").toLowerCase().includes(q));
     });
-  }, [sessions, search, hideTest, essOnly, tenantFilter, environmentFilter]);
+  }, [sessions, search, hideTest, essOnly, environmentFilter]);
 
   return (
     <div className="app">
@@ -238,12 +224,6 @@ export default function App() {
           <input type="checkbox" checked={essOnly} onChange={(e) => setEssOnly(e.target.checked)} />
           ESS only
         </label>
-        <select className="search" value={tenantFilter} onChange={(e) => setTenantFilter(e.target.value)}>
-          <option value="*">All tenants</option>
-          {tenantOptions.map((tenant) => (
-            <option key={tenant} value={tenant}>{tenant}</option>
-          ))}
-        </select>
         <select className="search" value={environmentFilter} onChange={(e) => setEnvironmentFilter(e.target.value)}>
           <option value="*">All environments</option>
           {environmentOptions.map(([id, label]) => (

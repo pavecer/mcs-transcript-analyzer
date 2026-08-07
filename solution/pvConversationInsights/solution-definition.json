@@ -18,6 +18,8 @@
         "pvci_BotId": "string",
         "pvci_BotName": "string",
         "pvci_TenantId": "string",
+        "pvci_EnvironmentId": "string",
+        "pvci_EnvironmentName": "string",
         "pvci_UserAadObjectId": "string",
         "pvci_UserUpn": "string",
         "pvci_UserDisplayName": "string",

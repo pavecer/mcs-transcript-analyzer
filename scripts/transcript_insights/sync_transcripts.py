@@ -62,6 +62,27 @@ def load_source_context(config_path: str) -> dict[str, str]:
     return out
 
 
+def resolve_source_context(dv: "Dv", config_path: str) -> dict[str, str]:
+    source_ctx = load_source_context(config_path)
+    if not source_ctx["environment_id"]:
+        raise RuntimeError(
+            "environmentId is required and must be the Power Platform environment GUID from the maker portal URL."
+        )
+    if source_ctx["environment_name"]:
+        return source_ctx
+
+    rows = dv.get_all("organizations?$select=friendlyname,name&$top=1")
+    organization = rows[0] if rows else {}
+    source_ctx["environment_name"] = source_ctx["environment_name"] or str(
+        organization.get("friendlyname") or organization.get("name") or ""
+    )
+    if not source_ctx["environment_name"]:
+        raise RuntimeError(
+            "Could not resolve the Dataverse environment name. Set environmentName in the sync config."
+        )
+    return source_ctx
+
+
 def build_source_stamp(source_ctx: dict[str, str]) -> str:
     parts = [source_ctx.get("source", "dataverse_v9.1")]
     if source_ctx.get("tenant_id"):
@@ -73,6 +94,15 @@ def build_source_stamp(source_ctx: dict[str, str]) -> str:
     if source_ctx.get("org"):
         parts.append(f"org:{source_ctx['org']}")
     return "|".join(parts)
+
+
+def environment_payload(source_ctx: dict[str, str]) -> dict[str, str]:
+    values = {
+        "pvci_environmentid": source_ctx.get("environment_id", ""),
+        "pvci_environmentname": source_ctx.get("environment_name", ""),
+        "pvci_datasource": build_source_stamp(source_ctx),
+    }
+    return {key: value for key, value in values.items() if value}
 
 
 class Dv:
@@ -582,10 +612,21 @@ def resolve_bot_name(dv: Dv, schema_name: str | None, cache: dict[str, str]) -> 
 
 
 def find_by(dv: Dv, entity_set: str, field: str, value: str, idfield: str) -> str | None:
+    record = find_record_by(dv, entity_set, field, value, [idfield])
+    return record.get(idfield) if record else None
+
+
+def find_record_by(
+    dv: Dv,
+    entity_set: str,
+    field: str,
+    value: str,
+    select: list[str],
+) -> dict[str, Any] | None:
     escaped = value.replace("'", "''")
-    body = dv.get(f"{entity_set}?$select={idfield}&$filter={field} eq '{escaped}'&$top=1")
+    body = dv.get(f"{entity_set}?$select={','.join(select)}&$filter={field} eq '{escaped}'&$top=1")
     vals = body.get("value", [])
-    return vals[0][idfield] if vals else None
+    return vals[0] if vals else None
 
 
 def ensure_flow_run_placeholders(
@@ -625,8 +666,19 @@ def _sync_one(
 
     # Transcripts are immutable once Copilot Studio finalises them, so an already-ingested
     # one is skipped before any parsing or writing. --reprocess overrides.
-    existing = find_by(dv, SESSIONS, "pvci_transcriptid", transcript_id, "pvci_transcriptsessionid")
+    existing_record = find_record_by(
+        dv,
+        SESSIONS,
+        "pvci_transcriptid",
+        transcript_id,
+        ["pvci_transcriptsessionid", "pvci_environmentid", "pvci_environmentname", "pvci_datasource"],
+    )
+    existing = existing_record.get("pvci_transcriptsessionid") if existing_record else None
     if existing and not reprocess:
+        source_values = environment_payload(source_ctx)
+        changed = {key: value for key, value in source_values.items() if existing_record.get(key) != value}
+        if changed:
+            dv.patch(SESSIONS, existing, changed)
         stats["transcripts"] += 1
         stats["sessions_skipped"] += 1
         return f"  {transcript_id[:8]} skipped (already ingested)"
@@ -656,6 +708,7 @@ def _sync_one(
         "pvci_botid": s1000(p["bot_id"]),
         "pvci_botname": s1000(bot_display_name),
         "pvci_tenantid": s1000(p["tenant_id"]),
+        **environment_payload(source_ctx),
         "pvci_useraadobjectid": s1000(p["user_aad"]),
         "pvci_userupn": s1000((su or {}).get("domainname")),
         "pvci_userdisplayname": s1000((su or {}).get("fullname")),
@@ -695,7 +748,6 @@ def _sync_one(
         "pvci_payloadtruncated": bool(trunc_a or trunc_c),
         "pvci_transcriptcreatedon": p["created_on"],
         "pvci_ingestedon": iso(datetime.now(timezone.utc)),
-        "pvci_datasource": build_source_stamp(source_ctx),
         "pvci_correlationstatus": "exact" if su else ("heuristic" if p["user_aad"] else "unmatched"),
     }
     if su:
@@ -794,7 +846,7 @@ def sync(dv: Dv, cfg_path: str, since: str | None, full: bool, include_traces: b
     print(f"flow runs in window: {len(flow_runs)} (earliest transcript {earliest})")
 
     if source_ctx is None:
-        source_ctx = load_source_context(cfg_path)
+        source_ctx = resolve_source_context(dv, cfg_path)
 
     user_cache: dict[str, dict[str, Any] | None] = {}
     bot_name_cache: dict[str, str] = {}
@@ -875,7 +927,7 @@ def main() -> None:
 
     token, dv_url = get_token_from_config(args.config)
     dv = Dv(f"{dv_url}/api/data/v9.1", token)
-    source_ctx = load_source_context(args.config)
+    source_ctx = resolve_source_context(dv, args.config)
 
     since = args.since
     if not since and not args.full:

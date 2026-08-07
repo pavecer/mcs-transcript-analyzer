@@ -13,7 +13,7 @@ from pathlib import Path
 from typing import Any
 
 from dv_token import get_token_from_config
-from sync_transcripts import Dv, SYNCSTATE, load_source_context, sync
+from sync_transcripts import Dv, SYNCSTATE, resolve_source_context, sync
 
 
 def discover_configs(args_configs: list[str], include_sample: bool) -> list[Path]:
@@ -59,7 +59,7 @@ def run_one(config_path: Path, full: bool, include_traces: bool, limit: int | No
     cfg = json.loads(config_path.read_text(encoding="utf-8"))
     token, dv_url = get_token_from_config(config_path)
     dv = Dv(f"{dv_url}/api/data/v9.1", token)
-    source_ctx = load_source_context(str(config_path))
+    source_ctx = resolve_source_context(dv, str(config_path))
 
     since = since_override
     if since is None and not full:

@@ -16,7 +16,7 @@ what it did.
 
 | Surface | What it is |
 |---|---|
-| **Dataverse solution** | 6 tables, views, forms, a model-driven app, a Custom API, and a scheduled flow |
+| **Dataverse solution** | 5 custom tables, views, forms, a model-driven app, a Custom API, and a scheduled flow |
 | **Model-driven app** | GA, standard-licensed. Grids + tabbed forms with a JSON viewer PCF control |
 | **Code app** (preview) | React/Vite triage UI: replay, trends, visual flow failure map, persisted theme |
 | **Custom API + plugin** | In-platform incremental sync — no token, no external host |
@@ -179,6 +179,7 @@ scripts/     Python toolkit — provisioning, sync, registration, fetch
 ## Documentation
 
 - [API reference](docs/api-reference.md) — the `conversationtranscripts` payload, field by field
+- [Dataverse data model](docs/data-model.md) — tables, columns, relationships, keys, and retention
 - [Architecture](docs/architecture.md) — data model, sync semantics, correlation strategy
 - [Operations](docs/operations.md) — deploy, run, schedule, troubleshoot
 - [Flow run detail findings](docs/flow-run-detail-findings.md) — tested APIs, payload depth, DLP and deployment options

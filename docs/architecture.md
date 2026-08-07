@@ -13,9 +13,13 @@
 
 ## Data model
 
+See [Dataverse data model](data-model.md) for the complete table, column, relationship, key,
+lineage, and retention reference.
+
 ```
 pvci_transcriptsession          one row per transcript
   ├─ pvci_UserId  →  systemuser (lookup, resolved from from.aadObjectId)
+  ├─ environment: Power Platform EnvironmentId · EnvironmentName · DataSource lineage stamp
   ├─ latency:   FirstResponseMs · AvgResponseMs · MaxResponseMs
   ├─ tools:     ToolCallCount · ToolErrorCount · ToolTotalMs · MaxToolMs
   ├─ flows:     FlowRunCount · FlowRunFailureCount · FlowRunMaxMs
@@ -33,7 +37,8 @@ pvci_transcriptidentitymap      one row per distinct end user
 pvci_syncstate                  watermark, last run status, last error
 pvci_flowrundetail              one row per correlated run; pending until payload enrichment
 
-`pvci_datasource` now carries source stamping for cross-environment analysis:
+First-class `pvci_environmentid` and `pvci_environmentname` columns drive environment display and
+filtering. `pvci_datasource` also carries a lineage stamp:
 `dataverse_v9.1|tenant:<id>|env:<id>|envName:<name>|org:<host>`.
 ```
 
@@ -147,8 +152,9 @@ volume and are skipped. `IncludeTraces` keeps them at roughly 4× the row count.
 supportable option. The code app is preview and premium, but can do things forms cannot, such
 as interleaving messages and reasoning in one chronological replay.
 
-The code app also supports ESS-scoped cross-environment diagnostics via tenant/environment
-filters derived from `pvci_datasource` source stamps.
+The code app supports ESS-scoped cross-environment diagnostics through an environment filter.
+There is no tenant picker because one installed solution serves one tenant. New records use the
+first-class environment columns; legacy source stamps remain a read fallback.
 
 **Payload size guards.** Memo columns cap at 1,048,576 characters; writes are capped at 900,000
 with pretty-print falling back to compact and then truncation, flagged by `PayloadTruncated`.

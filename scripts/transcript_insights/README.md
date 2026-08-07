@@ -107,7 +107,9 @@ Useful options:
 Each synced session is stamped into `pvci_datasource` with source context:
 `dataverse_v9.1|tenant:<id>|env:<id>|envName:<name>|org:<host>`.
 
-Optional config key for better UI labels:
+`environmentId` is the required Power Platform environment GUID from the maker portal URL and is
+stored in `pvci_environmentid`. The optional label override below is otherwise read from
+`organization.friendlyname`:
 
 ```json
 {

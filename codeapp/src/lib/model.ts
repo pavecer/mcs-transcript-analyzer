@@ -9,6 +9,8 @@ export interface SessionRow {
   pvci_botid?: string;
   pvci_botname?: string;
   pvci_tenantid?: string;
+  pvci_environmentid?: string;
+  pvci_environmentname?: string;
   pvci_topicname?: string;
   pvci_topicid?: string;
   pvci_datasource?: string;
@@ -155,9 +157,15 @@ export function parseSourceStamp(raw?: string): SourceStamp | null {
 }
 
 export function sourceEnvironmentLabel(s: SessionRow): string {
+  if (s.pvci_environmentname) return s.pvci_environmentname;
   const stamp = parseSourceStamp(s.pvci_datasource);
-  if (!stamp) return "unknown";
-  return stamp.environmentName ?? stamp.environmentId ?? stamp.org ?? "unknown";
+  return stamp?.environmentName ?? s.pvci_environmentid ?? stamp?.environmentId ?? stamp?.org ?? "unknown";
+}
+
+export function sourceEnvironmentKey(s: SessionRow): string {
+  if (s.pvci_environmentid) return s.pvci_environmentid;
+  const stamp = parseSourceStamp(s.pvci_datasource);
+  return stamp?.environmentId ?? stamp?.org ?? "unknown";
 }
 
 export function isEssSession(s: SessionRow): boolean {
