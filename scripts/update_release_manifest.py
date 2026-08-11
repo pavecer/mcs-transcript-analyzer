@@ -17,10 +17,54 @@ ROOT = Path(__file__).resolve().parents[1]
 CONFIG_PATH = ROOT / "config" / "release-packages.json"
 DOWNLOADS = ROOT / "site" / "downloads"
 MANIFEST_PATH = DOWNLOADS / "release-manifest.json"
+SOLUTION_DEFINITION_PATH = ROOT / "solution" / "pvConversationInsights" / "solution-definition.json"
+SOLUTION_XML_PATH = ROOT / "solution" / "pvConversationInsights" / "src" / "Other" / "Solution.xml"
+GENERATED_SERVICES_PATH = ROOT / "codeapp" / "src" / "generated" / "services"
+
+
+def service_filename(table_name: str) -> str:
+    plural_name = f"{table_name[:-1]}ies" if table_name.endswith("y") else f"{table_name}s"
+    return f"{plural_name[0].upper()}{plural_name[1:]}Service.ts"
+
+
+def validate_release_config(config: dict[str, Any]) -> None:
+    for key in ("core", "codeApp"):
+        artifact = config[key]
+        expected_filename = (
+            f'{artifact["solutionUniqueName"]}-managed-{artifact["version"]}.zip'
+        )
+        if artifact["filename"] != expected_filename:
+            raise RuntimeError(
+                f"Unexpected {key} filename for version {artifact['version']}: "
+                f"{artifact['filename']!r}; expected {expected_filename!r}"
+            )
+
+    core_version = config["core"]["version"]
+    definition = json.loads(SOLUTION_DEFINITION_PATH.read_text(encoding="utf-8"))
+    source_root = ET.parse(SOLUTION_XML_PATH).getroot()
+    source_version = source_root.findtext(".//Version")
+    if definition["solution"]["version"] != core_version or source_version != core_version:
+        raise RuntimeError(
+            "Core release version is not synchronized across release-packages.json, "
+            "solution-definition.json, and src/Other/Solution.xml"
+        )
+
+    expected_services = {
+        service_filename(table) for table in config["codeApp"]["requiredCoreTables"]
+    }
+    generated_services = {path.name for path in GENERATED_SERVICES_PATH.glob("*.ts")}
+    if generated_services != expected_services:
+        raise RuntimeError(
+            "Code-app generated services do not match requiredCoreTables: "
+            f"missing={sorted(generated_services - expected_services)}, "
+            f"stale={sorted(expected_services - generated_services)}"
+        )
 
 
 def read_config() -> dict[str, Any]:
-    return json.loads(CONFIG_PATH.read_text(encoding="utf-8"))
+    config = json.loads(CONFIG_PATH.read_text(encoding="utf-8"))
+    validate_release_config(config)
+    return config
 
 
 def inspect_package(key: str, config: dict[str, Any]) -> dict[str, Any]:
@@ -70,11 +114,7 @@ def inspect_package(key: str, config: dict[str, Any]) -> dict[str, Any]:
             for item in root_components
         ):
             raise RuntimeError("Code-app package does not contain the configured preview app")
-        expected_tables = {
-            "pvci_flowrundetail",
-            "pvci_transcriptsession",
-            "pvci_transcriptturn",
-        }
+        expected_tables = set(config["requiredCoreTables"])
         required_tables = {
             item.get("schemaName")
             for item in missing_dependencies

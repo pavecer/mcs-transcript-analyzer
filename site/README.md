@@ -8,8 +8,10 @@ exported from their deployed Dataverse solutions and pass `scripts/validate_site
 
 1. Update `index.html` so the capability, screenshot, limitations, and install steps still
    describe the product accurately.
-2. Increase the version in `solution/pvConversationInsights/solution-definition.json` and in
-   the source Dataverse solution. Use the same four-part version in the page and ZIP filename.
+2. Increase both live solution versions and both package versions. Backward-compatible features
+   increase the second component (`1.0.0.0` to `1.1.0.0`), fixes increase the third, and
+   packaging-only rebuilds increase the fourth. Never overwrite a published package at the same
+   version. Keep the core source files, page, filenames, and `config/release-packages.json` aligned.
 3. Ensure every new core component is a root component of `pvConversationInsights`. In
    particular, do not leave forms depending on a PCF control from the Active solution.
 4. Keep the preview code app in `pvConversationInsightsCodeApp`; do not add it to the core
@@ -38,8 +40,9 @@ exported from their deployed Dataverse solutions and pass `scripts/validate_site
 7. Refresh `assets/conversation-insights-preview.png` when the visible product changes. Use
    anonymized sample data only; never capture a real tenant, transcript, user, or environment.
 8. Test both independent acknowledgment gates at desktop and mobile widths.
-9. Import the core ZIP and then the preview ZIP into a clean sandbox before publishing. Bind the
-   connection reference, activate the flow, and verify both apps open.
+9. Import the core ZIP and then the preview ZIP into a clean sandbox before publishing. Bind both
+   connection references, set required environment variables, activate both flows, and verify both
+   apps open. Also test an upgrade over the previous public version when that package is available.
 
 The validator checks that both packages are managed, versions match the release config, the JSON
 Viewer PCF and code app are embedded in the correct package, checksums match the manifest, both
