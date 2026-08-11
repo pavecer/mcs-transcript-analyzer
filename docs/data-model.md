@@ -1,7 +1,8 @@
 # Dataverse data model
 
-PV Conversation Insights stores derived transcript analytics and Copilot Credit reporting facts in
-eleven custom Dataverse tables. It reads native Dataverse and Power Platform licensing data but does
+PV Conversation Insights stores derived transcript analytics, tenant inventory, and Copilot Credit
+reporting facts in thirteen custom Dataverse tables. It reads native Dataverse, Power Platform
+inventory, and licensing data but does
 not modify the source records or capacity settings. Logical names are used throughout this
 reference because they are shared by the plugin, Python tools, code app, and Web API.
 
@@ -16,6 +17,7 @@ erDiagram
     FLOWRUN }o--o{ PVCI_TRANSCRIPTSESSION : "time correlation"
     PVCI_TRANSCRIPTSESSION ||--o{ PVCI_FLOWRUNDETAIL : "pvci_transcriptid"
     PVCI_SYNCSTATE ||--|| CONVERSATIONTRANSCRIPT : "watermark"
+    PVCI_ENVIRONMENTINVENTORY ||--o{ PVCI_AGENTINVENTORY : "pvci_environmentinventoryid"
     PVCI_AGENTINVENTORY ||--o{ PVCI_CREDITUSAGE : "pvci_agentid"
     PVCI_CREDITCAPACITYSNAPSHOT }o--|| ENVIRONMENT : "source identity"
     PVCI_CREDITSYNCRUN ||--o{ PVCI_CREDITUSAGE : "import audit"
@@ -35,6 +37,8 @@ map rows cache resolution results; each session also retains a direct `systemuse
 | Identity map | `pvci_transcriptidentitymap` | One row per observed Entra object ID | `pvci_aadobjectid` |
 | Flow run detail | `pvci_flowrundetail` | One row per correlated Power Automate run | `pvci_runname` |
 | Sync state | `pvci_syncstate` | One row per sync scope | `pvci_name` (`default`) |
+| Environment inventory | `pvci_environmentinventory` | One row per tenant environment | `pvci_sourcekey` alternate key |
+| Inventory sync run | `pvci_inventorysyncrun` | One row per inventory invocation | `pvci_runkey` alternate key |
 | Agent inventory | `pvci_agentinventory` | One row per tenant, environment, and observed resource | `pvci_sourcekey` alternate key |
 | Credit usage | `pvci_creditusage` | One row per PPAC resource/source-period fact | `pvci_sourcekey` alternate key |
 | Capacity snapshot | `pvci_creditcapacitysnapshot` | One row per tenant, environment, entitlement, and as-of date | `pvci_sourcekey` alternate key |
@@ -43,17 +47,30 @@ map rows cache resolution results; each session also retains a direct `systemuse
 | Credit privacy approval | `pvci_creditprivacysetting` | Singleton shared disclosure setting | `pvci_settingkey` alternate key |
 
 The first five application keys are idempotency keys used by transcript sync and are not Dataverse
-alternate-key metadata. The four credit tables have real Dataverse alternate keys provisioned by
-the solution.
+alternate-key metadata. Inventory and credit reporting tables use real Dataverse alternate keys
+provisioned by the solution.
 
 ## Credit reporting tables
 
+### `pvci_environmentinventory`
+
+Stores every environment returned by Power Platform for Admins V2 independently of capacity or
+credit activity: tenant/environment identity, display name, URL, type, geography, state, managed
+and Dataverse signals, detailed-access status, source schema, bounded raw JSON, and freshness.
+
+### `pvci_inventorysyncrun`
+
+Stores each standalone inventory invocation with environment/agent source counts, create/update/
+reject outcomes, schema version, timestamps, status, and bounded errors. Inventory health remains
+separate from credit-collection health.
+
 ### `pvci_agentinventory`
 
-Stores resource identity, environment, display/schema names, resource type, lifecycle metadata,
-and harness classification evidence. The PPAC bootstrap currently creates rows for every reported
-resource. Harness remains `unknown` unless a verified source or audited override supports a more
-specific value.
+Stores resource identity, canonical environment lookup, display/schema names, resource type,
+lifecycle metadata, and harness classification evidence. PPAC One Inventory supplies tenant-wide
+base metadata, including agents with zero credit usage; billing-only resources remain visible when
+inventory cannot resolve them. Harness remains `unknown` unless verified evidence or an audited
+override supports a more specific value.
 
 ### `pvci_creditusage`
 

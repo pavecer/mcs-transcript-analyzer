@@ -15,6 +15,8 @@ from dv_token import get_token_from_config  # noqa: E402
 
 SOLUTION = "pvConversationInsights"
 ENTITIES = (
+    "pvci_environmentinventory",
+    "pvci_inventorysyncrun",
     "pvci_agentinventory",
     "pvci_creditusage",
     "pvci_creditcapacitysnapshot",
@@ -35,6 +37,8 @@ def agent_form() -> str:
                     forms.field_cell("ai_bot", "pvci_botid", forms.TEXT, "Bot ID"))
         + forms.row(forms.field_cell("ai_type", "pvci_resourcetype", forms.TEXT, "Resource type"),
                     forms.field_cell("ai_published", "pvci_published", forms.BOOL, "Published"))
+        + forms.row(forms.field_cell("ai_status", "pvci_agentstatus", forms.TEXT, "Agent status"),
+                forms.field_cell("ai_detail", "pvci_hasdetailedaccess", forms.BOOL, "Detailed access"))
         + forms.row(forms.field_cell("ai_schema", "pvci_schemaname", forms.TEXT, "Schema name"),
                     forms.field_cell("ai_model", "pvci_model", forms.TEXT, "Model")),
     )
@@ -54,7 +58,13 @@ def agent_form() -> str:
         forms.row(forms.field_cell("ai_envname", "pvci_environmentname", forms.TEXT, "Environment"),
                   forms.field_cell("ai_envid", "pvci_environmentid", forms.TEXT, "Environment ID"))
         + forms.row(forms.field_cell("ai_envurl", "pvci_environmenturl", forms.TEXT, "Environment URL"),
+                    forms.field_cell("ai_envtype", "pvci_environmenttype", forms.TEXT, "Environment type"))
+        + forms.row(forms.field_cell("ai_location", "pvci_location", forms.TEXT, "Location"),
                     forms.field_cell("ai_tenant", "pvci_tenantid", forms.TEXT, "Tenant ID"))
+        + forms.row(forms.field_cell("ai_created", "pvci_createdonsource", forms.DATE, "Agent created"),
+                    forms.field_cell("ai_published_on", "pvci_publishedonsource", forms.DATE, "Agent published"))
+        + forms.row(forms.field_cell("ai_auth", "pvci_authenticationmode", forms.TEXT, "Authentication mode"),
+                    forms.field_cell("ai_env_lookup", "pvci_environmentinventoryid", forms.LOOKUP, "Environment inventory"))
         + forms.row(forms.field_cell("ai_synced", "pvci_lastsyncedon", forms.DATE, "Last synced"),
                     forms.field_cell("ai_key", "pvci_sourcekey", forms.TEXT, "Source key")),
     )
@@ -66,6 +76,67 @@ def agent_form() -> str:
         columns="1",
     )
     return f"<form><tabs>{forms.tab('ai_summary', 'Summary', identity + classification + environment)}{forms.tab('ai_evidence_tab', 'Evidence', evidence)}</tabs>{forms.control_descriptions()}</form>"
+
+
+def environment_form() -> str:
+    identity = forms.section(
+        "ei_identity",
+        "Environment",
+        forms.row(forms.field_cell("ei_name", "pvci_name", forms.TEXT, "Name"),
+                  forms.field_cell("ei_display", "pvci_displayname", forms.TEXT, "Display name"))
+        + forms.row(forms.field_cell("ei_id", "pvci_environmentid", forms.TEXT, "Environment ID"),
+                    forms.field_cell("ei_tenant", "pvci_tenantid", forms.TEXT, "Tenant ID"))
+        + forms.row(forms.field_cell("ei_url", "pvci_environmenturl", forms.TEXT, "Dataverse URL"),
+                    forms.field_cell("ei_type", "pvci_environmenttype", forms.TEXT, "Environment type"))
+        + forms.row(forms.field_cell("ei_geo", "pvci_geo", forms.TEXT, "Geo"),
+                    forms.field_cell("ei_region", "pvci_azureregion", forms.TEXT, "Azure region"))
+        + forms.row(forms.field_cell("ei_state", "pvci_state", forms.TEXT, "State"),
+                    forms.field_cell("ei_managed", "pvci_ismanaged", forms.BOOL, "Managed environment"))
+        + forms.row(forms.field_cell("ei_dataverse", "pvci_hasdataverse", forms.BOOL, "Has Dataverse"),
+                    forms.field_cell("ei_detailed", "pvci_hasdetailedaccess", forms.BOOL, "Detailed access")),
+    )
+    lineage = forms.section(
+        "ei_lineage",
+        "Inventory lineage",
+        forms.row(forms.field_cell("ei_source", "pvci_inventorysource", forms.TEXT, "Inventory source"),
+                  forms.field_cell("ei_schema", "pvci_sourceschemaversion", forms.TEXT, "Schema version"))
+        + forms.row(forms.field_cell("ei_synced", "pvci_lastsyncedon", forms.DATE, "Last synced"),
+                    forms.field_cell("ei_key", "pvci_sourcekey", forms.TEXT, "Source key")),
+    )
+    raw = forms.section(
+        "ei_raw",
+        "Raw source record",
+        forms.row(forms.field_cell("ei_raw_json", "pvci_rawjson", forms.MEMO, "Raw source JSON",
+                                   rowspan=30, pcf=True, depth=4, height=650)),
+        columns="1",
+    )
+    return f"<form><tabs>{forms.tab('ei_summary', 'Environment', identity + lineage)}{forms.tab('ei_raw_tab', 'Raw Source', raw)}</tabs>{forms.control_descriptions()}</form>"
+
+
+def inventory_sync_form() -> str:
+    run = forms.section(
+        "is_run",
+        "Inventory collector run",
+        forms.row(forms.field_cell("is_name", "pvci_name", forms.TEXT, "Name"),
+                  forms.field_cell("is_status", "pvci_status", forms.TEXT, "Status"))
+        + forms.row(forms.field_cell("is_source", "pvci_source", forms.TEXT, "Source"),
+                    forms.field_cell("is_schema", "pvci_schemaversion", forms.TEXT, "Schema version"))
+        + forms.row(forms.field_cell("is_started", "pvci_startedon", forms.DATE, "Started"),
+                    forms.field_cell("is_completed", "pvci_completedon", forms.DATE, "Completed"))
+        + forms.row(forms.field_cell("is_envs", "pvci_environmentcount", forms.INT, "Environments"),
+                    forms.field_cell("is_agents", "pvci_agentcount", forms.INT, "Agents"))
+        + forms.row(forms.field_cell("is_created", "pvci_createdcount", forms.INT, "Created"),
+                    forms.field_cell("is_updated", "pvci_updatedcount", forms.INT, "Updated"))
+        + forms.row(forms.field_cell("is_rejected", "pvci_rejectedcount", forms.INT, "Rejected"),
+                    forms.field_cell("is_key", "pvci_runkey", forms.TEXT, "Run key")),
+    )
+    error = forms.section(
+        "is_error",
+        "Bounded errors",
+        forms.row(forms.field_cell("is_error_text", "pvci_error", forms.MEMO, "Error", rowspan=18)),
+        columns="1",
+    )
+    return f"<form><tabs>{forms.tab('is_summary', 'Run', run)}{forms.tab('is_error_tab', 'Errors', error)}</tabs></form>"
 
 
 def usage_form() -> str:
@@ -283,6 +354,8 @@ def main() -> None:
             print("WARNING: JSON viewer control not found; raw fields use standard memo controls.")
 
         builders = {
+            "pvci_environmentinventory": environment_form,
+            "pvci_inventorysyncrun": inventory_sync_form,
             "pvci_agentinventory": agent_form,
             "pvci_creditusage": usage_form,
             "pvci_creditcapacitysnapshot": capacity_form,

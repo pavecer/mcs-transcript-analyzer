@@ -34,6 +34,15 @@
       <statecode>0</statecode>
       <statuscode>1</statuscode>
     </connectionreference>
+    <connectionreference connectionreferencelogicalname="pvci_powerplatformadminv2">
+      <connectionreferencedisplayname>PVCI Power Platform Admin V2</connectionreferencedisplayname>
+      <connectorid>/providers/Microsoft.PowerApps/apis/shared_powerplatformadminv2</connectorid>
+      <description>Used by PVCI Collect Tenant Agent Inventory (scheduled).</description>
+      <iscustomizable>1</iscustomizable>
+      <promptingbehavior>0</promptingbehavior>
+      <statecode>0</statecode>
+      <statuscode>1</statuscode>
+    </connectionreference>
   </connectionreferences>
   <Languages>
     <Language>1033</Language>

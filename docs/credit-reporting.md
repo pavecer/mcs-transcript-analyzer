@@ -173,8 +173,9 @@ Session-level “credits” can only be a clearly labeled estimate or period cor
 - The current resource endpoint does not guarantee daily agent facts for every query.
 - Feature, channel, model, tool, and knowledge dimensions require the richer Agent Usage History
   projection or a completed PPAC report schema; missing dimensions are not inferred.
-- Power Platform Inventory enrichment is still required for tenant-wide lifecycle, owner, and
-  configuration metadata.
+- Power Platform Admin V2 and One Inventory now provide tenant-wide base environment/agent
+  metadata independently of usage. Per-environment `bot`/`botcomponent`, owner, and configuration
+  enrichment remains future work and requires separately authorized source-environment access.
 - A completed PPAC CSV capture is still required to validate report-only columns and correction
   behavior.
 - User-name disclosure is a global setting; row-level/per-viewer approval is not implemented.

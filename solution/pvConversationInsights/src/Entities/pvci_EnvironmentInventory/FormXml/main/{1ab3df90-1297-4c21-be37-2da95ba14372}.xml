@@ -1,0 +1,209 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<forms xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <systemform>
+    <formid>{1ab3df90-1297-4c21-be37-2da95ba14372}</formid>
+    <IntroducedVersion>1.2.0.0</IntroducedVersion>
+    <FormPresentation>1</FormPresentation>
+    <FormActivationState>1</FormActivationState>
+    <form>
+      <tabs>
+        <tab id="{e153ae39-2fa8-564e-9c26-438aa973b8e4}" name="ei_summary" verticallayout="true" showlabel="true" expanded="true">
+          <labels>
+            <label description="Environment" languagecode="1033" />
+          </labels>
+          <columns>
+            <column width="100%">
+              <sections>
+                <section id="{14d7692c-b8da-5290-9a94-272e7f2dec11}" name="ei_identity" showlabel="true" showbar="false" columns="11" labelwidth="140" celllabelalignment="Left" celllabelposition="Left">
+                  <labels>
+                    <label description="Environment" languagecode="1033" />
+                  </labels>
+                  <rows>
+                    <row>
+                      <cell id="{edb694a7-9b0f-518f-b40f-b818f92538ab}" showlabel="true">
+                        <labels>
+                          <label description="Name" languagecode="1033" />
+                        </labels>
+                        <control id="pvci_name" uniqueid="{68e168fb-18ad-5aba-aacb-e4c3a28cb71e}" classid="{4273EDBD-AC1D-40d3-9FB2-095C621B552D}" datafieldname="pvci_name" disabled="false" />
+                      </cell>
+                      <cell id="{17b7afb7-47b2-583c-a7a2-b13e422a415e}" showlabel="true">
+                        <labels>
+                          <label description="Display name" languagecode="1033" />
+                        </labels>
+                        <control id="pvci_displayname" uniqueid="{4d14aa38-9c57-5991-98d9-771daa6e7684}" classid="{4273EDBD-AC1D-40d3-9FB2-095C621B552D}" datafieldname="pvci_displayname" disabled="false" />
+                      </cell>
+                    </row>
+                    <row>
+                      <cell id="{a0e088ea-e376-5a41-b865-fed872b908b0}" showlabel="true">
+                        <labels>
+                          <label description="Environment ID" languagecode="1033" />
+                        </labels>
+                        <control id="pvci_environmentid" uniqueid="{63322093-363c-5a2d-b4f2-a434e427b8b4}" classid="{4273EDBD-AC1D-40d3-9FB2-095C621B552D}" datafieldname="pvci_environmentid" disabled="false" />
+                      </cell>
+                      <cell id="{97883763-3972-5a57-a94e-f191e1d92454}" showlabel="true">
+                        <labels>
+                          <label description="Tenant ID" languagecode="1033" />
+                        </labels>
+                        <control id="pvci_tenantid" uniqueid="{2c78aeec-4b3a-5951-a3a7-3e27e41070da}" classid="{4273EDBD-AC1D-40d3-9FB2-095C621B552D}" datafieldname="pvci_tenantid" disabled="false" />
+                      </cell>
+                    </row>
+                    <row>
+                      <cell id="{f0dd05bc-026d-56f6-9684-bf3bffde4d15}" showlabel="true">
+                        <labels>
+                          <label description="Dataverse URL" languagecode="1033" />
+                        </labels>
+                        <control id="pvci_environmenturl" uniqueid="{c890f8ff-5376-503a-8ff7-b00164a4e103}" classid="{4273EDBD-AC1D-40d3-9FB2-095C621B552D}" datafieldname="pvci_environmenturl" disabled="false" />
+                      </cell>
+                      <cell id="{516c941d-aa35-5b5e-88b8-eebc2f59d1f0}" showlabel="true">
+                        <labels>
+                          <label description="Environment type" languagecode="1033" />
+                        </labels>
+                        <control id="pvci_environmenttype" uniqueid="{c4ac9dc9-d8db-5e2e-a9e8-3224bc44823f}" classid="{4273EDBD-AC1D-40d3-9FB2-095C621B552D}" datafieldname="pvci_environmenttype" disabled="false" />
+                      </cell>
+                    </row>
+                    <row>
+                      <cell id="{2c92279d-cb5f-5f06-8f58-75529ffff8f8}" showlabel="true">
+                        <labels>
+                          <label description="Geo" languagecode="1033" />
+                        </labels>
+                        <control id="pvci_geo" uniqueid="{28dec0e6-b7fb-54e0-84ac-7a400026a9f3}" classid="{4273EDBD-AC1D-40d3-9FB2-095C621B552D}" datafieldname="pvci_geo" disabled="false" />
+                      </cell>
+                      <cell id="{95328daa-0d0d-5c23-a406-e8282bac2a34}" showlabel="true">
+                        <labels>
+                          <label description="Azure region" languagecode="1033" />
+                        </labels>
+                        <control id="pvci_azureregion" uniqueid="{be88e007-912d-5069-8043-844a5dab44a3}" classid="{4273EDBD-AC1D-40d3-9FB2-095C621B552D}" datafieldname="pvci_azureregion" disabled="false" />
+                      </cell>
+                    </row>
+                    <row>
+                      <cell id="{f3668e9f-5bf4-5228-9ad3-6a08284f7933}" showlabel="true">
+                        <labels>
+                          <label description="State" languagecode="1033" />
+                        </labels>
+                        <control id="pvci_state" uniqueid="{dc9b6d10-b373-5cc0-933f-7e15b9c5d114}" classid="{4273EDBD-AC1D-40d3-9FB2-095C621B552D}" datafieldname="pvci_state" disabled="false" />
+                      </cell>
+                      <cell id="{fa0b8e7a-0f49-5cdc-b169-0c418fd173c5}" showlabel="true">
+                        <labels>
+                          <label description="Managed environment" languagecode="1033" />
+                        </labels>
+                        <control id="pvci_ismanaged" uniqueid="{42e1d7c0-1d82-5384-a74a-7e3bc7ec2248}" classid="{B0C6723A-8503-4fd7-BB28-C8A06AC933C2}" datafieldname="pvci_ismanaged" disabled="false" />
+                      </cell>
+                    </row>
+                    <row>
+                      <cell id="{b970e763-e0f5-536e-8d91-ef39a2f8572d}" showlabel="true">
+                        <labels>
+                          <label description="Has Dataverse" languagecode="1033" />
+                        </labels>
+                        <control id="pvci_hasdataverse" uniqueid="{0a376ec2-89d5-5dc1-9d6e-7607979bac15}" classid="{B0C6723A-8503-4fd7-BB28-C8A06AC933C2}" datafieldname="pvci_hasdataverse" disabled="false" />
+                      </cell>
+                      <cell id="{18016bd6-e7b7-5e28-ade4-39f0b5fcff91}" showlabel="true">
+                        <labels>
+                          <label description="Detailed access" languagecode="1033" />
+                        </labels>
+                        <control id="pvci_hasdetailedaccess" uniqueid="{eeb7ec83-2eb4-5d16-b797-3086c0cba443}" classid="{B0C6723A-8503-4fd7-BB28-C8A06AC933C2}" datafieldname="pvci_hasdetailedaccess" disabled="false" />
+                      </cell>
+                    </row>
+                  </rows>
+                </section>
+                <section id="{26e5c463-c4ed-5b12-91b9-a6066724dc64}" name="ei_lineage" showlabel="true" showbar="false" columns="11" labelwidth="140" celllabelalignment="Left" celllabelposition="Left">
+                  <labels>
+                    <label description="Inventory lineage" languagecode="1033" />
+                  </labels>
+                  <rows>
+                    <row>
+                      <cell id="{de9d9b50-937d-51c9-8b20-56d1d6559a2a}" showlabel="true">
+                        <labels>
+                          <label description="Inventory source" languagecode="1033" />
+                        </labels>
+                        <control id="pvci_inventorysource" uniqueid="{631f114f-0eac-533f-b6b4-54ead9fe9773}" classid="{4273EDBD-AC1D-40d3-9FB2-095C621B552D}" datafieldname="pvci_inventorysource" disabled="false" />
+                      </cell>
+                      <cell id="{12b930e2-0052-5f09-8841-b5d8b4bd1673}" showlabel="true">
+                        <labels>
+                          <label description="Schema version" languagecode="1033" />
+                        </labels>
+                        <control id="pvci_sourceschemaversion" uniqueid="{b9c0291e-2ec1-5bd8-8c65-061087843f28}" classid="{4273EDBD-AC1D-40d3-9FB2-095C621B552D}" datafieldname="pvci_sourceschemaversion" disabled="false" />
+                      </cell>
+                    </row>
+                    <row>
+                      <cell id="{efb799b6-2212-5538-a122-b7bbd6c2559f}" showlabel="true">
+                        <labels>
+                          <label description="Last synced" languagecode="1033" />
+                        </labels>
+                        <control id="pvci_lastsyncedon" uniqueid="{46e549ac-7a16-5b00-9e27-f74599d82fdf}" classid="{5B773807-9FB2-42db-97C3-7A91EFF8ADFF}" datafieldname="pvci_lastsyncedon" disabled="false" />
+                      </cell>
+                      <cell id="{08112b1b-a800-5248-a003-cb06d97ba1bd}" showlabel="true">
+                        <labels>
+                          <label description="Source key" languagecode="1033" />
+                        </labels>
+                        <control id="pvci_sourcekey" uniqueid="{192e8fbf-6502-5cc0-bb4d-dd90ab32945d}" classid="{4273EDBD-AC1D-40d3-9FB2-095C621B552D}" datafieldname="pvci_sourcekey" disabled="false" />
+                      </cell>
+                    </row>
+                  </rows>
+                </section>
+              </sections>
+            </column>
+          </columns>
+        </tab>
+        <tab id="{7ed0b38a-769d-5d50-8a0b-16ab4065de2d}" name="ei_raw_tab" verticallayout="true" showlabel="true" expanded="true">
+          <labels>
+            <label description="Raw Source" languagecode="1033" />
+          </labels>
+          <columns>
+            <column width="100%">
+              <sections>
+                <section id="{a5aa267e-c015-5797-a91a-6d2174f747b8}" name="ei_raw" showlabel="true" showbar="false" columns="1" labelwidth="140" celllabelalignment="Left" celllabelposition="Left">
+                  <labels>
+                    <label description="Raw source record" languagecode="1033" />
+                  </labels>
+                  <rows>
+                    <row>
+                      <cell id="{7fc3717e-79ca-5735-883a-cba901bbc0ab}" rowspan="30" colspan="1" showlabel="true">
+                        <labels>
+                          <label description="Raw source JSON" languagecode="1033" />
+                        </labels>
+                        <control id="pvci_rawjson" uniqueid="{00c3070a-30bc-5dc3-9b45-6a037d4c848b}" classid="{E0DECE4B-6FC8-4a8f-A065-082708572369}" datafieldname="pvci_rawjson" disabled="false" />
+                      </cell>
+                    </row>
+                  </rows>
+                </section>
+              </sections>
+            </column>
+          </columns>
+        </tab>
+      </tabs>
+      <controlDescriptions>
+        <controlDescription forControl="{00c3070a-30bc-5dc3-9b45-6a037d4c848b}">
+          <customControl formFactor="0" name="pvci_PvciControls.JsonViewer">
+            <parameters>
+              <jsonValue>pvci_rawjson</jsonValue>
+              <startCollapsedDepth static="true" type="Whole.None">4</startCollapsedDepth>
+              <viewerHeight static="true" type="Whole.None">650</viewerHeight>
+            </parameters>
+          </customControl>
+          <customControl formFactor="1" name="pvci_PvciControls.JsonViewer">
+            <parameters>
+              <jsonValue>pvci_rawjson</jsonValue>
+              <startCollapsedDepth static="true" type="Whole.None">4</startCollapsedDepth>
+              <viewerHeight static="true" type="Whole.None">650</viewerHeight>
+            </parameters>
+          </customControl>
+          <customControl formFactor="2" name="pvci_PvciControls.JsonViewer">
+            <parameters>
+              <jsonValue>pvci_rawjson</jsonValue>
+              <startCollapsedDepth static="true" type="Whole.None">4</startCollapsedDepth>
+              <viewerHeight static="true" type="Whole.None">650</viewerHeight>
+            </parameters>
+          </customControl>
+        </controlDescription>
+      </controlDescriptions>
+    </form>
+    <IsCustomizable>1</IsCustomizable>
+    <CanBeDeleted>1</CanBeDeleted>
+    <LocalizedNames>
+      <LocalizedName description="Information" languagecode="1033" />
+    </LocalizedNames>
+    <Descriptions>
+      <Description description="A form for this entity." languagecode="1033" />
+    </Descriptions>
+  </systemform>
+</forms>

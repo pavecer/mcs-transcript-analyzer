@@ -2,14 +2,21 @@
 
 ## What the managed solution includes
 
-Version `1.1.0.0` does **not** include a dedicated PVCI Dataverse security role. The managed
-solution installs tables, apps, plug-ins, Custom APIs, connection references, and flows, but it
-cannot grant tenant-level Microsoft Entra roles or access to other Dataverse environments.
+Version `1.2.0.0` includes two least-privilege Dataverse application roles. Both roles are mapped
+to the model-driven app and apply to the same Dataverse data sources used by the code app:
 
-The model-driven app currently maps to the built-in **System Administrator** and **System
-Customizer** role templates. Those mappings permit administration but are not an acceptable
-least-privilege analyst model. The preview code app must be shared separately and every user still
-needs Dataverse table privileges.
+- **PVCI Analyst** provides organization-level read access to transcript, flow, inventory, credit,
+   capacity, privacy-status, and sync tables. Analysts can read names after disclosure is approved,
+   but cannot change the approval or stored identities.
+- **PVCI Privacy Approver** has the same read access plus organization-level write on
+   `pvci_creditprivacysetting` and `pvci_credituserusage`, and read on `systemuser`. These privileges
+   let the synchronous disclosure plug-in record the initiating user/time and resolve or revoke all
+   stored names.
+
+The preview code app must still be shared with users or groups through **Manage access**. App
+sharing grants the app shell; one of the packaged Dataverse roles grants its additional data
+access. Assign ordinary readers **PVCI Analyst** and only authorized approvers **PVCI Privacy
+Approver**. Do not grant System Administrator to report viewers.
 
 There are three independent permission boundaries:
 
@@ -18,9 +25,10 @@ There are three independent permission boundaries:
 | Import and configure PVCI | Installer with **System Administrator** in the target Dataverse environment | No; assign in the target environment |
 | Collect Copilot Credit usage | Owner of `pvci_licensinghttp` with the Power Platform administrative access accepted by the licensing service, plus a premium Power Automate entitlement | No; the connection is target-local |
 | Read and write PVCI data | Owner of `pvci_dataversesync` with access to the PVCI tables and Custom APIs in the collector environment | No; the connection is target-local |
-| Enumerate all tenant environments | **Power Platform Administrator** tenant role through Power Platform for Admins V2 | Not implemented in `1.1.0.0` |
-| Read detailed agent configuration in every environment | The inventory connection identity must also have **System Administrator** in every source Dataverse environment | Not implemented in `1.1.0.0` |
-| Open the apps as an analyst | App sharing plus read access to the PVCI tables | No dedicated least-privilege role in `1.1.0.0` |
+| Enumerate tenant environments and base agents | Owner of `pvci_powerplatformadminv2` with **Power Platform Administrator** tenant role | Flow and reference packaged; target connection/role external |
+| Read detailed agent configuration in every environment | Inventory identity with appropriate Dataverse access in every source environment | Detailed enrichment not implemented in `1.2.0.0` |
+| Open the apps as an analyst | **PVCI Analyst** plus model-driven/code-app sharing | Role packaged; assignments and code-app sharing external |
+| Reveal or revoke stored user names | **PVCI Privacy Approver** plus app sharing | Role and audited plug-in packaged; assignment external |
 
 Do not assign Global Administrator for routine collection. Use a dedicated account, the least
 privileged roles that satisfy the required scope, and Privileged Identity Management where your
@@ -69,27 +77,29 @@ In the environment where PVCI is installed:
 1. Assign the installer **System Administrator** while importing and configuring the solution.
 2. Create `pvci_licensinghttp` with **HTTP with Microsoft Entra ID (preauthorized)**. For commercial
    cloud, set both resource URLs to `https://licensing.powerplatform.microsoft.com/`.
-3. Create `pvci_dataversesync` with Microsoft Dataverse and bind both solution connection
+3. Create `pvci_powerplatformadminv2` with **Power Platform for Admins V2** and bind it to the
+   dedicated Power Platform Administrator account.
+4. Create `pvci_dataversesync` with Microsoft Dataverse and bind all solution connection
    references to the intended dedicated account.
-4. Set the current value of `pvci_CreditReportingTenantId` to the tenant GUID. Do not put a
+5. Set the current value of `pvci_CreditReportingTenantId` to the tenant GUID. Do not put a
    tenant-specific default value in the managed solution.
-5. Confirm DLP and Advanced Connector Policies allow Microsoft Dataverse and HTTP with Microsoft
-   Entra ID in the collector environment.
-6. Save the credit collector, run it manually, and activate the recurrence only after the smoke
-   test passes.
+6. Confirm DLP and Advanced Connector Policies allow Microsoft Dataverse, HTTP with Microsoft
+   Entra ID, and Power Platform for Admins V2 in the collector environment.
+7. Save both collectors, run each manually, and activate recurrence only after both smoke tests
+   pass.
 
 ## Understand the current inventory boundary
 
-The `1.1.0.0` collector calls three licensing projections:
+The credit collector calls three licensing projections:
 
 - resource usage for agent/resource credit facts;
 - tenant-wide user usage;
 - environment capacity.
 
-These are billing projections, not a complete Power Platform inventory. Environment choices come
-from observed resource rows and capacity snapshots. Environments with neither result are absent.
-Agent names exist only when the resource projection supplies `metadata.ResourceName`; otherwise the
-resource GUID remains the label.
+These are billing projections, not inventory. The separate `PVCI Collect Tenant Agent Inventory
+(scheduled)` flow reads Power Platform for Admins V2 environment inventory and PPAC One Inventory
+agent resources. It persists environments independently of activity and enriches exact matching
+billing resources while retaining unresolved billing-only rows.
 
 Copilot Agent Kit obtains broader visibility through separate sources:
 
@@ -100,10 +110,10 @@ Copilot Agent Kit obtains broader visibility through separate sources:
    environment where the connection identity has System Administrator.
 4. The licensing endpoint supplies usage metrics independently.
 
-PVCI `1.1.0.0` implements item 4 only. Assigning the external roles now prepares the correct
-identity, but it does not add items 1-3 to the installed flow. A future inventory collector must
-add the Admin V2/One Inventory connection references, persist environment inventory independently
-of usage, and enrich agent rows without treating missing detailed access as “no agent.”
+PVCI `1.2.0.0` implements items 1, 2, and 4. Item 3 remains future work: the current inventory
+records `Has Detailed Access = No` rather than pretending unavailable feature metadata means “no
+agent.” Base inventory, environment names, and agent names do not require activity or local
+Dataverse access in every source environment.
 
 ## Diagnose capacity or users with zero resource facts
 
@@ -126,18 +136,16 @@ succeed even when no resource facts are returned.
 Also confirm that the flow connection owner, not merely the person viewing PPAC in the browser, has
 the required role. Power Automate runs with the identities bound to its connection references.
 
-## Current role gap
+## Assign application users
 
-Until dedicated least-privilege PVCI roles are added and tested, administrators must create their
-own analyst role with organization-level read access to the required `pvci_*` tables and share the
-apps with that role, or temporarily use an appropriate existing administrative role in a sandbox.
-Do not grant System Administrator to ordinary report viewers as a permanent workaround.
+1. Share the model-driven app with users or groups and assign **PVCI Analyst** or **PVCI Privacy
+   Approver**.
+2. Share the code app separately through **Apps** > **Manage access**. The sharing dialog lists its
+   Dataverse data sources; users still need one of the same packaged roles.
+3. Give **PVCI Privacy Approver** only to users authorized to disclose names. The app confirmation
+   is not the security boundary; Dataverse write privilege is.
+4. Verify the Privacy Approval record after every reveal/revoke. `Approved By`, `Approved On`, and
+   `Revoked On` are stamped by the server-side plug-in, not trusted from the browser.
 
-Planned packaged roles should be split by duty:
-
-- **PVCI Analyst**: read-only access to reporting tables and apps;
-- **PVCI Privacy Approver**: Analyst plus update on `pvci_creditprivacysetting`;
-- **PVCI Collector**: minimum Custom API and table privileges needed by the two flow connections.
-
-Tenant Power Platform Administrator and per-environment System Administrator remain external even
-after those PVCI roles are packaged.
+Tenant Power Platform Administrator and future per-environment detailed-enrichment access remain
+external because a managed Dataverse solution cannot grant tenant or other-environment roles.

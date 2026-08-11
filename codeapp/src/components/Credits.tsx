@@ -7,6 +7,8 @@ import { Pvci_creditsyncrunsService } from "../generated/services/Pvci_creditsyn
 import { Pvci_creditusagesService } from "../generated/services/Pvci_creditusagesService";
 import { Pvci_credituserusagesService } from "../generated/services/Pvci_credituserusagesService";
 import { Pvci_creditprivacysettingsService } from "../generated/services/Pvci_creditprivacysettingsService";
+import { Pvci_environmentinventoriesService } from "../generated/services/Pvci_environmentinventoriesService";
+import { Pvci_inventorysyncrunsService } from "../generated/services/Pvci_inventorysyncrunsService";
 import { Pvci_transcriptsessionsService } from "../generated/services/Pvci_transcriptsessionsService";
 import type { Pvci_agentinventories } from "../generated/models/Pvci_agentinventoriesModel";
 import type { Pvci_creditcapacitysnapshots } from "../generated/models/Pvci_creditcapacitysnapshotsModel";
@@ -14,6 +16,8 @@ import type { Pvci_creditsyncruns } from "../generated/models/Pvci_creditsyncrun
 import type { Pvci_creditusages } from "../generated/models/Pvci_creditusagesModel";
 import type { Pvci_credituserusages } from "../generated/models/Pvci_credituserusagesModel";
 import type { Pvci_creditprivacysettings } from "../generated/models/Pvci_creditprivacysettingsModel";
+import type { Pvci_environmentinventories } from "../generated/models/Pvci_environmentinventoriesModel";
+import type { Pvci_inventorysyncruns } from "../generated/models/Pvci_inventorysyncrunsModel";
 import type { SessionRow } from "../lib/model";
 import { loadAllPages } from "../lib/paging";
 
@@ -32,6 +36,19 @@ const CAPACITY_FIELDS = [
 const AGENT_FIELDS = [
   "pvci_agentinventoryid", "pvci_resourceid", "pvci_displayname", "pvci_environmentid",
   "pvci_environmentname", "pvci_harness", "pvci_resourcetype", "pvci_classificationconfidence",
+  "pvci_agentstatus", "pvci_hasdetailedaccess", "pvci_inventorysource",
+];
+
+const ENVIRONMENT_FIELDS = [
+  "pvci_environmentinventoryid", "pvci_environmentid", "pvci_displayname", "pvci_environmenturl",
+  "pvci_environmenttype", "pvci_geo", "pvci_state", "pvci_ismanaged", "pvci_hasdataverse",
+  "pvci_hasdetailedaccess", "pvci_lastsyncedon",
+];
+
+const INVENTORY_SYNC_FIELDS = [
+  "pvci_inventorysyncrunid", "pvci_name", "pvci_source", "pvci_startedon", "pvci_completedon",
+  "pvci_status", "pvci_environmentcount", "pvci_agentcount", "pvci_createdcount",
+  "pvci_updatedcount", "pvci_rejectedcount",
 ];
 
 const SYNC_FIELDS = [
@@ -59,11 +76,21 @@ const CORRELATION_SESSION_FIELDS = [
 
 type CreditMode = "total" | "billed" | "nonbilled";
 type PeriodGrain = "day" | "week";
+type ResourceSummary = {
+  label: string;
+  resourceId: string;
+  environmentId?: string;
+  billed: number;
+  nonbilled: number;
+  facts: number;
+};
 
 export function Credits({ sidebarTarget }: { sidebarTarget: HTMLElement | null }) {
   const [usage, setUsage] = useState<Pvci_creditusages[]>([]);
   const [capacity, setCapacity] = useState<Pvci_creditcapacitysnapshots[]>([]);
   const [agents, setAgents] = useState<Pvci_agentinventories[]>([]);
+  const [environments, setEnvironments] = useState<Pvci_environmentinventories[]>([]);
+  const [inventorySyncRuns, setInventorySyncRuns] = useState<Pvci_inventorysyncruns[]>([]);
   const [syncRuns, setSyncRuns] = useState<Pvci_creditsyncruns[]>([]);
   const [userUsage, setUserUsage] = useState<Pvci_credituserusages[]>([]);
   const [privacy, setPrivacy] = useState<Pvci_creditprivacysettings | null>(null);
@@ -82,10 +109,12 @@ export function Credits({ sidebarTarget }: { sidebarTarget: HTMLElement | null }
     let cancelled = false;
     void (async () => {
       try {
-        const [usageResult, capacityResult, agentResult, syncResult, userResult, privacyResult, sessionResult] = await Promise.all([
+        const [usageResult, capacityResult, agentResult, environmentResult, inventorySyncResult, syncResult, userResult, privacyResult, sessionResult] = await Promise.all([
           loadAllPages((skipToken, maxPageSize) => Pvci_creditusagesService.getAll({ select: USAGE_FIELDS, orderBy: ["pvci_usagedate desc"], maxPageSize, skipToken })),
           loadAllPages((skipToken, maxPageSize) => Pvci_creditcapacitysnapshotsService.getAll({ select: CAPACITY_FIELDS, orderBy: ["pvci_asofdate desc"], maxPageSize, skipToken })),
           loadAllPages((skipToken, maxPageSize) => Pvci_agentinventoriesService.getAll({ select: AGENT_FIELDS, orderBy: ["pvci_displayname asc"], maxPageSize, skipToken })),
+          loadAllPages((skipToken, maxPageSize) => Pvci_environmentinventoriesService.getAll({ select: ENVIRONMENT_FIELDS, orderBy: ["pvci_displayname asc"], maxPageSize, skipToken })),
+          Pvci_inventorysyncrunsService.getAll({ select: INVENTORY_SYNC_FIELDS, orderBy: ["pvci_startedon desc"], top: 50 }),
           Pvci_creditsyncrunsService.getAll({ select: SYNC_FIELDS, orderBy: ["pvci_startedon desc"], top: 50 }),
           loadAllPages((skipToken, maxPageSize) => Pvci_credituserusagesService.getAll({ select: USER_USAGE_FIELDS, orderBy: ["pvci_usagedate desc"], maxPageSize, skipToken })),
           Pvci_creditprivacysettingsService.getAll({ select: PRIVACY_FIELDS, filter: "pvci_settingkey eq 'credit-user-disclosure'", top: 1 }),
@@ -95,6 +124,8 @@ export function Credits({ sidebarTarget }: { sidebarTarget: HTMLElement | null }
         setUsage(usageResult);
         setCapacity(capacityResult);
         setAgents(agentResult);
+        setEnvironments(environmentResult);
+        setInventorySyncRuns((inventorySyncResult.data ?? []) as unknown as Pvci_inventorysyncruns[]);
         setSyncRuns((syncResult.data ?? []) as unknown as Pvci_creditsyncruns[]);
         setUserUsage(userResult);
         setPrivacy(((privacyResult.data ?? [])[0] ?? null) as unknown as Pvci_creditprivacysettings | null);
@@ -110,28 +141,50 @@ export function Credits({ sidebarTarget }: { sidebarTarget: HTMLElement | null }
 
   const environmentOptions = useMemo(() => {
     const options = new Map<string, string>();
+    environments.forEach((row) => {
+      const id = row.pvci_environmentid;
+      if (id) options.set(id.toLowerCase(), row.pvci_displayname ?? id);
+    });
     agents.forEach((agent) => {
       const id = agent.pvci_environmentid;
-      if (id) options.set(id, agent.pvci_environmentname ?? id);
+      if (id && !options.has(id.toLowerCase())) options.set(id.toLowerCase(), agent.pvci_environmentname ?? id);
     });
     capacity.forEach((row) => {
       const id = row.pvci_environmentid;
-      if (id) options.set(id, row.pvci_environmentname ?? id);
+      if (id && !options.has(id.toLowerCase())) options.set(id.toLowerCase(), row.pvci_environmentname ?? id);
     });
     return [...options.entries()].sort((left, right) => left[1].localeCompare(right[1]));
-  }, [agents, capacity]);
+  }, [agents, capacity, environments]);
   const revealUserNames = privacy?.pvci_revealusernames === true;
 
   const environmentUsage = useMemo(
-    () => usage.filter((row) => environment === "*" || row.pvci_environmentid === environment),
+    () => usage.filter((row) => environment === "*" || sameId(row.pvci_environmentid, environment)),
     [usage, environment]
   );
+  const environmentAgents = useMemo(
+    () => agents.filter((row) => environment === "*" || sameId(row.pvci_environmentid, environment)),
+    [agents, environment]
+  );
   const resourceSummaries = useMemo(() => {
-    const summaries = new Map<string, { label: string; billed: number; nonbilled: number; facts: number }>();
+    const summaries = new Map<string, ResourceSummary>();
+    environmentAgents.forEach((row) => {
+      const resourceId = row.pvci_resourceid ?? row.pvci_agentinventoryid;
+      const key = resourceIdentityKey(row.pvci_environmentid, resourceId);
+      summaries.set(key, {
+        label: row.pvci_displayname ?? row.pvci_resourceid ?? "Unknown agent",
+        resourceId,
+        environmentId: row.pvci_environmentid,
+        billed: 0,
+        nonbilled: 0,
+        facts: 0,
+      });
+    });
     environmentUsage.forEach((row) => {
       const key = resourceKey(row);
       const current = summaries.get(key) ?? {
         label: row.pvci_agentname ?? row.pvci_resourceid ?? "Unknown resource",
+        resourceId: row.pvci_resourceid ?? row.pvci_agentname ?? "unknown",
+        environmentId: row.pvci_environmentid,
         billed: 0,
         nonbilled: 0,
         facts: 0,
@@ -144,13 +197,13 @@ export function Credits({ sidebarTarget }: { sidebarTarget: HTMLElement | null }
     return [...summaries.entries()].sort((left, right) =>
       (right[1].billed + right[1].nonbilled) - (left[1].billed + left[1].nonbilled)
     );
-  }, [environmentUsage]);
+  }, [environmentAgents, environmentUsage]);
   const scopedUsage = useMemo(
     () => environmentUsage.filter((row) => resource === "*" || resourceKey(row) === resource),
     [environmentUsage, resource]
   );
   const scopedCapacity = useMemo(
-    () => capacity.filter((row) => environment === "*" || row.pvci_environmentid === environment),
+    () => capacity.filter((row) => environment === "*" || sameId(row.pvci_environmentid, environment)),
     [capacity, environment]
   );
   const userSummaries = useMemo(() => {
@@ -192,18 +245,24 @@ export function Credits({ sidebarTarget }: { sidebarTarget: HTMLElement | null }
   const selectedResourceLabel = resource === "*"
     ? null
     : resourceSummaries.find(([key]) => key === resource)?.[1].label ?? resource;
+  const selectedResourceSummary = resource === "*"
+    ? null
+    : resourceSummaries.find(([key]) => key === resource)?.[1] ?? null;
   const selectedUserLabel = selectedUser === "*"
     ? null
     : userSummaries.find(([key]) => key === selectedUser)?.[1].label ?? selectedUser;
   const environmentSessions = useMemo(
-    () => correlationSessions.filter((session) => environment === "*" || session.pvci_environmentid === environment),
+    () => correlationSessions.filter((session) => environment === "*" || sameId(session.pvci_environmentid, environment)),
     [correlationSessions, environment]
   );
   const agentSessions = useMemo(
     () => resource === "*"
       ? environmentSessions
-      : environmentSessions.filter((session) => sessionMatchesResource(session, resource, selectedResourceLabel)),
-    [environmentSessions, resource, selectedResourceLabel]
+      : environmentSessions.filter((session) =>
+        (!selectedResourceSummary?.environmentId || sameId(session.pvci_environmentid, selectedResourceSummary.environmentId))
+        && sessionMatchesResource(session, selectedResourceSummary?.resourceId ?? resource, selectedResourceLabel)
+      ),
+    [environmentSessions, resource, selectedResourceLabel, selectedResourceSummary]
   );
   const userSessions = useMemo(
     () => selectedUser === "*"
@@ -240,7 +299,7 @@ export function Credits({ sidebarTarget }: { sidebarTarget: HTMLElement | null }
       if (session.pvci_botname) related.add(session.pvci_botname.toLowerCase());
     });
     return resourceSummaries
-      .filter(([key, summary]) => related.has(key.toLowerCase()) || related.has(summary.label.toLowerCase()))
+      .filter(([, summary]) => related.has(summary.resourceId.toLowerCase()) || related.has(summary.label.toLowerCase()))
       .map(([, summary]) => ({ label: summary.label, value: summary.billed + summary.nonbilled }))
       .sort((left, right) => right.value - left.value);
   }, [userSessions, resourceSummaries]);
@@ -304,6 +363,8 @@ export function Credits({ sidebarTarget }: { sidebarTarget: HTMLElement | null }
   );
 
   const latestSync = syncRuns[0];
+  const latestInventorySync = inventorySyncRuns[0];
+  const detailedEnvironmentCount = environments.filter((row) => row.pvci_hasdetailedaccess).length;
   const latestUsageDate = environmentUsage.reduce<string | undefined>(
     (latest, row) => !latest || (row.pvci_usagedate ?? "") > latest ? row.pvci_usagedate : latest,
     undefined
@@ -409,7 +470,8 @@ export function Credits({ sidebarTarget }: { sidebarTarget: HTMLElement | null }
         </div>
         <div className="freshness">
           <span>Usage through <strong>{fmtDate(latestUsageDate)}</strong></span>
-          <span>Last sync <strong>{fmtDateTime(latestSync?.pvci_completedon)}</strong></span>
+          <span>Credit sync <strong>{fmtDateTime(latestSync?.pvci_completedon)}</strong></span>
+          <span>Inventory sync <strong>{fmtDateTime(latestInventorySync?.pvci_completedon)}</strong></span>
         </div>
       </div>
 
@@ -604,6 +666,15 @@ export function Credits({ sidebarTarget }: { sidebarTarget: HTMLElement | null }
           </div>
         </div>
 
+        <SectionHeading text="Tenant inventory" help="Environment and agent inventory collected independently of credit activity. Detailed access reflects environments where deeper Dataverse enrichment is available." className="report-subheading" />
+        <div className="sync-strip">
+          <span>{latestInventorySync?.pvci_name ?? "No inventory sync run"}</span>
+          <span className={`conf ${latestInventorySync?.pvci_status === "success" ? "high" : "multiple"}`}>{latestInventorySync?.pvci_status ?? "not configured"}</span>
+          <span>{environments.length} environments</span>
+          <span>{agents.length} agents/resources</span>
+          <span>{detailedEnvironmentCount} detailed access</span>
+        </div>
+
         <SectionHeading text="Environment capacity" help="Latest PPAC capacity snapshots by environment, including allocation, consumption, availability, pool policy, and status." className="report-subheading" />
         <div className="credit-table-wrap">
         <table className="runtable credit-table">
@@ -738,7 +809,11 @@ function groupSessionsByPeriod(rows: SessionRow[], grain: PeriodGrain) {
 }
 
 function resourceKey(row: Pvci_creditusages) {
-  return row.pvci_resourceid ?? row.pvci_agentname ?? "unknown";
+  return resourceIdentityKey(row.pvci_environmentid, row.pvci_resourceid ?? row.pvci_agentname ?? "unknown");
+}
+
+function resourceIdentityKey(environmentId: string | undefined, resourceId: string) {
+  return `${environmentId?.toLowerCase() ?? ""}|${resourceId.toLowerCase()}`;
 }
 
 function periodKey(value: string | undefined, grain: PeriodGrain) {

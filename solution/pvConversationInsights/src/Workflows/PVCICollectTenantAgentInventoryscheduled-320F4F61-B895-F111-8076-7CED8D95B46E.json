@@ -1,0 +1,553 @@
+{
+  "properties": {
+    "connectionReferences": {
+      "shared_powerplatformadminv2": {
+        "runtimeSource": "embedded",
+        "connection": {
+          "connectionReferenceLogicalName": "pvci_powerplatformadminv2"
+        },
+        "api": {
+          "name": "shared_powerplatformadminv2"
+        }
+      },
+      "shared_commondataserviceforapps": {
+        "runtimeSource": "embedded",
+        "connection": {
+          "connectionReferenceLogicalName": "pvci_dataversesync"
+        },
+        "api": {
+          "name": "shared_commondataserviceforapps"
+        }
+      }
+    },
+    "definition": {
+      "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+      "contentVersion": "1.0.0.0",
+      "parameters": {
+        "$connections": {
+          "defaultValue": {},
+          "type": "Object"
+        },
+        "$authentication": {
+          "defaultValue": {},
+          "type": "SecureObject"
+        },
+        "pvci_CreditReportingTenantId (pvci_CreditReportingTenantId)": {
+          "defaultValue": "",
+          "type": "String",
+          "metadata": {
+            "schemaName": "pvci_CreditReportingTenantId"
+          }
+        }
+      },
+      "triggers": {
+        "Daily": {
+          "type": "Recurrence",
+          "recurrence": {
+            "frequency": "Day",
+            "interval": 1,
+            "startTime": "2026-01-01T01:00:00Z"
+          }
+        }
+      },
+      "actions": {
+        "Initialize_started_on": {
+          "type": "InitializeVariable",
+          "runAfter": {},
+          "inputs": {
+            "variables": [
+              {
+                "name": "StartedOn",
+                "type": "string",
+                "value": "@utcNow()"
+              }
+            ]
+          }
+        },
+        "Initialize_environment_skip": {
+          "type": "InitializeVariable",
+          "runAfter": {
+            "Initialize_started_on": [
+              "Succeeded"
+            ]
+          },
+          "inputs": {
+            "variables": [
+              {
+                "name": "EnvironmentSkip",
+                "type": "integer",
+                "value": 0
+              }
+            ]
+          }
+        },
+        "Initialize_environment_has_more": {
+          "type": "InitializeVariable",
+          "runAfter": {
+            "Initialize_environment_skip": [
+              "Succeeded"
+            ]
+          },
+          "inputs": {
+            "variables": [
+              {
+                "name": "EnvironmentHasMore",
+                "type": "boolean",
+                "value": true
+              }
+            ]
+          }
+        },
+        "Initialize_resource_skip_token": {
+          "type": "InitializeVariable",
+          "runAfter": {
+            "Initialize_environment_has_more": [
+              "Succeeded"
+            ]
+          },
+          "inputs": {
+            "variables": [
+              {
+                "name": "ResourceSkipToken",
+                "type": "string",
+                "value": ""
+              }
+            ]
+          }
+        },
+        "Initialize_resource_has_more": {
+          "type": "InitializeVariable",
+          "runAfter": {
+            "Initialize_resource_skip_token": [
+              "Succeeded"
+            ]
+          },
+          "inputs": {
+            "variables": [
+              {
+                "name": "ResourceHasMore",
+                "type": "boolean",
+                "value": true
+              }
+            ]
+          }
+        },
+        "Initialize_environment_count": {
+          "type": "InitializeVariable",
+          "runAfter": {
+            "Initialize_resource_has_more": [
+              "Succeeded"
+            ]
+          },
+          "inputs": {
+            "variables": [
+              {
+                "name": "EnvironmentCount",
+                "type": "integer",
+                "value": 0
+              }
+            ]
+          }
+        },
+        "Initialize_agent_count": {
+          "type": "InitializeVariable",
+          "runAfter": {
+            "Initialize_environment_count": [
+              "Succeeded"
+            ]
+          },
+          "inputs": {
+            "variables": [
+              {
+                "name": "AgentCount",
+                "type": "integer",
+                "value": 0
+              }
+            ]
+          }
+        },
+        "Initialize_created_count": {
+          "type": "InitializeVariable",
+          "runAfter": {
+            "Initialize_agent_count": [
+              "Succeeded"
+            ]
+          },
+          "inputs": {
+            "variables": [
+              {
+                "name": "CreatedCount",
+                "type": "integer",
+                "value": 0
+              }
+            ]
+          }
+        },
+        "Initialize_updated_count": {
+          "type": "InitializeVariable",
+          "runAfter": {
+            "Initialize_created_count": [
+              "Succeeded"
+            ]
+          },
+          "inputs": {
+            "variables": [
+              {
+                "name": "UpdatedCount",
+                "type": "integer",
+                "value": 0
+              }
+            ]
+          }
+        },
+        "Initialize_rejected_count": {
+          "type": "InitializeVariable",
+          "runAfter": {
+            "Initialize_updated_count": [
+              "Succeeded"
+            ]
+          },
+          "inputs": {
+            "variables": [
+              {
+                "name": "RejectedCount",
+                "type": "integer",
+                "value": 0
+              }
+            ]
+          }
+        },
+        "Until_environment_pages_complete": {
+          "type": "Until",
+          "runAfter": {
+            "Initialize_rejected_count": [
+              "Succeeded"
+            ]
+          },
+          "expression": "@equals(variables('EnvironmentHasMore'), false)",
+          "limit": {
+            "count": 100,
+            "timeout": "PT1H"
+          },
+          "actions": {
+            "List_environment_page": {
+              "type": "OpenApiConnection",
+              "runAfter": {},
+              "inputs": {
+                "host": {
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_powerplatformadminv2",
+                  "connectionName": "shared_powerplatformadminv2",
+                  "operationId": "ListEnvironmentsForUser"
+                },
+                "parameters": {
+                  "api-version": "2022-03-01-preview",
+                  "$top": 100,
+                  "$skip": "@variables('EnvironmentSkip')"
+                }
+              }
+            },
+            "Compose_environment_payload": {
+              "type": "Compose",
+              "runAfter": {
+                "List_environment_page": [
+                  "Succeeded"
+                ]
+              },
+              "inputs": {
+                "tenantId": "@parameters('pvci_CreditReportingTenantId (pvci_CreditReportingTenantId)')",
+                "adminEnvironments": "@body('List_environment_page')"
+              }
+            },
+            "Import_environment_page": {
+              "type": "OpenApiConnection",
+              "runAfter": {
+                "Compose_environment_payload": [
+                  "Succeeded"
+                ]
+              },
+              "inputs": {
+                "host": {
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+                  "connectionName": "shared_commondataserviceforapps",
+                  "operationId": "PerformUnboundAction"
+                },
+                "parameters": {
+                  "actionName": "pvci_ImportCreditUsageBatch",
+                  "item/PayloadJson": "@string(outputs('Compose_environment_payload'))",
+                  "item/SourceSchemaVersion": "power-platform-inventory-v1",
+                  "item/DryRun": false
+                }
+              }
+            },
+            "Increment_environment_count": {
+              "type": "IncrementVariable",
+              "runAfter": {
+                "Import_environment_page": [
+                  "Succeeded"
+                ]
+              },
+              "inputs": {
+                "name": "EnvironmentCount",
+                "value": "@length(coalesce(body('List_environment_page')?['value'], createArray()))"
+              }
+            },
+            "Increment_environment_created": {
+              "type": "IncrementVariable",
+              "runAfter": {
+                "Increment_environment_count": [
+                  "Succeeded"
+                ]
+              },
+              "inputs": {
+                "name": "CreatedCount",
+                "value": "@int(coalesce(body('Import_environment_page')?['Created'], 0))"
+              }
+            },
+            "Increment_environment_updated": {
+              "type": "IncrementVariable",
+              "runAfter": {
+                "Increment_environment_created": [
+                  "Succeeded"
+                ]
+              },
+              "inputs": {
+                "name": "UpdatedCount",
+                "value": "@int(coalesce(body('Import_environment_page')?['Updated'], 0))"
+              }
+            },
+            "Increment_environment_rejected": {
+              "type": "IncrementVariable",
+              "runAfter": {
+                "Increment_environment_updated": [
+                  "Succeeded"
+                ]
+              },
+              "inputs": {
+                "name": "RejectedCount",
+                "value": "@int(coalesce(body('Import_environment_page')?['Rejected'], 0))"
+              }
+            },
+            "Set_environment_has_more": {
+              "type": "SetVariable",
+              "runAfter": {
+                "Increment_environment_rejected": [
+                  "Succeeded"
+                ]
+              },
+              "inputs": {
+                "name": "EnvironmentHasMore",
+                "value": "@equals(length(coalesce(body('List_environment_page')?['value'], createArray())), 100)"
+              }
+            },
+            "Increment_environment_skip": {
+              "type": "IncrementVariable",
+              "runAfter": {
+                "Set_environment_has_more": [
+                  "Succeeded"
+                ]
+              },
+              "inputs": {
+                "name": "EnvironmentSkip",
+                "value": 100
+              }
+            }
+          }
+        },
+        "Until_resource_pages_complete": {
+          "type": "Until",
+          "runAfter": {
+            "Until_environment_pages_complete": [
+              "Succeeded"
+            ]
+          },
+          "expression": "@equals(variables('ResourceHasMore'), false)",
+          "limit": {
+            "count": 100,
+            "timeout": "PT1H"
+          },
+          "actions": {
+            "Query_agent_resources": {
+              "type": "OpenApiConnection",
+              "runAfter": {},
+              "inputs": {
+                "host": {
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_powerplatformadminv2",
+                  "connectionName": "shared_powerplatformadminv2",
+                  "operationId": "QueryResources"
+                },
+                "parameters": {
+                  "api-version": "2022-03-01-preview",
+                  "body/TableName": "PowerPlatformResources",
+                  "body/Clauses": [
+                    {
+                      "$type": "where",
+                      "FieldName": "type",
+                      "Operator": "in~",
+                      "Values": [
+                        "'microsoft.copilotstudio/agents'"
+                      ]
+                    }
+                  ],
+                  "body/Options/Top": 100,
+                  "body/Options/SkipToken": "@variables('ResourceSkipToken')"
+                }
+              }
+            },
+            "Compose_agent_payload": {
+              "type": "Compose",
+              "runAfter": {
+                "Query_agent_resources": [
+                  "Succeeded"
+                ]
+              },
+              "inputs": {
+                "tenantId": "@parameters('pvci_CreditReportingTenantId (pvci_CreditReportingTenantId)')",
+                "powerPlatformResourcePages": "@body('Query_agent_resources')"
+              }
+            },
+            "Import_agent_page": {
+              "type": "OpenApiConnection",
+              "runAfter": {
+                "Compose_agent_payload": [
+                  "Succeeded"
+                ]
+              },
+              "inputs": {
+                "host": {
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+                  "connectionName": "shared_commondataserviceforapps",
+                  "operationId": "PerformUnboundAction"
+                },
+                "parameters": {
+                  "actionName": "pvci_ImportCreditUsageBatch",
+                  "item/PayloadJson": "@string(outputs('Compose_agent_payload'))",
+                  "item/SourceSchemaVersion": "power-platform-inventory-v1",
+                  "item/DryRun": false
+                }
+              }
+            },
+            "Increment_agent_count": {
+              "type": "IncrementVariable",
+              "runAfter": {
+                "Import_agent_page": [
+                  "Succeeded"
+                ]
+              },
+              "inputs": {
+                "name": "AgentCount",
+                "value": "@length(coalesce(body('Query_agent_resources')?['data'], createArray()))"
+              }
+            },
+            "Increment_agent_created": {
+              "type": "IncrementVariable",
+              "runAfter": {
+                "Increment_agent_count": [
+                  "Succeeded"
+                ]
+              },
+              "inputs": {
+                "name": "CreatedCount",
+                "value": "@int(coalesce(body('Import_agent_page')?['Created'], 0))"
+              }
+            },
+            "Increment_agent_updated": {
+              "type": "IncrementVariable",
+              "runAfter": {
+                "Increment_agent_created": [
+                  "Succeeded"
+                ]
+              },
+              "inputs": {
+                "name": "UpdatedCount",
+                "value": "@int(coalesce(body('Import_agent_page')?['Updated'], 0))"
+              }
+            },
+            "Increment_agent_rejected": {
+              "type": "IncrementVariable",
+              "runAfter": {
+                "Increment_agent_updated": [
+                  "Succeeded"
+                ]
+              },
+              "inputs": {
+                "name": "RejectedCount",
+                "value": "@int(coalesce(body('Import_agent_page')?['Rejected'], 0))"
+              }
+            },
+            "Set_resource_skip_token": {
+              "type": "SetVariable",
+              "runAfter": {
+                "Increment_agent_rejected": [
+                  "Succeeded"
+                ]
+              },
+              "inputs": {
+                "name": "ResourceSkipToken",
+                "value": "@coalesce(body('Query_agent_resources')?['skipToken'], '')"
+              }
+            },
+            "Set_resource_has_more": {
+              "type": "SetVariable",
+              "runAfter": {
+                "Set_resource_skip_token": [
+                  "Succeeded"
+                ]
+              },
+              "inputs": {
+                "name": "ResourceHasMore",
+                "value": "@not(empty(variables('ResourceSkipToken')))"
+              }
+            }
+          }
+        },
+        "Compose_inventory_sync_payload": {
+          "type": "Compose",
+          "runAfter": {
+            "Until_resource_pages_complete": [
+              "Succeeded"
+            ]
+          },
+          "inputs": {
+            "tenantId": "@parameters('pvci_CreditReportingTenantId (pvci_CreditReportingTenantId)')",
+            "inventorySyncRun": {
+              "runKey": "@concat('inventory-', formatDateTime(utcNow(), 'yyyyMMddHHmmss'))",
+              "name": "@concat('Tenant inventory - ', formatDateTime(utcNow(), 'yyyy-MM-dd HH:mm'))",
+              "source": "Power Platform Admin V2 and One Inventory",
+              "startedOn": "@variables('StartedOn')",
+              "completedOn": "@utcNow()",
+              "environmentCount": "@variables('EnvironmentCount')",
+              "agentCount": "@variables('AgentCount')",
+              "createdCount": "@variables('CreatedCount')",
+              "updatedCount": "@variables('UpdatedCount')",
+              "rejectedCount": "@variables('RejectedCount')",
+              "schemaVersion": "power-platform-inventory-v1"
+            }
+          }
+        },
+        "Finalize_inventory_sync": {
+          "type": "OpenApiConnection",
+          "runAfter": {
+            "Compose_inventory_sync_payload": [
+              "Succeeded"
+            ]
+          },
+          "inputs": {
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+              "connectionName": "shared_commondataserviceforapps",
+              "operationId": "PerformUnboundAction"
+            },
+            "parameters": {
+              "actionName": "pvci_ImportCreditUsageBatch",
+              "item/PayloadJson": "@string(outputs('Compose_inventory_sync_payload'))",
+              "item/SourceSchemaVersion": "power-platform-inventory-v1",
+              "item/DryRun": false
+            }
+          }
+        }
+      }
+    },
+    "templateName": null
+  },
+  "schemaVersion": "1.0.0.0"
+}

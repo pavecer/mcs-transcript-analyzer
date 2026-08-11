@@ -7,8 +7,51 @@
       "uniqueName": "pvConversationInsightsPublisher",
       "prefix": "pvci"
     },
-    "version": "1.1.0.0"
+    "version": "1.2.0.0"
   },
+  "securityRoles": [
+    {
+      "name": "PVCI Analyst",
+      "description": "Read-only access to Conversation Insights transcript, inventory, credit, capacity, and sync reporting data.",
+      "baseRole": "App Opener",
+      "tablePrivileges": {
+        "pvci_transcriptsession": ["Read"],
+        "pvci_transcriptturn": ["Read"],
+        "pvci_transcriptidentitymap": ["Read"],
+        "pvci_flowrundetail": ["Read"],
+        "pvci_syncstate": ["Read"],
+        "pvci_environmentinventory": ["Read"],
+        "pvci_inventorysyncrun": ["Read"],
+        "pvci_agentinventory": ["Read"],
+        "pvci_creditusage": ["Read"],
+        "pvci_creditcapacitysnapshot": ["Read"],
+        "pvci_creditsyncrun": ["Read"],
+        "pvci_credituserusage": ["Read"],
+        "pvci_creditprivacysetting": ["Read"]
+      }
+    },
+    {
+      "name": "PVCI Privacy Approver",
+      "description": "PVCI Analyst access plus audited reveal and revocation of stored credit user names.",
+      "baseRole": "App Opener",
+      "tablePrivileges": {
+        "pvci_transcriptsession": ["Read"],
+        "pvci_transcriptturn": ["Read"],
+        "pvci_transcriptidentitymap": ["Read"],
+        "pvci_flowrundetail": ["Read"],
+        "pvci_syncstate": ["Read"],
+        "pvci_environmentinventory": ["Read"],
+        "pvci_inventorysyncrun": ["Read"],
+        "pvci_agentinventory": ["Read"],
+        "pvci_creditusage": ["Read"],
+        "pvci_creditcapacitysnapshot": ["Read"],
+        "pvci_creditsyncrun": ["Read"],
+        "pvci_credituserusage": ["Read", "Write"],
+        "pvci_creditprivacysetting": ["Read", "Write"],
+        "systemuser": ["Read"]
+      }
+    }
+  ],
   "environmentVariables": [
     {
       "schemaName": "pvci_CreditReportingTenantId",
@@ -145,6 +188,66 @@
       }
     },
     {
+      "schemaName": "pvci_EnvironmentInventory",
+      "displayName": "Environment Inventory",
+      "displayCollectionName": "Environment Inventory",
+      "ownershipType": "OrganizationOwned",
+      "primaryColumn": "pvci_Name",
+      "columns": {
+        "pvci_SourceKey": { "type": "string", "maxLength": 200, "displayName": "Source Key" },
+        "pvci_TenantId": { "type": "string", "displayName": "Tenant ID" },
+        "pvci_EnvironmentId": { "type": "string", "displayName": "Environment ID" },
+        "pvci_DisplayName": { "type": "string", "displayName": "Display Name" },
+        "pvci_EnvironmentUrl": { "type": "string", "displayName": "Environment URL" },
+        "pvci_EnvironmentType": { "type": "string", "displayName": "Environment Type" },
+        "pvci_Geo": { "type": "string", "displayName": "Geo" },
+        "pvci_AzureRegion": { "type": "string", "displayName": "Azure Region" },
+        "pvci_State": { "type": "string", "displayName": "State" },
+        "pvci_IsManaged": { "type": "bool", "displayName": "Managed Environment" },
+        "pvci_HasDataverse": { "type": "bool", "displayName": "Has Dataverse" },
+        "pvci_HasDetailedAccess": { "type": "bool", "displayName": "Has Detailed Access" },
+        "pvci_InventorySource": { "type": "string", "displayName": "Inventory Source" },
+        "pvci_SourceSchemaVersion": { "type": "string", "displayName": "Source Schema Version" },
+        "pvci_RawJson": { "type": "text", "displayName": "Raw Source JSON" },
+        "pvci_LastSyncedOn": { "type": "datetime", "displayName": "Last Synced On" }
+      },
+      "alternateKeys": [
+        {
+          "schemaName": "pvci_EnvironmentInventory_SourceKey",
+          "displayName": "Environment Inventory Source Key",
+          "columns": ["pvci_sourcekey"]
+        }
+      ]
+    },
+    {
+      "schemaName": "pvci_InventorySyncRun",
+      "displayName": "Inventory Sync Run",
+      "displayCollectionName": "Inventory Sync Runs",
+      "ownershipType": "OrganizationOwned",
+      "primaryColumn": "pvci_Name",
+      "columns": {
+        "pvci_RunKey": { "type": "string", "maxLength": 200, "displayName": "Run Key" },
+        "pvci_Source": { "type": "string", "displayName": "Source" },
+        "pvci_StartedOn": { "type": "datetime", "displayName": "Started On" },
+        "pvci_CompletedOn": { "type": "datetime", "displayName": "Completed On" },
+        "pvci_Status": { "type": "string", "displayName": "Status" },
+        "pvci_EnvironmentCount": { "type": "int", "displayName": "Environment Count" },
+        "pvci_AgentCount": { "type": "int", "displayName": "Agent Count" },
+        "pvci_CreatedCount": { "type": "int", "displayName": "Created Count" },
+        "pvci_UpdatedCount": { "type": "int", "displayName": "Updated Count" },
+        "pvci_RejectedCount": { "type": "int", "displayName": "Rejected Count" },
+        "pvci_SchemaVersion": { "type": "string", "displayName": "Schema Version" },
+        "pvci_Error": { "type": "text", "displayName": "Error" }
+      },
+      "alternateKeys": [
+        {
+          "schemaName": "pvci_InventorySyncRun_RunKey",
+          "displayName": "Inventory Sync Run Key",
+          "columns": ["pvci_runkey"]
+        }
+      ]
+    },
+    {
       "schemaName": "pvci_AgentInventory",
       "displayName": "Agent Inventory",
       "displayCollectionName": "Agent Inventory",
@@ -156,6 +259,8 @@
         "pvci_EnvironmentId": { "type": "string", "displayName": "Environment ID" },
         "pvci_EnvironmentName": { "type": "string", "displayName": "Environment Name" },
         "pvci_EnvironmentUrl": { "type": "string", "displayName": "Environment URL" },
+        "pvci_EnvironmentType": { "type": "string", "displayName": "Environment Type" },
+        "pvci_Location": { "type": "string", "displayName": "Location" },
         "pvci_ResourceId": { "type": "string", "displayName": "Resource ID" },
         "pvci_BotId": { "type": "string", "displayName": "Bot ID" },
         "pvci_DisplayName": { "type": "string", "displayName": "Display Name" },
@@ -168,6 +273,11 @@
         "pvci_Model": { "type": "string", "displayName": "Model" },
         "pvci_AuthoringOrigin": { "type": "string", "displayName": "Authoring Origin" },
         "pvci_Published": { "type": "bool", "displayName": "Published" },
+        "pvci_CreatedOnSource": { "type": "datetime", "displayName": "Agent Created On" },
+        "pvci_PublishedOnSource": { "type": "datetime", "displayName": "Agent Published On" },
+        "pvci_AuthenticationMode": { "type": "string", "displayName": "Authentication Mode" },
+        "pvci_AgentStatus": { "type": "string", "displayName": "Agent Status" },
+        "pvci_HasDetailedAccess": { "type": "bool", "displayName": "Has Detailed Access" },
         "pvci_InventorySource": { "type": "string", "displayName": "Inventory Source" },
         "pvci_EvidenceJson": { "type": "text", "displayName": "Evidence JSON" },
         "pvci_LastSyncedOn": { "type": "datetime", "displayName": "Last Synced On" }
@@ -177,6 +287,14 @@
           "schemaName": "pvci_AgentInventory_SourceKey",
           "displayName": "Agent Inventory Source Key",
           "columns": ["pvci_sourcekey"]
+        }
+      ],
+      "lookups": [
+        {
+          "schemaName": "pvci_EnvironmentInventoryId",
+          "displayName": "Environment Inventory",
+          "referencedTable": "pvci_environmentinventory",
+          "relationshipName": "pvci_environmentinventory_agentinventory"
         }
       ]
     },

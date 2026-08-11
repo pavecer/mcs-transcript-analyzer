@@ -47,10 +47,24 @@ export const dataSourcesInfo = {
     "dataSourceType": "Dataverse",
     "apis": {}
   },
+  "pvci_environmentinventories": {
+    "tableId": "",
+    "version": "",
+    "primaryKey": "pvci_environmentinventoryid",
+    "dataSourceType": "Dataverse",
+    "apis": {}
+  },
   "pvci_flowrundetails": {
     "tableId": "",
     "version": "",
     "primaryKey": "pvci_flowrundetailid",
+    "dataSourceType": "Dataverse",
+    "apis": {}
+  },
+  "pvci_inventorysyncruns": {
+    "tableId": "",
+    "version": "",
+    "primaryKey": "pvci_inventorysyncrunid",
     "dataSourceType": "Dataverse",
     "apis": {}
   },

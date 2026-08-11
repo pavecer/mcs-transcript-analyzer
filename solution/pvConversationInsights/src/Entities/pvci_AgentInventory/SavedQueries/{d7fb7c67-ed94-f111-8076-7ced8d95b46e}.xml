@@ -12,11 +12,14 @@
         <row name="result" id="pvci_agentinventoryid">
           <cell name="pvci_displayname" width="220" />
           <cell name="pvci_environmentname" width="180" />
+          <cell name="pvci_environmenttype" width="120" />
           <cell name="pvci_resourceid" width="240" />
           <cell name="pvci_resourcetype" width="130" />
           <cell name="pvci_harness" width="110" />
           <cell name="pvci_classificationconfidence" width="130" />
           <cell name="pvci_model" width="120" />
+          <cell name="pvci_agentstatus" width="100" />
+          <cell name="pvci_hasdetailedaccess" width="100" />
           <cell name="pvci_published" width="70" />
         </row>
       </grid>
@@ -27,11 +30,14 @@
         <entity name="pvci_agentinventory">
           <attribute name="pvci_displayname" />
           <attribute name="pvci_environmentname" />
+          <attribute name="pvci_environmenttype" />
           <attribute name="pvci_resourceid" />
           <attribute name="pvci_resourcetype" />
           <attribute name="pvci_harness" />
           <attribute name="pvci_classificationconfidence" />
           <attribute name="pvci_model" />
+          <attribute name="pvci_agentstatus" />
+          <attribute name="pvci_hasdetailedaccess" />
           <attribute name="pvci_published" />
           <attribute name="pvci_agentinventoryid" />
           <filter type="and">
