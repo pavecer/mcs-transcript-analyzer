@@ -120,9 +120,36 @@ exporting.
 
 ## Version changes
 
-Update both the live solution version and `config/release-packages.json`. Rename the expected
-ZIP filename in the same config. The site reads filenames and hashes from the release manifest,
-while `scripts/validate_site.py` prevents Pages from publishing mismatched versions.
+The core and code-app packages use one synchronized four-part release train:
+
+| Change | Version example | Use |
+| --- | --- | --- |
+| Breaking install or migration change | `2.0.0.0` | Existing consumers need explicit migration work |
+| Backward-compatible feature | `1.1.0.0` | New tables, APIs, flows, app capabilities, or dependencies |
+| Backward-compatible fix | `1.1.1.0` | Correct behavior without adding a feature surface |
+| Rebuilt release artifact only | `1.1.1.1` | Packaging-only correction with unchanged solution behavior |
+
+Every published package must have a version greater than the previous package. Never replace a
+published ZIP while keeping its version: Power Platform upgrade detection and administrator audit
+trails depend on the version being immutable.
+
+For every version change:
+
+1. Update both live Dataverse solutions in PVE Dev with `pac solution online-version`.
+2. Update the core source versions in `solution-definition.json` and `src/Other/Solution.xml`.
+3. Update both package versions, filenames, and the code-app core-table dependency contract in
+  `config/release-packages.json`.
+4. Update the public page's version and install content.
+5. Export both managed ZIPs, regenerate `release-manifest.json`, and run
+  `scripts/validate_site.py`.
+6. Import core first and code app second into a clean sandbox. For an existing installation,
+  confirm both imports are recognized as upgrades and retained data remains available.
+7. Publish through a pull request. Confirm CI, the refresh workflow, Pages deployment, public
+  manifest versions and hashes, and both public downloads.
+
+The release validator rejects filename/version drift, unsynchronized core source versions,
+unexpected code-app dependencies, stale manifests, and packages exported from a live solution
+whose version does not match the repository contract.
 
 ## Recovery
 

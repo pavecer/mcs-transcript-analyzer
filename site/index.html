@@ -394,14 +394,14 @@
         <div class="hero-content" data-reveal>
           <span class="eyebrow">Copilot Studio observability</span>
           <h1>MCS Transcript Analyzer</h1>
-          <p class="hero-copy">See who spoke to your agent, how long each response took, what the orchestrator chose, and which flows or tools failed. All inside your Dataverse environment.</p>
+          <p class="hero-copy">Investigate conversations, orchestration, tool and flow failures, and billed or non-billed Copilot Credit consumption. All inside your Dataverse environment.</p>
           <div class="actions">
             <a class="button primary" href="#install">
               <i data-lucide="shield-check" aria-hidden="true"></i>Review and download
             </a>
             <a class="button" href="#install"><i data-lucide="list-checks" aria-hidden="true"></i>Installation guide</a>
           </div>
-          <p class="version-note"><strong>Version 1.0.0.0</strong> · Managed Dataverse solution · MIT licensed</p>
+          <p class="version-note"><strong>Version <span data-release-version="core">1.1.0.0</span></strong> · Managed Dataverse solution · MIT licensed</p>
         </div>
       </div>
     </section>
@@ -411,7 +411,7 @@
         <div class="signal"><strong>Identity</strong><span>Resolve the real end user</span></div>
         <div class="signal"><strong>Latency</strong><span>Measure every reply</span></div>
         <div class="signal"><strong>Reasoning</strong><span>Inspect orchestration events</span></div>
-        <div class="signal"><strong>Flow runs</strong><span>Correlate automation failures</span></div>
+        <div class="signal"><strong>Credits</strong><span>Track consumption and capacity</span></div>
       </div>
     </section>
 
@@ -427,7 +427,7 @@
           <article class="feature"><i class="feature-icon" data-lucide="route" aria-hidden="true"></i><h3>Agent reasoning</h3><p>Inspect DynamicPlan events to understand which topic or action the orchestrator selected.</p></article>
           <article class="feature"><i class="feature-icon" data-lucide="wrench" aria-hidden="true"></i><h3>Tool-call diagnostics</h3><p>Review connector and AI Builder invocations, duration, output, and exceptions where available.</p></article>
           <article class="feature"><i class="feature-icon" data-lucide="workflow" aria-hidden="true"></i><h3>Flow correlation</h3><p>Match Power Automate runs to session windows and surface failed or unusually slow actions.</p></article>
-          <article class="feature"><i class="feature-icon" data-lucide="shield-check" aria-hidden="true"></i><h3>Operational control</h3><p>Keep an additive watermark, separate test sessions, and inspect health from one sync-state record.</p></article>
+          <article class="feature"><i class="feature-icon" data-lucide="gauge" aria-hidden="true"></i><h3>Copilot Credit reporting</h3><p>Review billed and non-billed usage, capacity, freshness, resource trends, and privacy-controlled user consumption.</p></article>
         </div>
       </div>
     </section>
@@ -480,18 +480,18 @@
           <div class="steps" data-reveal>
             <article class="step"><h3>Download the managed ZIP</h3><p>Keep the archive intact. Power Apps imports the ZIP directly; do not extract it.</p></article>
             <article class="step"><h3>Import in Power Apps</h3><p>Open <strong>Solutions</strong>, choose <strong>Import solution</strong>, upload the ZIP, and complete the import wizard.</p></article>
-            <article class="step"><h3>Bind the connection</h3><p>Associate the <code>pvci_dataversesync</code> connection reference with a Dataverse connection in the target environment.</p></article>
-            <article class="step"><h3>Activate and run the sync flow</h3><p>Turn on the scheduled sync flow and run it once to load existing finalized transcripts. Future batches run hourly.</p></article>
+            <article class="step"><h3>Configure connections and tenant</h3><p>Bind <code>pvci_dataversesync</code> to Dataverse and <code>pvci_licensinghttp</code> to Web Contents, then set the required <code>pvci_CreditReportingTenantId</code> environment variable.</p></article>
+            <article class="step"><h3>Activate and run both sync flows</h3><p>Run transcript sync once to load finalized sessions, then run credit collection to verify licensing API access. Future batches run on their schedules.</p></article>
             <article class="step"><h3>Assign access</h3><p>Grant the intended support users access to the model-driven app and the least-privilege Dataverse roles required by your organization.</p></article>
           </div>
           <aside class="package" data-reveal aria-label="Download package details">
             <h3>PV Conversation Insights</h3>
-            <div class="package-meta">Managed solution · version 1.0.0.0</div>
+            <div class="package-meta">Managed solution · version <span data-release-version="core">1.1.0.0</span></div>
             <ul class="package-list">
               <li><i data-lucide="check" aria-hidden="true"></i><span>Dataverse schema, forms, and views</span></li>
               <li><i data-lucide="check" aria-hidden="true"></i><span>Model-driven investigation app</span></li>
               <li><i data-lucide="check" aria-hidden="true"></i><span>Custom API and sandboxed plugin</span></li>
-              <li><i data-lucide="check" aria-hidden="true"></i><span>Scheduled Power Automate sync flow</span></li>
+              <li><i data-lucide="check" aria-hidden="true"></i><span>Transcript and Copilot Credit collection flows</span></li>
             </ul>
             <div class="trust-panel">
               <div class="trust-head"><i data-lucide="shield-alert" aria-hidden="true"></i><strong>Import only what you trust</strong></div>
@@ -512,7 +512,7 @@
         </div>
 
         <div class="command" data-reveal>
-          <code>pac solution import --path pvConversationInsights-managed-1.0.0.0.zip --activate-plugins</code>
+          <code id="import-command">pac solution import --path pvConversationInsights-managed-1.1.0.0.zip --activate-plugins</code>
           <button class="icon-button" id="copy-command" type="button" title="Copy import command" aria-label="Copy import command"><i data-lucide="copy" aria-hidden="true"></i></button>
         </div>
 
@@ -520,7 +520,7 @@
           <div class="preview-copy">
             <span class="section-kicker">Optional preview</span>
             <h3>Conversation Insights Explorer code app</h3>
-            <p>The React code app adds conversation replay, trends, tool and flow drill-down, and a visual execution map. It is packaged separately so production users can install the supported model-driven solution without taking a dependency on preview technology.</p>
+            <p>The React code app adds conversation replay, trends, tool and flow drill-down, a visual execution map, and scoped Copilot Credit analysis. It is packaged separately so production users can install the supported model-driven solution without taking a dependency on preview technology.</p>
             <ul>
               <li>Import the core managed solution first.</li>
               <li>Code apps and their ALM support are currently preview features.</li>
@@ -531,7 +531,7 @@
           <aside class="package preview-package" aria-label="Preview code app download details">
             <span class="preview-badge">Preview · unsupported</span>
             <h3>Conversation Insights Explorer</h3>
-            <div class="package-meta">Managed code-app solution · version 1.0.0.0</div>
+            <div class="package-meta">Managed code-app solution · version <span data-release-version="codeApp">1.1.0.0</span></div>
             <div class="trust-panel">
               <div class="trust-head"><i data-lucide="triangle-alert" aria-hidden="true"></i><strong>Understand the preview risk</strong></div>
               <p>This package uses Power Apps code apps and preview ALM capabilities. Preview features can change, have limited support, or become unavailable.</p>
@@ -603,15 +603,22 @@
         Object.assign(artifacts, manifest.artifacts);
         document.getElementById("package-hash").textContent = artifacts.core.sha256;
         document.getElementById("codeapp-package-hash").textContent = artifacts.codeApp.sha256;
+        document.querySelectorAll('[data-release-version="core"]').forEach((element) => {
+          element.textContent = artifacts.core.version;
+        });
+        document.querySelectorAll('[data-release-version="codeApp"]').forEach((element) => {
+          element.textContent = artifacts.codeApp.version;
+        });
+        document.getElementById("import-command").textContent =
+          `pac solution import --path ${artifacts.core.filename} --activate-plugins`;
       })
       .catch(() => {
         document.getElementById("package-hash").textContent = "see release manifest";
         document.getElementById("codeapp-package-hash").textContent = "see release manifest";
       });
 
-    const command = "pac solution import --path pvConversationInsights-managed-1.0.0.0.zip --activate-plugins";
     document.getElementById("copy-command").addEventListener("click", async (event) => {
-      await navigator.clipboard.writeText(command);
+      await navigator.clipboard.writeText(document.getElementById("import-command").textContent);
       event.currentTarget.setAttribute("title", "Copied");
       event.currentTarget.setAttribute("aria-label", "Import command copied");
     });
