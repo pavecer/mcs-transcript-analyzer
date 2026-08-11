@@ -64,6 +64,10 @@ any environment.
 
 ## Copilot Credit collector
 
+Read [Permissions and tenant inventory](permissions-and-inventory.md) before binding the collector
+connections. The managed `1.1.0.0` solution does not contain a dedicated PVCI security role and its
+licensing projections are not a complete tenant inventory.
+
 Create an **HTTP with Microsoft Entra ID (preauthorized)** connection before creating the flow. In
 commercial cloud, set both connection fields to:
 
@@ -274,6 +278,8 @@ Afterwards, in the target environment:
 | Plugin returns `Status: failed` | Read `Errors` in the response and `pvci_lasterror` |
 | Flow does not start | Check the connection reference is bound and the flow is activated |
 | Credit collector fails at `Get_usage_page` | Verify `pvci_licensinghttp` is connected and both licensing connection URLs match the tenant cloud |
+| Capacity or users load but agents/resources are empty | Inspect `Get_usage_page`: `401/403` is connection-owner access; `200` with an empty `resources` array means no resource facts were returned for the seven-day window. Capacity is not tenant inventory |
+| Only some tenant environments are listed in Credits | Expected in `1.1.0.0`; the selector uses resource and capacity projections. Full enumeration requires the not-yet-implemented Admin V2/One Inventory collector |
 | Credit sync is stale | Check the latest `pvci_creditsyncrun`, physical connection health, flow state, and recurrence history |
 | Agent day/week chart has sparse dates | PPAC returned aggregate or weekly source periods; do not manufacture daily rows |
 

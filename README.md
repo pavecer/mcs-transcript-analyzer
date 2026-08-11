@@ -66,6 +66,11 @@ For a normal installation, download the managed solution from the
 Power Apps under **Solutions > Import solution**. The source deployment below is intended for
 contributors and environments where you want to rebuild every component.
 
+Before enabling credit collection, review [permissions and tenant inventory](docs/permissions-and-inventory.md).
+The current package does not include a dedicated PVCI security role or a tenant-wide Admin V2/One
+Inventory collector; those permissions and target-local connections are separate installation
+steps.
+
 **Prerequisites:** Python 3.10+, Node 22+, .NET SDK 8+, [Power Platform CLI](https://aka.ms/PowerPlatformCLI),
 Azure CLI, and a Dataverse environment where you hold System Customizer.
 
