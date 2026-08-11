@@ -482,7 +482,7 @@
             <article class="step"><h3>Import in Power Apps</h3><p>Open <strong>Solutions</strong>, choose <strong>Import solution</strong>, upload the ZIP, and complete the import wizard.</p></article>
             <article class="step"><h3>Configure connections and tenant</h3><p>Bind <code>pvci_dataversesync</code> to Dataverse and <code>pvci_licensinghttp</code> to Web Contents, then set the required <code>pvci_CreditReportingTenantId</code> environment variable.</p></article>
             <article class="step"><h3>Activate and run both sync flows</h3><p>Run transcript sync once to load finalized sessions, then run credit collection to verify licensing API access. Future batches run on their schedules.</p></article>
-            <article class="step"><h3>Assign access</h3><p>Grant the intended support users access to the model-driven app and the least-privilege Dataverse roles required by your organization.</p></article>
+            <article class="step"><h3>Assign access</h3><p>Grant app and Dataverse access, then follow the <a href="https://github.com/pavecer/mcs-transcript-analyzer/blob/main/docs/permissions-and-inventory.md">permissions and inventory checklist</a> for collector and cross-environment roles.</p></article>
           </div>
           <aside class="package" data-reveal aria-label="Download package details">
             <h3>PV Conversation Insights</h3>
@@ -565,7 +565,7 @@
   <footer>
     <div class="shell footer-inner">
       <span>© <span id="year"></span> MCS Transcript Analyzer · MIT licensed · Not affiliated with Microsoft</span>
-      <div class="footer-links"><a href="https://github.com/pavecer/mcs-transcript-analyzer/blob/main/docs/operations.md">Operations</a><a href="https://github.com/pavecer/mcs-transcript-analyzer/blob/main/SECURITY.md">Security</a></div>
+      <div class="footer-links"><a href="https://github.com/pavecer/mcs-transcript-analyzer/blob/main/docs/permissions-and-inventory.md">Permissions</a><a href="https://github.com/pavecer/mcs-transcript-analyzer/blob/main/docs/operations.md">Operations</a><a href="https://github.com/pavecer/mcs-transcript-analyzer/blob/main/SECURITY.md">Security</a></div>
     </div>
   </footer>
 

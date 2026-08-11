@@ -56,6 +56,7 @@ def validate_html(html: str, config: dict[str, dict[str, str]]) -> None:
         'wireDownloadGate("trust-package", "download-package")',
         'wireDownloadGate("trust-codeapp", "download-codeapp")',
         "Preview features can change, have limited support, or become unavailable.",
+        "docs/permissions-and-inventory.md",
     ]
     missing = [value for value in required if value not in html]
     if missing:
