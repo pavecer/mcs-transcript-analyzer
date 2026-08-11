@@ -9,6 +9,7 @@ from scripts.transcript_insights.create_credit_sync_flow import (
     PAGE_SIZE,
     TENANT_PARAMETER,
     TENANT_VARIABLE_SCHEMA,
+    USER_CHUNK_SIZE,
     build_clientdata,
     build_definition,
     resolve_connection_id,
@@ -33,7 +34,10 @@ class CreditSyncFlowTests(unittest.TestCase):
         self.assertEqual("GET", users["inputs"]["parameters"]["request/method"])
         self.assertIn(f"parameters('{TENANT_PARAMETER}')", users["inputs"]["parameters"]["request/url"])
         self.assertEqual({"Until_usage_complete": ["Succeeded"]}, users["runAfter"])
-        self.assertEqual({"Get_user_usage": ["Succeeded"]}, capacity["runAfter"])
+        self.assertEqual(
+            {"Import_user_chunks": ["Succeeded", "Failed", "TimedOut"]},
+            capacity["runAfter"],
+        )
         self.assertEqual(MAX_PAGES, until["limit"]["count"])
         self.assertIn(f"pageSize={PAGE_SIZE}", usage["inputs"]["parameters"]["request/url"])
         self.assertIn(
@@ -48,8 +52,42 @@ class CreditSyncFlowTests(unittest.TestCase):
         self.assertFalse(action["inputs"]["parameters"]["item/DryRun"])
         self.assertNotIn("authentication", action["inputs"])
         self.assertEqual(
-            "@body('Get_user_usage')",
-            definition["actions"]["Compose_import_payload"]["inputs"]["ppacUsers"],
+            "@variables('SourceCount')",
+            definition["actions"]["Compose_import_payload"]["inputs"]["syncRun"]["sourceCount"],
+        )
+
+    def test_definition_chunks_user_usage_before_main_import(self) -> None:
+        definition = build_definition()
+        actions = definition["actions"]
+        chunks = actions["Compose_user_chunks"]
+        loop = actions["Import_user_chunks"]
+        user_import = loop["actions"]["Import_user_chunk"]
+
+        self.assertEqual(f"@chunk(outputs('Compose_user_rows'), {USER_CHUNK_SIZE})", chunks["inputs"])
+        self.assertEqual("@outputs('Compose_user_chunks')", loop["foreach"])
+        self.assertEqual(1, loop["runtimeConfiguration"]["concurrency"]["repetitions"])
+        self.assertEqual(
+            {"Import_user_chunks": ["Succeeded", "Failed", "TimedOut"]},
+            actions["Get_capacity"]["runAfter"],
+        )
+        self.assertNotIn("ppacUsers", actions["Compose_import_payload"]["inputs"])
+        self.assertEqual(API_NAME, user_import["inputs"]["parameters"]["actionName"])
+        self.assertEqual(
+            "@string(outputs('Compose_user_chunk_payload'))",
+            user_import["inputs"]["parameters"]["item/PayloadJson"],
+        )
+        self.assertEqual(
+            "@int(coalesce(body('Import_user_chunk')?['Created'], 0))",
+            loop["actions"]["Increment_user_created_count"]["inputs"]["value"],
+        )
+        sync_run = actions["Compose_import_payload"]["inputs"]["syncRun"]
+        self.assertEqual("@variables('UserCreatedCount')", sync_run["priorCreatedCount"])
+        self.assertEqual("@variables('UserUpdatedCount')", sync_run["priorUpdatedCount"])
+        self.assertEqual("@variables('UserRejectedCount')", sync_run["priorRejectedCount"])
+        self.assertEqual("@variables('UserFailedChunkCount')", sync_run["priorFailedChunkCount"])
+        self.assertEqual(
+            {"Import_user_chunk": ["Failed", "TimedOut"]},
+            loop["actions"]["Increment_user_failed_chunk_count"]["runAfter"],
         )
 
     def test_definition_uses_portable_tenant_environment_variable(self) -> None:

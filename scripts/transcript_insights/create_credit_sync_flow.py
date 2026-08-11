@@ -22,6 +22,7 @@ FLOW_NAME = "PVCI Collect Copilot Credit Usage (scheduled)"
 API_NAME = "pvci_ImportCreditUsageBatch"
 PAGE_SIZE = 100
 MAX_PAGES = 20
+USER_CHUNK_SIZE = 250
 SCHEMA_VERSION = "ppac-v2-resource-aggregate-v1"
 TENANT_VARIABLE_SCHEMA = "pvci_CreditReportingTenantId"
 TENANT_PARAMETER = f"{TENANT_VARIABLE_SCHEMA} ({TENANT_VARIABLE_SCHEMA})"
@@ -86,9 +87,34 @@ def build_definition(lookback_days: int = 7) -> dict[str, Any]:
                 "runAfter": {"Initialize_page_number": ["Succeeded"]},
                 "inputs": {"variables": [{"name": "HasMore", "type": "boolean", "value": True}]},
             },
+            "Initialize_source_count": {
+                "type": "InitializeVariable",
+                "runAfter": {"Initialize_has_more": ["Succeeded"]},
+                "inputs": {"variables": [{"name": "SourceCount", "type": "integer", "value": 0}]},
+            },
+            "Initialize_user_created_count": {
+                "type": "InitializeVariable",
+                "runAfter": {"Initialize_source_count": ["Succeeded"]},
+                "inputs": {"variables": [{"name": "UserCreatedCount", "type": "integer", "value": 0}]},
+            },
+            "Initialize_user_updated_count": {
+                "type": "InitializeVariable",
+                "runAfter": {"Initialize_user_created_count": ["Succeeded"]},
+                "inputs": {"variables": [{"name": "UserUpdatedCount", "type": "integer", "value": 0}]},
+            },
+            "Initialize_user_rejected_count": {
+                "type": "InitializeVariable",
+                "runAfter": {"Initialize_user_updated_count": ["Succeeded"]},
+                "inputs": {"variables": [{"name": "UserRejectedCount", "type": "integer", "value": 0}]},
+            },
+            "Initialize_user_failed_chunk_count": {
+                "type": "InitializeVariable",
+                "runAfter": {"Initialize_user_rejected_count": ["Succeeded"]},
+                "inputs": {"variables": [{"name": "UserFailedChunkCount", "type": "integer", "value": 0}]},
+            },
             "Until_usage_complete": {
                 "type": "Until",
-                "runAfter": {"Initialize_has_more": ["Succeeded"]},
+                "runAfter": {"Initialize_user_failed_chunk_count": ["Succeeded"]},
                 "expression": "@equals(variables('HasMore'), false)",
                 "limit": {"count": MAX_PAGES, "timeout": "PT1H"},
                 "actions": {
@@ -109,9 +135,17 @@ def build_definition(lookback_days: int = 7) -> dict[str, Any]:
                         "runAfter": {"Get_usage_page": ["Succeeded"]},
                         "inputs": {"name": "UsagePages", "value": "@body('Get_usage_page')"},
                     },
+                    "Increment_resource_source_count": {
+                        "type": "IncrementVariable",
+                        "runAfter": {"Append_usage_page": ["Succeeded"]},
+                        "inputs": {
+                            "name": "SourceCount",
+                            "value": "@length(coalesce(first(body('Get_usage_page')?['value'])?['resources'], createArray()))",
+                        },
+                    },
                     "Set_has_more": {
                         "type": "SetVariable",
-                        "runAfter": {"Append_usage_page": ["Succeeded"]},
+                        "runAfter": {"Increment_resource_source_count": ["Succeeded"]},
                         "inputs": {
                             "name": "HasMore",
                             "value": (
@@ -129,7 +163,7 @@ def build_definition(lookback_days: int = 7) -> dict[str, Any]:
             },
             "Get_capacity": {
                 "type": "OpenApiConnection",
-                "runAfter": {"Get_user_usage": ["Succeeded"]},
+                "runAfter": {"Import_user_chunks": ["Succeeded", "Failed", "TimedOut"]},
                 "inputs": {
                     "host": {
                         "apiId": HTTP_CONNECTOR,
@@ -137,6 +171,14 @@ def build_definition(lookback_days: int = 7) -> dict[str, Any]:
                         "operationId": "InvokeHttp",
                     },
                     "parameters": {"request/method": "GET", "request/url": capacity_url},
+                },
+            },
+            "Increment_capacity_source_count": {
+                "type": "IncrementVariable",
+                "runAfter": {"Get_capacity": ["Succeeded"]},
+                "inputs": {
+                    "name": "SourceCount",
+                    "value": "@length(coalesce(body('Get_capacity')?['value'], createArray()))",
                 },
             },
             "Get_user_usage": {
@@ -151,13 +193,89 @@ def build_definition(lookback_days: int = 7) -> dict[str, Any]:
                     "parameters": {"request/method": "GET", "request/url": users_url},
                 },
             },
+            "Compose_user_rows": {
+                "type": "Compose",
+                "runAfter": {"Get_user_usage": ["Succeeded"]},
+                "inputs": "@coalesce(first(body('Get_user_usage')?['value'])?['users'], createArray())",
+            },
+            "Increment_user_source_count": {
+                "type": "IncrementVariable",
+                "runAfter": {"Compose_user_rows": ["Succeeded"]},
+                "inputs": {"name": "SourceCount", "value": "@length(outputs('Compose_user_rows'))"},
+            },
+            "Compose_user_chunks": {
+                "type": "Compose",
+                "runAfter": {"Increment_user_source_count": ["Succeeded"]},
+                "inputs": f"@chunk(outputs('Compose_user_rows'), {USER_CHUNK_SIZE})",
+            },
+            "Import_user_chunks": {
+                "type": "Foreach",
+                "runAfter": {"Compose_user_chunks": ["Succeeded"]},
+                "foreach": "@outputs('Compose_user_chunks')",
+                "runtimeConfiguration": {"concurrency": {"repetitions": 1}},
+                "actions": {
+                    "Compose_user_chunk_payload": {
+                        "type": "Compose",
+                        "runAfter": {},
+                        "inputs": {
+                            "tenantId": f"@{tenant_expression}",
+                            "ppacUsers": {"value": [{"users": "@items('Import_user_chunks')"}]},
+                        },
+                    },
+                    "Import_user_chunk": {
+                        "type": "OpenApiConnection",
+                        "runAfter": {"Compose_user_chunk_payload": ["Succeeded"]},
+                        "inputs": {
+                            "host": {
+                                "apiId": DATAVERSE_CONNECTOR,
+                                "connectionName": "shared_commondataserviceforapps",
+                                "operationId": "PerformUnboundAction",
+                            },
+                            "parameters": {
+                                "actionName": API_NAME,
+                                "item/PayloadJson": "@string(outputs('Compose_user_chunk_payload'))",
+                                "item/SourceSchemaVersion": SCHEMA_VERSION,
+                                "item/DryRun": False,
+                            },
+                        },
+                    },
+                    "Increment_user_created_count": {
+                        "type": "IncrementVariable",
+                        "runAfter": {"Import_user_chunk": ["Succeeded"]},
+                        "inputs": {
+                            "name": "UserCreatedCount",
+                            "value": "@int(coalesce(body('Import_user_chunk')?['Created'], 0))",
+                        },
+                    },
+                    "Increment_user_updated_count": {
+                        "type": "IncrementVariable",
+                        "runAfter": {"Increment_user_created_count": ["Succeeded"]},
+                        "inputs": {
+                            "name": "UserUpdatedCount",
+                            "value": "@int(coalesce(body('Import_user_chunk')?['Updated'], 0))",
+                        },
+                    },
+                    "Increment_user_rejected_count": {
+                        "type": "IncrementVariable",
+                        "runAfter": {"Increment_user_updated_count": ["Succeeded"]},
+                        "inputs": {
+                            "name": "UserRejectedCount",
+                            "value": "@int(coalesce(body('Import_user_chunk')?['Rejected'], 0))",
+                        },
+                    },
+                    "Increment_user_failed_chunk_count": {
+                        "type": "IncrementVariable",
+                        "runAfter": {"Import_user_chunk": ["Failed", "TimedOut"]},
+                        "inputs": {"name": "UserFailedChunkCount", "value": 1},
+                    },
+                },
+            },
             "Compose_import_payload": {
                 "type": "Compose",
-                "runAfter": {"Get_capacity": ["Succeeded"]},
+                "runAfter": {"Increment_capacity_source_count": ["Succeeded"]},
                 "inputs": {
                     "tenantId": f"@{tenant_expression}",
                     "ppacResourcePages": "@variables('UsagePages')",
-                    "ppacUsers": "@body('Get_user_usage')",
                     "ppacCapacity": "@body('Get_capacity')",
                     "syncRun": {
                         "runKey": "@concat('ppac-', formatDateTime(utcNow(), 'yyyyMMddHHmmss'))",
@@ -168,6 +286,11 @@ def build_definition(lookback_days: int = 7) -> dict[str, Any]:
                         "fromDate": f"@formatDateTime(addDays(utcNow(), -{lookback_days}), 'yyyy-MM-dd')",
                         "toDate": "@formatDateTime(utcNow(), 'yyyy-MM-dd')",
                         "pageCount": "@sub(variables('PageNumber'), 1)",
+                        "sourceCount": "@variables('SourceCount')",
+                        "priorCreatedCount": "@variables('UserCreatedCount')",
+                        "priorUpdatedCount": "@variables('UserUpdatedCount')",
+                        "priorRejectedCount": "@variables('UserRejectedCount')",
+                        "priorFailedChunkCount": "@variables('UserFailedChunkCount')",
                         "schemaVersion": SCHEMA_VERSION,
                     },
                 },

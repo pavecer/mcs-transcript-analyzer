@@ -112,10 +112,11 @@ value of `pvci_CreditReportingTenantId` outside the solution. On subsequent depl
 binding is reused. Neither the current tenant value nor the physical connection ID is exported.
 
 The flow reads only the observed PPAC resource-usage, user-usage, and environment-capacity routes,
-follows up to 20 pages of 100 resource rows, and imports through `pvci_ImportCreditUsageBatch`. User
-facts are GUID-only unless the shared audited privacy setting is approved. Authenticate and save
-the stopped solution flow once, run a smoke test, inspect the Credit Sync Run row, then activate the
-daily schedule. Do not use `--activate` before that smoke test succeeds.
+follows up to 20 pages of 100 resource rows, splits the unpaged tenant-wide user projection into
+250-row chunks, and imports through `pvci_ImportCreditUsageBatch`. User facts are GUID-only unless
+the shared audited privacy setting is approved. Authenticate and save the stopped solution flow
+once, run a smoke test, inspect the Credit Sync Run row, then activate the daily schedule. Do not
+use `--activate` before that smoke test succeeds.
 
 ## Setup
 

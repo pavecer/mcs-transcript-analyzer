@@ -105,6 +105,7 @@ jobs:
         working-directory: codeapp
         run: |
           npm ci
+          npm test
           npm run build
 
       - name: Configure code app target

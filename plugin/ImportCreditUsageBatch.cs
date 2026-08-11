@@ -492,6 +492,7 @@ namespace PvciTranscripts
                     SetString(record, "pvci_sourceapi", Json.Str(item, "sourceApi"));
                     SetString(record, "pvci_sourceschemaversion", Json.Str(item, "sourceSchemaVersion") ?? schemaVersion);
                     SetDate(record, "pvci_importedon", Json.Get(item, "importedOn"), DateTime.UtcNow);
+                    ClearResolvedIdentity(record);
                     if (revealNames) ApplyResolvedIdentity(service, record, userId, identities);
                     else SetString(record, "pvci_nameresolutionstatus", "hidden_pending_approval");
                     Upsert(service, existing, record, dryRun, result);
@@ -508,6 +509,13 @@ namespace PvciTranscripts
             Entity setting = FindByString(service, PrivacySettingEntity, "pvci_settingkey", "credit-user-disclosure",
                 "pvci_creditprivacysettingid", "pvci_revealusernames");
             return setting != null && setting.GetAttributeValue<bool>("pvci_revealusernames");
+        }
+
+        private static void ClearResolvedIdentity(Entity record)
+        {
+            record["pvci_userdisplayname"] = null;
+            record["pvci_userprincipalname"] = null;
+            record["pvci_systemuserid"] = null;
         }
 
         private static void ApplyResolvedIdentity(
@@ -570,17 +578,27 @@ namespace PvciTranscripts
                 SetString(record, "pvci_source", Json.Str(item, "source"));
                 SetDate(record, "pvci_startedon", Json.Get(item, "startedOn"), null);
                 SetDate(record, "pvci_completedon", Json.Get(item, "completedOn"), DateTime.UtcNow);
-                SetString(record, "pvci_status", errors.Count == 0 ? "success" : "partial");
+                int priorCreated = Integer(item, "priorCreatedCount");
+                int priorUpdated = Integer(item, "priorUpdatedCount");
+                int priorRejected = Integer(item, "priorRejectedCount");
+                int priorFailedChunks = Integer(item, "priorFailedChunkCount");
+                SetString(record, "pvci_status",
+                    errors.Count == 0 && priorRejected == 0 && priorFailedChunks == 0 ? "success" : "partial");
                 SetDate(record, "pvci_fromdate", Json.Get(item, "fromDate"), null);
                 SetDate(record, "pvci_todate", Json.Get(item, "toDate"), null);
                 SetInteger(record, "pvci_pagecount", Json.Get(item, "pageCount"));
                 SetInteger(record, "pvci_sourcecount", Json.Get(item, "sourceCount"));
-                record["pvci_createdcount"] = result.Created;
-                record["pvci_updatedcount"] = result.Updated;
+                record["pvci_createdcount"] = checked(priorCreated + result.Created);
+                record["pvci_updatedcount"] = checked(priorUpdated + result.Updated);
                 record["pvci_skippedcount"] = result.Skipped;
-                record["pvci_rejectedcount"] = result.Rejected;
+                record["pvci_rejectedcount"] = checked(priorRejected + result.Rejected);
                 SetString(record, "pvci_schemaversion", Json.Str(item, "schemaVersion") ?? schemaVersion);
-                SetMemo(record, "pvci_error", errors.Count > 0 ? string.Join("\n", errors.ToArray()) : string.Empty);
+                var syncErrors = new List<string>();
+                if (priorFailedChunks > 0)
+                    syncErrors.Add(priorFailedChunks + " user chunk import(s) failed before returning row outcomes.");
+                if (priorRejected > 0) syncErrors.Add("User chunk imports rejected " + priorRejected + " row(s).");
+                syncErrors.AddRange(errors);
+                SetMemo(record, "pvci_error", syncErrors.Count > 0 ? string.Join("\n", syncErrors.ToArray()) : string.Empty);
                 if (existing != null)
                 {
                     record.Id = existing.Id;
@@ -705,6 +723,19 @@ namespace PvciTranscripts
                 if (int.TryParse((string)value, NumberStyles.Integer, CultureInfo.InvariantCulture, out parsed))
                     record[field] = parsed;
             }
+        }
+
+        private static int Integer(object item, string key)
+        {
+            object value = Json.Get(item, key);
+            if (value is int) return (int)value;
+            if (value is long) return checked((int)(long)value);
+            if (value is double) return Convert.ToInt32((double)value, CultureInfo.InvariantCulture);
+            int parsed;
+            return value is string
+                && int.TryParse((string)value, NumberStyles.Integer, CultureInfo.InvariantCulture, out parsed)
+                ? parsed
+                : 0;
         }
 
         private static void SetBoolean(Entity record, string field, object value)

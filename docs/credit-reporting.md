@@ -8,12 +8,12 @@ harness runtimes; it does not use the separate GitHub Copilot product billing AP
 
 | Component | Current behavior |
 | --- | --- |
-| `PVCI Collect Copilot Credit Usage (scheduled)` | Runs daily, re-reads seven days, follows up to 20 pages of 100 resource rows, and captures user usage and environment capacity |
+| `PVCI Collect Copilot Credit Usage (scheduled)` | Runs daily, re-reads seven days, follows up to 20 pages of 100 resource rows, imports user rows in bounded 250-row chunks, and captures environment capacity |
 | `pvci_ImportCreditUsageBatch` | Validates tenant scope, normalizes raw PPAC responses, computes stable keys, and idempotently imports bounded batches |
 | `pvci_agentinventory` | One row per observed tenant, environment, and resource ID; harness remains `unknown` without verified evidence |
 | `pvci_creditusage` | One row per source resource/period fact with billed and non-billed credits and optional driver dimensions |
 | `pvci_creditcapacitysnapshot` | One row per environment, entitlement, and source as-of date |
-| `pvci_creditsyncrun` | Collector freshness, source/import counts, status, schema version, and bounded errors |
+| `pvci_creditsyncrun` | Collector freshness, combined user/resource/capacity import counts, status, schema version, and bounded errors |
 | `pvci_credituserusage` | Separate user/source-period projection; source user GUID is the default label and no name is accepted from PPAC |
 | `pvci_creditprivacysetting` | Singleton, default-off, shared and audited approval controlling server-side name resolution and revocation |
 | Model-driven app | Agent, usage, user consumption, privacy approval, capacity, unresolved-resource, unknown-harness, and sync-run views/forms |
@@ -85,10 +85,12 @@ The test-tenant capture returned nested user rows with:
 - `metadata.Resources`,
 - source `unit`.
 
-This is not an agent-user-event fact table. It can answer “how much was attributed to this user in
-the source period?” and which resources contributed according to source metadata. It cannot prove
-which individual conversation or action incurred a charge. The all-zero user ID can represent
-background or non-human usage and must remain visible rather than being resolved to a person.
+The projection does not include an environment ID. User totals are therefore tenant-wide even when
+the resource and transcript views are scoped to one environment. This is not an
+agent-user-event fact table. It can answer “how much was attributed to this user in the source
+period?” and which resources contributed according to source metadata. It cannot prove which
+individual conversation or action incurred a charge. The all-zero user ID can represent background
+or non-human usage and must remain visible rather than being resolved to a person.
 
 The scheduled collector now imports this projection into the separate organization-owned
 `pvci_credituserusage` table. Privacy behavior is shared across both applications:
@@ -102,17 +104,20 @@ The scheduled collector now imports this projection into the separate organizati
 4. A synchronous Dataverse plug-in records the initiating user and approval time, resolves source
   IDs against `systemuser.azureactivedirectoryobjectid`, and updates the user facts.
 5. The all-zero source ID becomes `Background activity`; it is never resolved to a person.
-6. Revocation immediately restores GUID labels and clears display name, UPN, and linked system-user
-  fields from every user fact.
+6. Every re-import clears any stored display name, UPN, and linked system-user ID before applying
+  the current approval and resolution result, so stale identity data cannot survive an unresolved
+  or hidden transition. Revocation applies the same clearing behavior to every user fact.
 7. Only security principals with update privilege on the privacy-setting row should be granted the
   ability to approve. The approval is tenant/environment-wide, not a browser-local preference.
 8. Resource and user projections remain separate totals and must never be added together.
 
 The code app follows the Sessions interaction pattern: the left rail contains search, environment
-scope, selectable agent/resource cards, and selectable user cards. Agent selection filters the
-credit KPIs and contribution charts. User selection filters the user-consumption detail table.
-Both lists retain explicit **All** choices and show compact totals/status so the main reporting pane
-can remain focused on analysis rather than selectors.
+scope, selectable agent/resource cards, and tenant-wide selectable user cards. Agent selection
+filters the environment-scoped credit KPIs and contribution charts. User selection filters the
+tenant-wide user-consumption detail table. Both lists retain explicit **All** choices and show
+compact totals/status so the main reporting pane can remain focused on analysis rather than
+selectors. Dataverse usage, capacity, inventory, user, and transcript reads follow `skipToken`
+until complete; the app fails explicitly instead of silently presenting a truncated global total.
 
 The main pane is organized as a human-readable report with three non-overlapping bands:
 

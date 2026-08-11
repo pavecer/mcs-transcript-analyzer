@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import base64
 import json
 import sys
 from pathlib import Path
@@ -43,6 +44,7 @@ RESPONSE_PROPS = [
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--config", default="config/transcript_solution_config.dev.json")
+    parser.add_argument("--assembly", default="plugin/bin/Release/net462/plugin.dll")
     args = parser.parse_args()
 
     token, dv_url = get_token_from_config(args.config)
@@ -52,6 +54,15 @@ def main() -> None:
     if not assembly:
         raise SystemExit("Plugin assembly is not registered; run register_plugin.py first.")
     assembly_id = assembly["pluginassemblyid"]
+    assembly_path = Path(args.assembly)
+    if not assembly_path.exists():
+        raise SystemExit(f"Assembly not found: {assembly_path} (run the Release build first).")
+    dv.update(
+        "pluginassemblies",
+        assembly_id,
+        {"content": base64.b64encode(assembly_path.read_bytes()).decode("ascii")},
+    )
+    print(f"pluginassembly updated: {assembly_id}")
 
     existing = dv.find("plugintypes", f"typename eq '{PLUGIN_TYPE}'", "plugintypeid,typename")
     if existing:

@@ -15,6 +15,7 @@ import type { Pvci_creditusages } from "../generated/models/Pvci_creditusagesMod
 import type { Pvci_credituserusages } from "../generated/models/Pvci_credituserusagesModel";
 import type { Pvci_creditprivacysettings } from "../generated/models/Pvci_creditprivacysettingsModel";
 import type { SessionRow } from "../lib/model";
+import { loadAllPages } from "../lib/paging";
 
 const USAGE_FIELDS = [
   "pvci_creditusageid", "pvci_usagedate", "pvci_environmentid", "pvci_resourceid",
@@ -82,22 +83,22 @@ export function Credits({ sidebarTarget }: { sidebarTarget: HTMLElement | null }
     void (async () => {
       try {
         const [usageResult, capacityResult, agentResult, syncResult, userResult, privacyResult, sessionResult] = await Promise.all([
-          Pvci_creditusagesService.getAll({ select: USAGE_FIELDS, orderBy: ["pvci_usagedate desc"], top: 500 }),
-          Pvci_creditcapacitysnapshotsService.getAll({ select: CAPACITY_FIELDS, orderBy: ["pvci_asofdate desc"], top: 200 }),
-          Pvci_agentinventoriesService.getAll({ select: AGENT_FIELDS, orderBy: ["pvci_displayname asc"], top: 500 }),
+          loadAllPages((skipToken, maxPageSize) => Pvci_creditusagesService.getAll({ select: USAGE_FIELDS, orderBy: ["pvci_usagedate desc"], maxPageSize, skipToken })),
+          loadAllPages((skipToken, maxPageSize) => Pvci_creditcapacitysnapshotsService.getAll({ select: CAPACITY_FIELDS, orderBy: ["pvci_asofdate desc"], maxPageSize, skipToken })),
+          loadAllPages((skipToken, maxPageSize) => Pvci_agentinventoriesService.getAll({ select: AGENT_FIELDS, orderBy: ["pvci_displayname asc"], maxPageSize, skipToken })),
           Pvci_creditsyncrunsService.getAll({ select: SYNC_FIELDS, orderBy: ["pvci_startedon desc"], top: 50 }),
-          Pvci_credituserusagesService.getAll({ select: USER_USAGE_FIELDS, orderBy: ["pvci_usagedate desc"], top: 500 }),
+          loadAllPages((skipToken, maxPageSize) => Pvci_credituserusagesService.getAll({ select: USER_USAGE_FIELDS, orderBy: ["pvci_usagedate desc"], maxPageSize, skipToken })),
           Pvci_creditprivacysettingsService.getAll({ select: PRIVACY_FIELDS, filter: "pvci_settingkey eq 'credit-user-disclosure'", top: 1 }),
-          Pvci_transcriptsessionsService.getAll({ select: CORRELATION_SESSION_FIELDS, orderBy: ["pvci_startdatetimeutc desc"], top: 500 }),
+          loadAllPages((skipToken, maxPageSize) => Pvci_transcriptsessionsService.getAll({ select: CORRELATION_SESSION_FIELDS, orderBy: ["pvci_startdatetimeutc desc"], maxPageSize, skipToken })),
         ]);
         if (cancelled) return;
-        setUsage((usageResult.data ?? []) as unknown as Pvci_creditusages[]);
-        setCapacity((capacityResult.data ?? []) as unknown as Pvci_creditcapacitysnapshots[]);
-        setAgents((agentResult.data ?? []) as unknown as Pvci_agentinventories[]);
+        setUsage(usageResult);
+        setCapacity(capacityResult);
+        setAgents(agentResult);
         setSyncRuns((syncResult.data ?? []) as unknown as Pvci_creditsyncruns[]);
-        setUserUsage((userResult.data ?? []) as unknown as Pvci_credituserusages[]);
+        setUserUsage(userResult);
         setPrivacy(((privacyResult.data ?? [])[0] ?? null) as unknown as Pvci_creditprivacysettings | null);
-        setCorrelationSessions((sessionResult.data ?? []) as unknown as SessionRow[]);
+        setCorrelationSessions(sessionResult);
       } catch (reason) {
         if (!cancelled) setError(reason instanceof Error ? reason.message : String(reason));
       } finally {
@@ -184,7 +185,7 @@ export function Credits({ sidebarTarget }: { sidebarTarget: HTMLElement | null }
       ? userSummaries.filter(([key, summary]) => `${summary.label} ${key}`.toLowerCase().includes(query))
       : userSummaries;
   }, [userSummaries, navigatorSearch]);
-  const scopedUserUsage = useMemo(
+  const selectedUserUsage = useMemo(
     () => userUsage.filter((row) => selectedUser === "*" || (row.pvci_userid ?? "unknown") === selectedUser),
     [userUsage, selectedUser]
   );
@@ -244,8 +245,8 @@ export function Credits({ sidebarTarget }: { sidebarTarget: HTMLElement | null }
       .sort((left, right) => right.value - left.value);
   }, [userSessions, resourceSummaries]);
   const userCreditTrend = useMemo(
-    () => aggregateSplitCreditPeriods(scopedUserUsage, periodGrain),
-    [scopedUserUsage, periodGrain]
+    () => aggregateSplitCreditPeriods(selectedUserUsage, periodGrain),
+    [selectedUserUsage, periodGrain]
   );
   const combinationByPeriod = useMemo(
     () => groupSessionsByPeriod(combinationSessions, periodGrain),
@@ -259,8 +260,8 @@ export function Credits({ sidebarTarget }: { sidebarTarget: HTMLElement | null }
     toolErrors: combinationSessions.reduce((total, row) => total + (row.pvci_toolerrorcount ?? 0), 0),
     resolved: combinationSessions.filter((row) => row.pvci_sessionoutcome === "Resolved").length,
     reportedUsers: maxSourceCount(scopedUsage.map((row) => row.pvci_users)),
-    reportedResources: maxSourceCount(scopedUserUsage.map((row) => row.pvci_resources)),
-  }), [combinationSessions, scopedUsage, scopedUserUsage]);
+    reportedResources: maxSourceCount(selectedUserUsage.map((row) => row.pvci_resources)),
+  }), [combinationSessions, scopedUsage, selectedUserUsage]);
 
   const globalTotals = useMemo(() => {
     const billed = sum(environmentUsage, "pvci_billedcredits");
@@ -327,10 +328,10 @@ export function Credits({ sidebarTarget }: { sidebarTarget: HTMLElement | null }
         pvci_revealusernames: reveal,
       });
       const [userResult, privacyResult] = await Promise.all([
-        Pvci_credituserusagesService.getAll({ select: USER_USAGE_FIELDS, orderBy: ["pvci_usagedate desc"], top: 500 }),
+        loadAllPages((skipToken, maxPageSize) => Pvci_credituserusagesService.getAll({ select: USER_USAGE_FIELDS, orderBy: ["pvci_usagedate desc"], maxPageSize, skipToken })),
         Pvci_creditprivacysettingsService.get(privacy.pvci_creditprivacysettingid, { select: PRIVACY_FIELDS }),
       ]);
-      setUserUsage((userResult.data ?? []) as unknown as Pvci_credituserusages[]);
+      setUserUsage(userResult);
       setPrivacy((privacyResult.data ?? null) as unknown as Pvci_creditprivacysettings | null);
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : String(reason));
@@ -376,13 +377,13 @@ export function Credits({ sidebarTarget }: { sidebarTarget: HTMLElement | null }
       </div>
 
       <div className="credit-nav-heading">
-        <span>Users</span>
+        <span>Users · tenant-wide</span>
         <span>{userSummaries.length}</span>
       </div>
       <div className="credit-nav-list user-nav-list">
         <button className={`session-item credit-nav-item${selectedUser === "*" ? " active" : ""}`} onClick={() => setSelectedUser("*")}>
           <div className="si-top"><span className="si-user">All users</span></div>
-          <div className="si-sub muted small">{userUsage.length} source-period facts</div>
+          <div className="si-sub muted small">{userUsage.length} tenant-wide source-period facts</div>
         </button>
         {visibleUserSummaries.map(([key, summary]) => (
           <button key={key} className={`session-item credit-nav-item${selectedUser === key ? " active" : ""}`} onClick={() => setSelectedUser(key)}>
@@ -493,7 +494,7 @@ export function Credits({ sidebarTarget }: { sidebarTarget: HTMLElement | null }
             </div>
           </div>
           <div className="selection-note">
-            PPAC exposes user and resource credits as separate aggregate projections. The two credit trends below remain authoritative separately; transcript relationships show observed usage but do not assign user credits to an agent.
+            PPAC exposes user and resource credits as separate aggregate projections. User credits are tenant-wide because that projection has no environment ID. The two credit trends remain authoritative separately; transcript relationships show observed usage but do not assign user credits to an agent.
           </div>
           {resource !== "*" && agentSessions.length === 0 && (
             <div className="selection-gap">
@@ -503,7 +504,7 @@ export function Credits({ sidebarTarget }: { sidebarTarget: HTMLElement | null }
 
           <div className="kpis selection-kpis">
             {resource !== "*" && <CreditKpi label="Agent credits" value={fmtCredits(scopedTotals.total)} />}
-            {selectedUser !== "*" && <CreditKpi label="User credits" value={fmtCredits(sumUserCredits(scopedUserUsage))} />}
+            {selectedUser !== "*" && <CreditKpi label="User credits · tenant" value={fmtCredits(sumUserCredits(selectedUserUsage))} />}
             <CreditKpi label="Matched sessions" value={String(relationshipKpis.sessions)} />
             <CreditKpi label="Messages" value={String(relationshipKpis.messages)} />
             <CreditKpi label="User turns" value={String(relationshipKpis.userTurns)} />
@@ -522,7 +523,7 @@ export function Credits({ sidebarTarget }: { sidebarTarget: HTMLElement | null }
             )}
             {selectedUser !== "*" && (
               <div>
-                <SectionHeading text="User credit trend" help="Authoritative PPAC user credits by source period, split into billed and non-billed lanes. These values are not assigned to the selected agent." />
+                <SectionHeading text="User credit trend · tenant-wide" help="Authoritative tenant-wide PPAC user credits by source period, split into billed and non-billed lanes. The source has no environment ID, and these values are not assigned to the selected agent." />
                 <CreditTrend rows={userCreditTrend} />
               </div>
             )}
@@ -540,7 +541,7 @@ export function Credits({ sidebarTarget }: { sidebarTarget: HTMLElement | null }
             )}
             {resource !== "*" && (
               <div>
-                <SectionHeading text="Related users · total credits across all agents" help="Each observed user's full PPAC credit total across all agents. It is context for the relationship, not this resource's attributed charge." />
+                <SectionHeading text="Related users · tenant-wide credits" help="Each observed user's full tenant-wide PPAC credit total. It is context for the relationship, not this resource's or environment's attributed charge." />
                 <HBar rows={userCreditsForAgent} unit="credits" />
               </div>
             )}
@@ -573,7 +574,7 @@ export function Credits({ sidebarTarget }: { sidebarTarget: HTMLElement | null }
                 <table className="runtable credit-table user-credit-table">
                   <thead><tr><th>User</th><th>As of</th><th>Billed</th><th>Non-billed</th><th>Identity status</th><th>Resources</th></tr></thead>
                   <tbody>
-                    {scopedUserUsage.map((row) => (
+                    {selectedUserUsage.map((row) => (
                       <tr key={row.pvci_credituserusageid}>
                         <td className={revealUserNames ? "" : "mono"}>
                           {revealUserNames ? row.pvci_userdisplayname ?? row.pvci_userid ?? "Unknown" : row.pvci_userid ?? "Unknown"}

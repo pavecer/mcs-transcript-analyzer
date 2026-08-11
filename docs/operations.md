@@ -91,8 +91,9 @@ connection ID.
 The script creates the flow stopped. Authenticate/save its solution connection references, run one
 manual smoke test, and verify a successful `pvci_creditsyncrun` before activation. The flow runs
 daily, re-reads seven days, requests pages of 100 up to a hard cap of 20, captures current capacity,
-and invokes `pvci_ImportCreditUsageBatch`. Re-reading is intentional because PPAC can revise recent
-facts and the importer is idempotent.
+splits the unpaged user projection into bounded 250-row imports, and invokes
+`pvci_ImportCreditUsageBatch`. Re-reading is intentional because PPAC can revise recent facts and
+the importer is idempotent.
 
 Health query:
 
@@ -105,13 +106,18 @@ GET {dataverseUrl}/api/data/v9.1/pvci_creditsyncruns
 
 `success` with a recent completion time and zero rejected rows is healthy. A source count of zero
 can be valid when PPAC has no reportable usage, but should be compared with PPAC and previous runs.
-Do not activate a flow whose physical licensing connection targets a different Base Resource URL.
+Created, updated, and rejected counts combine all user chunks with the final resource/capacity
+batch. A row rejection or transport-level user-chunk failure makes the persisted run `partial`;
+failed chunks are recorded even when they return no row-level outcome. Do not activate a flow whose
+physical licensing connection targets a different Base Resource URL.
 
-Per-user usage is collected into `pvci_credituserusage`, separately from resource totals. The
-default display is the source GUID. To approve name disclosure in the code app, use **Reveal user
-names** and confirm the dialog. In the model-driven app, open **Privacy Approval**, read the shared
-statement, set **Reveal User Names** to Yes, and save. Approval is global and audited. Revocation in
-either app clears all resolved names, UPNs, and system-user IDs. Restrict update access on
+Per-user usage is collected into `pvci_credituserusage`, separately from resource totals. The PPAC
+user projection has no environment ID, so its totals remain tenant-wide when resource reporting is
+environment-filtered. The default display is the source GUID. To approve name disclosure in the
+code app, use **Reveal user names** and confirm the dialog. In the model-driven app, open **Privacy
+Approval**, read the shared statement, set **Reveal User Names** to Yes, and save. Approval is global
+and audited. Revocation and unresolved re-imports clear all resolved names, UPNs, and system-user
+IDs. Restrict update access on
 `pvci_creditprivacysetting` to authorized approvers and define retention/export policy before
 enabling names outside the test tenant.
 
