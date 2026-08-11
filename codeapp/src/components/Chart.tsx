@@ -6,6 +6,12 @@ interface Bucket {
   failures: number;
 }
 
+export interface CreditTrendRow {
+  label: string;
+  billed: number;
+  nonbilled: number;
+}
+
 const PAD = { top: 14, right: 52, bottom: 30, left: 44 };
 
 /** Bars = session count (left axis), line = latency percentile (right axis). */
@@ -94,11 +100,52 @@ export function HBar({ rows, unit = "" }: { rows: { label: string; value: number
           <span className="hbar-track">
             <span className={`hbar-fill${r.bad ? " bad" : ""}`} style={{ width: `${(r.value / max) * 100}%` }} />
           </span>
-          <span className="hbar-value">{unit === "ms" ? fmtShort(r.value) : r.value}</span>
+          <span className="hbar-value">
+            {unit === "ms" ? fmtShort(r.value) : unit === "credits" ? fmtNumber(r.value) : r.value}
+          </span>
         </div>
       ))}
     </div>
   );
+}
+
+export function CreditTrend({ rows }: { rows: CreditTrendRow[] }) {
+  if (!rows.length) return <div className="muted small">No credit facts in this source period.</div>;
+  const max = Math.max(1, ...rows.flatMap((row) => [row.billed, row.nonbilled]));
+  return (
+    <div className="credit-trend">
+      <div className="credit-trend-legend" aria-hidden="true">
+        <span><i className="billed" />Billed</span>
+        <span><i className="nonbilled" />Non-billed</span>
+      </div>
+      {rows.map((row) => (
+        <div className="credit-trend-period" key={row.label}>
+          <div className="credit-trend-period-head">
+            <strong>{row.label}</strong>
+            <span>{fmtNumber(row.billed + row.nonbilled)} total</span>
+          </div>
+          <div className="credit-trend-lane">
+            <span className="credit-trend-kind">Billed</span>
+            <span className="credit-trend-track">
+              <span className="credit-trend-fill billed" style={{ width: `${(row.billed / max) * 100}%` }} />
+            </span>
+            <span className="credit-trend-value">{fmtNumber(row.billed)}</span>
+          </div>
+          <div className="credit-trend-lane">
+            <span className="credit-trend-kind">Non-billed</span>
+            <span className="credit-trend-track">
+              <span className="credit-trend-fill nonbilled" style={{ width: `${(row.nonbilled / max) * 100}%` }} />
+            </span>
+            <span className="credit-trend-value">{fmtNumber(row.nonbilled)}</span>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function fmtNumber(value: number): string {
+  return value.toLocaleString(undefined, { maximumFractionDigits: 2 });
 }
 
 function fmtShort(ms: number): string {

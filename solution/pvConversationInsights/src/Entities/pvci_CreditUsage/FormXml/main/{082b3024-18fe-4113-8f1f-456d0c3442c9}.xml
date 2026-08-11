@@ -1,0 +1,306 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<forms xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <systemform>
+    <formid>{082b3024-18fe-4113-8f1f-456d0c3442c9}</formid>
+    <IntroducedVersion>1.0.0.0</IntroducedVersion>
+    <FormPresentation>1</FormPresentation>
+    <FormActivationState>1</FormActivationState>
+    <form>
+      <tabs>
+        <tab id="{6d13056c-e65b-59e5-a2cc-ca9470ed7971}" name="cu_summary" verticallayout="true" showlabel="true" expanded="true">
+          <labels>
+            <label description="Usage" languagecode="1033" />
+          </labels>
+          <columns>
+            <column width="100%">
+              <sections>
+                <section id="{f79dd1a1-deac-5b74-91f3-395bc76a2b8a}" name="cu_billing" showlabel="true" showbar="false" columns="11" labelwidth="140" celllabelalignment="Left" celllabelposition="Left">
+                  <labels>
+                    <label description="Authoritative usage fact" languagecode="1033" />
+                  </labels>
+                  <rows>
+                    <row>
+                      <cell id="{d9147d69-6f41-57cc-ab2b-2e6f865abfad}" showlabel="true">
+                        <labels>
+                          <label description="Name" languagecode="1033" />
+                        </labels>
+                        <control id="pvci_name" uniqueid="{1dd98890-0214-5b8e-816e-0258ad1d715f}" classid="{4273EDBD-AC1D-40d3-9FB2-095C621B552D}" datafieldname="pvci_name" disabled="false" />
+                      </cell>
+                      <cell id="{a6fa7e75-2779-5ca8-bfe4-c6c5213f706c}" showlabel="true">
+                        <labels>
+                          <label description="Agent inventory" languagecode="1033" />
+                        </labels>
+                        <control id="pvci_agentid" uniqueid="{45b6d227-15f3-5ef7-b448-0a8de14a93b6}" classid="{270BD3DB-D9AF-4782-9025-509E298DEC0A}" datafieldname="pvci_agentid" disabled="false" />
+                      </cell>
+                    </row>
+                    <row>
+                      <cell id="{c5fb680d-17e5-5269-8fcb-d027800d06e3}" showlabel="true">
+                        <labels>
+                          <label description="Agent or resource" languagecode="1033" />
+                        </labels>
+                        <control id="pvci_agentname" uniqueid="{ff3d27e0-1b3d-585c-bb15-c31ddaa19d7b}" classid="{4273EDBD-AC1D-40d3-9FB2-095C621B552D}" datafieldname="pvci_agentname" disabled="false" />
+                      </cell>
+                      <cell id="{6bcfc0ef-0432-577e-85e4-39080a242392}" showlabel="true">
+                        <labels>
+                          <label description="Feature" languagecode="1033" />
+                        </labels>
+                        <control id="pvci_featurename" uniqueid="{53d5be1f-d060-57b3-8712-ef31d7936ca8}" classid="{4273EDBD-AC1D-40d3-9FB2-095C621B552D}" datafieldname="pvci_featurename" disabled="false" />
+                      </cell>
+                    </row>
+                    <row>
+                      <cell id="{6efe5a6a-b352-531b-8597-9506f50673a6}" showlabel="true">
+                        <labels>
+                          <label description="Billed Copilot Credits" languagecode="1033" />
+                        </labels>
+                        <control id="pvci_billedcredits" uniqueid="{71968b97-59e8-5517-9732-9fe207882955}" classid="{C3EFE0C3-0EC6-42be-8349-CBD9079DFD8E}" datafieldname="pvci_billedcredits" disabled="false" />
+                      </cell>
+                      <cell id="{e60d6bda-5556-594a-bc2f-0205056365aa}" showlabel="true">
+                        <labels>
+                          <label description="Non-billed Copilot Credits" languagecode="1033" />
+                        </labels>
+                        <control id="pvci_nonbilledcredits" uniqueid="{ba2b7b81-79be-5050-8854-e9ba0b136c8a}" classid="{C3EFE0C3-0EC6-42be-8349-CBD9079DFD8E}" datafieldname="pvci_nonbilledcredits" disabled="false" />
+                      </cell>
+                    </row>
+                    <row>
+                      <cell id="{c3cd4dd1-c4b1-5947-ad03-84c740f41c90}" showlabel="true">
+                        <labels>
+                          <label description="Source unit" languagecode="1033" />
+                        </labels>
+                        <control id="pvci_sourceunit" uniqueid="{4cf03460-e9ed-56f8-9bf6-06aafd923cd8}" classid="{4273EDBD-AC1D-40d3-9FB2-095C621B552D}" datafieldname="pvci_sourceunit" disabled="false" />
+                      </cell>
+                      <cell id="{6c4b0bbc-3d77-5687-9933-981e0766e3e9}" showlabel="true">
+                        <labels>
+                          <label description="Entitlement" languagecode="1033" />
+                        </labels>
+                        <control id="pvci_entitlementid" uniqueid="{9bdd217f-8a86-5545-860f-0433517417f0}" classid="{4273EDBD-AC1D-40d3-9FB2-095C621B552D}" datafieldname="pvci_entitlementid" disabled="false" />
+                      </cell>
+                    </row>
+                  </rows>
+                </section>
+                <section id="{622db8fb-4dee-53fa-8075-983eb969d5ba}" name="cu_scope" showlabel="true" showbar="false" columns="11" labelwidth="140" celllabelalignment="Left" celllabelposition="Left">
+                  <labels>
+                    <label description="Period and attribution" languagecode="1033" />
+                  </labels>
+                  <rows>
+                    <row>
+                      <cell id="{e169f88e-4cc9-5fe4-9597-3ce42ec51b20}" showlabel="true">
+                        <labels>
+                          <label description="Usage date" languagecode="1033" />
+                        </labels>
+                        <control id="pvci_usagedate" uniqueid="{4bb939c8-bb84-5168-aca0-c5386cd961ad}" classid="{5B773807-9FB2-42db-97C3-7A91EFF8ADFF}" datafieldname="pvci_usagedate" disabled="false" />
+                      </cell>
+                      <cell id="{7187fd89-504a-59f6-a16c-7b50c408d7a3}" showlabel="true">
+                        <labels>
+                          <label description="From date" languagecode="1033" />
+                        </labels>
+                        <control id="pvci_fromdate" uniqueid="{46c6c529-bb3d-5951-8856-cdfb186328b1}" classid="{5B773807-9FB2-42db-97C3-7A91EFF8ADFF}" datafieldname="pvci_fromdate" disabled="false" />
+                      </cell>
+                    </row>
+                    <row>
+                      <cell id="{1dc08199-ba2d-5fa2-a2af-e8a77fe192f8}" showlabel="true">
+                        <labels>
+                          <label description="To date" languagecode="1033" />
+                        </labels>
+                        <control id="pvci_todate" uniqueid="{566f833c-43bf-59c4-be94-0a797e462aa8}" classid="{5B773807-9FB2-42db-97C3-7A91EFF8ADFF}" datafieldname="pvci_todate" disabled="false" />
+                      </cell>
+                      <cell id="{57c53b83-0086-5338-bff8-afabd4bbd349}" showlabel="true">
+                        <labels>
+                          <label description="Imported" languagecode="1033" />
+                        </labels>
+                        <control id="pvci_importedon" uniqueid="{627f5d05-d746-5638-9be9-445504a781e9}" classid="{5B773807-9FB2-42db-97C3-7A91EFF8ADFF}" datafieldname="pvci_importedon" disabled="false" />
+                      </cell>
+                    </row>
+                    <row>
+                      <cell id="{0d53b1e5-f448-578e-a621-3043393359c6}" showlabel="true">
+                        <labels>
+                          <label description="Harness" languagecode="1033" />
+                        </labels>
+                        <control id="pvci_harness" uniqueid="{3700e1a8-3937-5df3-96eb-8cc2d6e844fe}" classid="{4273EDBD-AC1D-40d3-9FB2-095C621B552D}" datafieldname="pvci_harness" disabled="false" />
+                      </cell>
+                      <cell id="{0333649f-b65e-5259-a6f6-34869aa97448}" showlabel="true">
+                        <labels>
+                          <label description="Resolution status" languagecode="1033" />
+                        </labels>
+                        <control id="pvci_resolutionstatus" uniqueid="{14bd98b7-085d-58ce-b800-e31a005bb9e0}" classid="{4273EDBD-AC1D-40d3-9FB2-095C621B552D}" datafieldname="pvci_resolutionstatus" disabled="false" />
+                      </cell>
+                    </row>
+                    <row>
+                      <cell id="{09edf0bd-da20-517c-bba8-9a1f52e36d69}" showlabel="true">
+                        <labels>
+                          <label description="Resource type" languagecode="1033" />
+                        </labels>
+                        <control id="pvci_resourcetype" uniqueid="{46071c6d-d734-5bb9-bc13-722a69ec0b23}" classid="{4273EDBD-AC1D-40d3-9FB2-095C621B552D}" datafieldname="pvci_resourcetype" disabled="false" />
+                      </cell>
+                      <cell id="{76af2d42-657a-558c-bc67-7679ac19d89b}" showlabel="true">
+                        <labels>
+                          <label description="Channel" languagecode="1033" />
+                        </labels>
+                        <control id="pvci_channelid" uniqueid="{8645774e-d76c-50f7-9cc6-9bcc2310456c}" classid="{4273EDBD-AC1D-40d3-9FB2-095C621B552D}" datafieldname="pvci_channelid" disabled="false" />
+                      </cell>
+                    </row>
+                    <row>
+                      <cell id="{dec03a50-5645-582c-a8e9-9a8e89cecfd5}" showlabel="true">
+                        <labels>
+                          <label description="LLM model" languagecode="1033" />
+                        </labels>
+                        <control id="pvci_llmmodel" uniqueid="{174f328e-8d96-5f5f-b8b6-1bbccc487338}" classid="{4273EDBD-AC1D-40d3-9FB2-095C621B552D}" datafieldname="pvci_llmmodel" disabled="false" />
+                      </cell>
+                      <cell id="{58ac7d79-905a-5e28-b6aa-1437d28f4491}" showlabel="true">
+                        <labels>
+                          <label description="Users" languagecode="1033" />
+                        </labels>
+                        <control id="pvci_users" uniqueid="{a98a53fc-b993-594a-b90d-d7d698a749e9}" classid="{E0DECE4B-6FC8-4a8f-A065-082708572369}" datafieldname="pvci_users" disabled="false" />
+                      </cell>
+                    </row>
+                  </rows>
+                </section>
+                <section id="{19daa9b1-0790-5ed2-9eaa-b943cde8143a}" name="cu_lineage" showlabel="true" showbar="false" columns="11" labelwidth="140" celllabelalignment="Left" celllabelposition="Left">
+                  <labels>
+                    <label description="Source lineage" languagecode="1033" />
+                  </labels>
+                  <rows>
+                    <row>
+                      <cell id="{4eff499a-6389-5977-94fa-fed9dd3827aa}" showlabel="true">
+                        <labels>
+                          <label description="Environment ID" languagecode="1033" />
+                        </labels>
+                        <control id="pvci_environmentid" uniqueid="{d5360f58-5aaa-50c5-b52d-52a32ede8db1}" classid="{4273EDBD-AC1D-40d3-9FB2-095C621B552D}" datafieldname="pvci_environmentid" disabled="false" />
+                      </cell>
+                      <cell id="{007d044e-78fb-5659-b9bd-b3e81ba71a29}" showlabel="true">
+                        <labels>
+                          <label description="Resource ID" languagecode="1033" />
+                        </labels>
+                        <control id="pvci_resourceid" uniqueid="{224808df-aa6c-5eb2-8201-79aabe2cad23}" classid="{4273EDBD-AC1D-40d3-9FB2-095C621B552D}" datafieldname="pvci_resourceid" disabled="false" />
+                      </cell>
+                    </row>
+                    <row>
+                      <cell id="{28d01602-392b-5e29-abdc-52b12bf283e3}" showlabel="true">
+                        <labels>
+                          <label description="Tenant ID" languagecode="1033" />
+                        </labels>
+                        <control id="pvci_tenantid" uniqueid="{4f429060-83a0-5c38-8853-f6c2a300d06e}" classid="{4273EDBD-AC1D-40d3-9FB2-095C621B552D}" datafieldname="pvci_tenantid" disabled="false" />
+                      </cell>
+                      <cell id="{25c3ff6f-13c1-5412-903c-cc479cabcba7}" showlabel="true">
+                        <labels>
+                          <label description="Source key" languagecode="1033" />
+                        </labels>
+                        <control id="pvci_sourcekey" uniqueid="{4fe20548-f0a8-5e45-892b-71e3955e522b}" classid="{4273EDBD-AC1D-40d3-9FB2-095C621B552D}" datafieldname="pvci_sourcekey" disabled="false" />
+                      </cell>
+                    </row>
+                    <row>
+                      <cell id="{ad464450-b810-52ef-bee4-a051d131dcd1}" showlabel="true">
+                        <labels>
+                          <label description="Source API" languagecode="1033" />
+                        </labels>
+                        <control id="pvci_sourceapi" uniqueid="{069c277c-0365-555e-bf86-5431052d508e}" classid="{4273EDBD-AC1D-40d3-9FB2-095C621B552D}" datafieldname="pvci_sourceapi" disabled="false" />
+                      </cell>
+                      <cell id="{416f3ba4-9e36-5edb-92f4-c16216762d37}" showlabel="true">
+                        <labels>
+                          <label description="Schema version" languagecode="1033" />
+                        </labels>
+                        <control id="pvci_sourceschemaversion" uniqueid="{4c2ba0bc-a5a1-571c-82d0-b27cbfebcc44}" classid="{4273EDBD-AC1D-40d3-9FB2-095C621B552D}" datafieldname="pvci_sourceschemaversion" disabled="false" />
+                      </cell>
+                    </row>
+                  </rows>
+                </section>
+              </sections>
+            </column>
+          </columns>
+        </tab>
+        <tab id="{fe4a12d8-c0ca-52b7-a914-19ab4f2f9a83}" name="cu_drivers_tab" verticallayout="true" showlabel="true" expanded="true">
+          <labels>
+            <label description="Drivers" languagecode="1033" />
+          </labels>
+          <columns>
+            <column width="100%">
+              <sections>
+                <section id="{9dad73ca-9d09-5148-a221-84f5f6227369}" name="cu_drivers" showlabel="true" showbar="false" columns="1" labelwidth="140" celllabelalignment="Left" celllabelposition="Left">
+                  <labels>
+                    <label description="Driver detail" languagecode="1033" />
+                  </labels>
+                  <rows>
+                    <row>
+                      <cell id="{cd298fee-9db4-5308-ac8d-3cb46f3290be}" rowspan="6" colspan="1" showlabel="true">
+                        <labels>
+                          <label description="Tool invoked" languagecode="1033" />
+                        </labels>
+                        <control id="pvci_toolinvoked" uniqueid="{e148ee2c-26d3-5b03-bc93-eaff1641e484}" classid="{E0DECE4B-6FC8-4a8f-A065-082708572369}" datafieldname="pvci_toolinvoked" disabled="false" />
+                      </cell>
+                    </row>
+                    <row>
+                      <cell id="{153c3d28-0c9f-5304-af95-fd8962995bbd}" rowspan="6" colspan="1" showlabel="true">
+                        <labels>
+                          <label description="Knowledge sources" languagecode="1033" />
+                        </labels>
+                        <control id="pvci_knowledgesources" uniqueid="{1d0a17eb-19b4-526e-8f98-09fc6611425f}" classid="{E0DECE4B-6FC8-4a8f-A065-082708572369}" datafieldname="pvci_knowledgesources" disabled="false" />
+                      </cell>
+                    </row>
+                  </rows>
+                </section>
+              </sections>
+            </column>
+          </columns>
+        </tab>
+        <tab id="{f22b6c5d-18a1-55b1-911d-becfa8270753}" name="cu_raw_tab" verticallayout="true" showlabel="true" expanded="true">
+          <labels>
+            <label description="Raw Source" languagecode="1033" />
+          </labels>
+          <columns>
+            <column width="100%">
+              <sections>
+                <section id="{678c9723-17ef-5367-8ae7-aeed06882968}" name="cu_raw" showlabel="true" showbar="false" columns="1" labelwidth="140" celllabelalignment="Left" celllabelposition="Left">
+                  <labels>
+                    <label description="Raw source record" languagecode="1033" />
+                  </labels>
+                  <rows>
+                    <row>
+                      <cell id="{79b58c93-14d9-52b5-b612-a04c6a933d65}" rowspan="30" colspan="1" showlabel="true">
+                        <labels>
+                          <label description="Raw source JSON" languagecode="1033" />
+                        </labels>
+                        <control id="pvci_rawjson" uniqueid="{852c8d16-0c0b-5268-96a3-f55ce2774253}" classid="{E0DECE4B-6FC8-4a8f-A065-082708572369}" datafieldname="pvci_rawjson" disabled="false" />
+                      </cell>
+                    </row>
+                  </rows>
+                </section>
+              </sections>
+            </column>
+          </columns>
+        </tab>
+      </tabs>
+      <controlDescriptions>
+        <controlDescription forControl="{852c8d16-0c0b-5268-96a3-f55ce2774253}">
+          <customControl formFactor="0" name="pvci_PvciControls.JsonViewer">
+            <parameters>
+              <jsonValue>pvci_rawjson</jsonValue>
+              <startCollapsedDepth static="true" type="Whole.None">4</startCollapsedDepth>
+              <viewerHeight static="true" type="Whole.None">650</viewerHeight>
+            </parameters>
+          </customControl>
+          <customControl formFactor="1" name="pvci_PvciControls.JsonViewer">
+            <parameters>
+              <jsonValue>pvci_rawjson</jsonValue>
+              <startCollapsedDepth static="true" type="Whole.None">4</startCollapsedDepth>
+              <viewerHeight static="true" type="Whole.None">650</viewerHeight>
+            </parameters>
+          </customControl>
+          <customControl formFactor="2" name="pvci_PvciControls.JsonViewer">
+            <parameters>
+              <jsonValue>pvci_rawjson</jsonValue>
+              <startCollapsedDepth static="true" type="Whole.None">4</startCollapsedDepth>
+              <viewerHeight static="true" type="Whole.None">650</viewerHeight>
+            </parameters>
+          </customControl>
+        </controlDescription>
+      </controlDescriptions>
+    </form>
+    <IsCustomizable>1</IsCustomizable>
+    <CanBeDeleted>1</CanBeDeleted>
+    <LocalizedNames>
+      <LocalizedName description="Information" languagecode="1033" />
+    </LocalizedNames>
+    <Descriptions>
+      <Description description="A form for this entity." languagecode="1033" />
+    </Descriptions>
+  </systemform>
+</forms>

@@ -10,6 +10,10 @@
 | `fetch_flow_run_details.py` | Local / CI | Pulls per-action inputs and outputs from the Power Automate API |
 | PCF `JsonViewer` | Model-driven forms | Collapsible, searchable JSON rendering |
 | Code app | Browser (preview) | Replay timeline, trends, tool and flow drill-down |
+| `PVCI Collect Copilot Credit Usage` | Power Automate | Daily read-only PPAC resource usage and capacity collection with seven-day overlap |
+| `pvci_ImportCreditUsageBatch` | Dataverse sandbox plugin | Tenant validation, raw-response normalization, stable-key upsert, and sync audit |
+| `CreditUserDisclosure` | Dataverse sandbox plugin | Shared approval audit, user-name resolution, and revocation cleanup |
+| Credit reporting surfaces | Model-driven app + code app | Agent/resource contribution, source periods, capacity, freshness, and data quality |
 
 ## Data model
 
@@ -37,10 +41,23 @@ pvci_transcriptidentitymap      one row per distinct end user
 pvci_syncstate                  watermark, last run status, last error
 pvci_flowrundetail              one row per correlated run; pending until payload enrichment
 
+pvci_agentinventory             one row per observed tenant/environment/resource
+  └─ pvci_creditusage           one row per PPAC resource/source-period fact
+
+pvci_creditcapacitysnapshot     one row per environment/entitlement/as-of date
+pvci_creditsyncrun              one row per collector/import invocation
+pvci_credituserusage            one row per user/source-period fact; GUID label by default
+pvci_creditprivacysetting       singleton shared name-disclosure approval
+
 First-class `pvci_environmentid` and `pvci_environmentname` columns drive environment display and
 filtering. `pvci_datasource` also carries a lineage stamp:
 `dataverse_v9.1|tenant:<id>|env:<id>|envName:<name>|org:<host>`.
 ```
+
+Credit reporting has a separate truth boundary from transcripts. PPAC values are actual aggregate
+billing facts. Environment/resource/date overlap with sessions can explain likely drivers, but no
+reviewed source exposes a billing-event ID that joins one charge to one transcript turn. See
+[Copilot Credit reporting](credit-reporting.md) for source grain and per-user handling.
 
 ## Sync semantics
 

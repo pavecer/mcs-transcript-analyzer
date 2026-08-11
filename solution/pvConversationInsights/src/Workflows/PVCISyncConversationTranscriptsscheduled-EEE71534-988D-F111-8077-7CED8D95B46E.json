@@ -1,0 +1,120 @@
+{
+  "properties": {
+    "connectionReferences": {
+      "shared_commondataserviceforapps": {
+        "runtimeSource": "embedded",
+        "connection": {
+          "connectionReferenceLogicalName": "pvci_dataversesync"
+        },
+        "api": {
+          "name": "shared_commondataserviceforapps"
+        }
+      }
+    },
+    "definition": {
+      "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+      "contentVersion": "1.0.0.0",
+      "parameters": {
+        "$connections": {
+          "defaultValue": {},
+          "type": "Object"
+        },
+        "$authentication": {
+          "defaultValue": {},
+          "type": "SecureObject"
+        }
+      },
+      "triggers": {
+        "Recurrence": {
+          "recurrence": {
+            "frequency": "Hour",
+            "interval": 1
+          },
+          "evaluatedRecurrence": {
+            "frequency": "Hour",
+            "interval": 1
+          },
+          "metadata": {
+            "operationMetadataId": "b1a0f0f1-0000-4000-8000-000000000001"
+          },
+          "type": "Recurrence"
+        }
+      },
+      "actions": {
+        "Initialise_batch_counter": {
+          "runAfter": {},
+          "metadata": {
+            "operationMetadataId": "5b9b546d-03b7-473c-821f-ca02e136248b"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "LastProcessed",
+                "type": "integer",
+                "value": 50
+              }
+            ]
+          }
+        },
+        "Until_backlog_drained": {
+          "actions": {
+            "Sync_transcripts": {
+              "runAfter": {},
+              "metadata": {
+                "operationMetadataId": "7351051e-851c-4f4d-8c28-c97dcb2a7f72"
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_commondataserviceforapps",
+                  "operationId": "PerformUnboundAction",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                },
+                "parameters": {
+                  "actionName": "pvci_SyncConversationTranscripts",
+                  "item/MaxRecords": 50,
+                  "item/FullSync": false,
+                  "item/IncludeTraces": false,
+                  "item/Reprocess": false
+                },
+                "authentication": "@parameters('$authentication')"
+              }
+            },
+            "Record_batch_size": {
+              "runAfter": {
+                "Sync_transcripts": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "ea6f85a6-7df7-480f-8bea-9f8dc04b8710"
+              },
+              "type": "SetVariable",
+              "inputs": {
+                "name": "LastProcessed",
+                "value": "@body('Sync_transcripts')?['TranscriptsProcessed']"
+              }
+            }
+          },
+          "runAfter": {
+            "Initialise_batch_counter": [
+              "Succeeded"
+            ]
+          },
+          "expression": "@less(variables('LastProcessed'), 50)",
+          "limit": {
+            "count": 12,
+            "timeout": "PT1H"
+          },
+          "metadata": {
+            "operationMetadataId": "10615724-6c23-4436-a440-b758478c97f9"
+          },
+          "type": "Until"
+        }
+      }
+    },
+    "templateName": ""
+  },
+  "schemaVersion": "1.0.0.0"
+}

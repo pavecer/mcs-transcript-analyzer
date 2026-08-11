@@ -1,0 +1,8 @@
+<customapiresponseproperty uniquename="SessionsSkipped">
+  <displayname default="Sessions skipped (already ingested)">
+    <label description="Sessions skipped (already ingested)" languagecode="1033" />
+  </displayname>
+  <iscustomizable>1</iscustomizable>
+  <name>SessionsSkipped</name>
+  <type>7</type>
+</customapiresponseproperty>

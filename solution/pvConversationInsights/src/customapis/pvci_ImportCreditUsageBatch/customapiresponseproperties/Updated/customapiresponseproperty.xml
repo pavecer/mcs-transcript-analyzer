@@ -1,0 +1,8 @@
+<customapiresponseproperty uniquename="Updated">
+  <displayname default="Records updated">
+    <label description="Records updated" languagecode="1033" />
+  </displayname>
+  <iscustomizable>1</iscustomizable>
+  <name>Updated</name>
+  <type>7</type>
+</customapiresponseproperty>

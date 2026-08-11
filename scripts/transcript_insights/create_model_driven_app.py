@@ -16,7 +16,17 @@ from dv_token import get_token_from_config  # noqa: E402
 SOLUTION = "pvConversationInsights"
 APP_UNIQUE = "pvci_conversationinsights"
 APP_NAME = "Conversation Insights"
-TABLES = ["pvci_transcriptsession", "pvci_transcriptturn", "pvci_transcriptidentitymap"]
+TABLES = [
+    "pvci_transcriptsession",
+    "pvci_transcriptturn",
+    "pvci_transcriptidentitymap",
+    "pvci_agentinventory",
+    "pvci_creditusage",
+    "pvci_creditcapacitysnapshot",
+    "pvci_creditsyncrun",
+    "pvci_credituserusage",
+    "pvci_creditprivacysetting",
+]
 
 SITEMAP_XML = """<SiteMap IntroducedVersion="1.0">
   <Area Id="pvci_area" Title="Conversation Insights" ShowGroups="true">
@@ -25,6 +35,14 @@ SITEMAP_XML = """<SiteMap IntroducedVersion="1.0">
       <SubArea Id="pvci_sa_turns" Entity="pvci_transcriptturn" Title="Turns" />
       <SubArea Id="pvci_sa_identity" Entity="pvci_transcriptidentitymap" Title="Users" />
     </Group>
+        <Group Id="pvci_group_credits" Title="Credits and Capacity">
+            <SubArea Id="pvci_sa_creditusage" Entity="pvci_creditusage" Title="Credit Usage" />
+            <SubArea Id="pvci_sa_capacity" Entity="pvci_creditcapacitysnapshot" Title="Capacity" />
+            <SubArea Id="pvci_sa_agents" Entity="pvci_agentinventory" Title="Agent Inventory" />
+            <SubArea Id="pvci_sa_creditsync" Entity="pvci_creditsyncrun" Title="Sync Runs" />
+            <SubArea Id="pvci_sa_userusage" Entity="pvci_credituserusage" Title="User Consumption" />
+            <SubArea Id="pvci_sa_privacy" Entity="pvci_creditprivacysetting" Title="Privacy Approval" />
+        </Group>
   </Area>
 </SiteMap>"""
 

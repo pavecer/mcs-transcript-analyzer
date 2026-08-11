@@ -7,6 +7,7 @@ import { ToolCalls } from "./components/ToolCalls";
 import { FlowRuns } from "./components/FlowRuns";
 import { EssOps } from "./components/EssOps";
 import { Trends } from "./components/Trends";
+import { Credits } from "./components/Credits";
 import {
   fmtDuration,
   fmtMs,
@@ -92,7 +93,8 @@ export default function App() {
   const [environmentFilter, setEnvironmentFilter] = useState("*");
   const [tab, setTab] = useState<Tab>("replay");
   const [jsonFilter, setJsonFilter] = useState("");
-  const [view, setView] = useState<"sessions" | "trends">("sessions");
+  const [view, setView] = useState<"sessions" | "trends" | "credits">("sessions");
+  const [creditsSidebarTarget, setCreditsSidebarTarget] = useState<HTMLDivElement | null>(null);
   const [theme, setTheme] = useState<Theme>(initialTheme);
 
   useEffect(() => {
@@ -209,73 +211,81 @@ export default function App() {
         <div className="viewswitch">
           <button className={view === "sessions" ? "on" : ""} onClick={() => setView("sessions")}>Sessions</button>
           <button className={view === "trends" ? "on" : ""} onClick={() => setView("trends")}>Trends</button>
+          <button className={view === "credits" ? "on" : ""} onClick={() => setView("credits")}>Credits</button>
         </div>
-        <input
-          className="search"
-          placeholder="Search user, channel, first message…"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
-        <label className="checkline">
-          <input type="checkbox" checked={hideTest} onChange={(e) => setHideTest(e.target.checked)} />
-          Hide test-mode sessions
-        </label>
-        <label className="checkline">
-          <input type="checkbox" checked={essOnly} onChange={(e) => setEssOnly(e.target.checked)} />
-          ESS only
-        </label>
-        <select className="search" value={environmentFilter} onChange={(e) => setEnvironmentFilter(e.target.value)}>
-          <option value="*">All environments</option>
-          {environmentOptions.map(([id, label]) => (
-            <option key={id} value={id}>{label}</option>
-          ))}
-        </select>
+        {view === "credits" && <div ref={setCreditsSidebarTarget} className="credits-sidebar-host" />}
+        {view !== "credits" && (
+          <>
+            <input
+              className="search"
+              placeholder="Search user, channel, first message…"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+            <label className="checkline">
+              <input type="checkbox" checked={hideTest} onChange={(e) => setHideTest(e.target.checked)} />
+              Hide test-mode sessions
+            </label>
+            <label className="checkline">
+              <input type="checkbox" checked={essOnly} onChange={(e) => setEssOnly(e.target.checked)} />
+              ESS only
+            </label>
+            <select className="search" value={environmentFilter} onChange={(e) => setEnvironmentFilter(e.target.value)}>
+              <option value="*">All environments</option>
+              {environmentOptions.map(([id, label]) => (
+                <option key={id} value={id}>{label}</option>
+              ))}
+            </select>
 
-        <div className="session-list">
-          {loadingSessions && <div className="muted pad">Loading…</div>}
-          {!loadingSessions && !filtered.length && <div className="muted pad">No sessions match.</div>}
-          {filtered.map((s) => (
-            <button
-              key={s.pvci_transcriptsessionid}
-              className={`session-item${selected?.pvci_transcriptsessionid === s.pvci_transcriptsessionid ? " active" : ""}`}
-              onClick={() => { setSelected(s); setTab("replay"); }}
-            >
-              <div className="si-top">
-                <span className="si-user">{s.pvci_userdisplayname ?? "Unknown user"}</span>
-                <span className="chip">{s.pvci_channel ?? "—"}</span>
-              </div>
-              <div className="si-sub muted small">
-                {fmtTime(s.pvci_startdatetimeutc)} · {s.pvci_messagecount ?? 0} msg · {fmtDuration(s.pvci_durationseconds)}
-              </div>
-              <div className="si-metrics">
-                <span className={`lat ${latencyBand(s.pvci_maxresponsems)}`}>
-                  slowest reply {fmtMs(s.pvci_maxresponsems)}
-                </span>
-                {(s.pvci_toolcallcount ?? 0) > 0 && (
-                  <span className={`lat ${s.pvci_toolerrorcount ? "bad" : "none"}`}>
-                    {s.pvci_toolcallcount} tools
-                    {s.pvci_toolerrorcount ? ` · ${s.pvci_toolerrorcount} failed` : ""}
-                  </span>
-                )}
-              </div>
-              {s.pvci_initialusermessage && <div className="si-snippet">{s.pvci_initialusermessage.slice(0, 90)}</div>}
-              <div className="si-flags">
-                {s.pvci_istestmode && <span className="flag test">test</span>}
-                {s.pvci_multiuseranomaly && <span className="flag warn">multi-user</span>}
-                {s.pvci_payloadtruncated && <span className="flag warn">truncated</span>}
-                {s.pvci_correlationstatus && s.pvci_correlationstatus !== "exact" && (
-                  <span className="flag warn">{s.pvci_correlationstatus}</span>
-                )}
-              </div>
-            </button>
-          ))}
-        </div>
+            <div className="session-list">
+              {loadingSessions && <div className="muted pad">Loading…</div>}
+              {!loadingSessions && !filtered.length && <div className="muted pad">No sessions match.</div>}
+              {filtered.map((s) => (
+                <button
+                  key={s.pvci_transcriptsessionid}
+                  className={`session-item${selected?.pvci_transcriptsessionid === s.pvci_transcriptsessionid ? " active" : ""}`}
+                  onClick={() => { setSelected(s); setTab("replay"); }}
+                >
+                  <div className="si-top">
+                    <span className="si-user">{s.pvci_userdisplayname ?? "Unknown user"}</span>
+                    <span className="chip">{s.pvci_channel ?? "—"}</span>
+                  </div>
+                  <div className="si-sub muted small">
+                    {fmtTime(s.pvci_startdatetimeutc)} · {s.pvci_messagecount ?? 0} msg · {fmtDuration(s.pvci_durationseconds)}
+                  </div>
+                  <div className="si-metrics">
+                    <span className={`lat ${latencyBand(s.pvci_maxresponsems)}`}>
+                      slowest reply {fmtMs(s.pvci_maxresponsems)}
+                    </span>
+                    {(s.pvci_toolcallcount ?? 0) > 0 && (
+                      <span className={`lat ${s.pvci_toolerrorcount ? "bad" : "none"}`}>
+                        {s.pvci_toolcallcount} tools
+                        {s.pvci_toolerrorcount ? ` · ${s.pvci_toolerrorcount} failed` : ""}
+                      </span>
+                    )}
+                  </div>
+                  {s.pvci_initialusermessage && <div className="si-snippet">{s.pvci_initialusermessage.slice(0, 90)}</div>}
+                  <div className="si-flags">
+                    {s.pvci_istestmode && <span className="flag test">test</span>}
+                    {s.pvci_multiuseranomaly && <span className="flag warn">multi-user</span>}
+                    {s.pvci_payloadtruncated && <span className="flag warn">truncated</span>}
+                    {s.pvci_correlationstatus && s.pvci_correlationstatus !== "exact" && (
+                      <span className="flag warn">{s.pvci_correlationstatus}</span>
+                    )}
+                  </div>
+                </button>
+              ))}
+            </div>
+          </>
+        )}
       </aside>
 
       <main className="main">
         {error && <div className="error">{error}</div>}
 
         {view === "trends" && <Trends sessions={sessions} loading={loadingSessions} />}
+
+        {view === "credits" && <Credits sidebarTarget={creditsSidebarTarget} />}
 
         {view === "sessions" && !selected && !loadingSessions && <div className="muted pad">Select a session.</div>}
 

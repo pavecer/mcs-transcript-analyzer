@@ -1,0 +1,58 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<savedqueries xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <savedquery>
+    <IsCustomizable>1</IsCustomizable>
+    <CanBeDeleted>1</CanBeDeleted>
+    <isquickfindquery>0</isquickfindquery>
+    <isprivate>0</isprivate>
+    <isdefault>0</isdefault>
+    <savedqueryid>{2ef2e03b-bc8c-f111-8077-7ced8d95b46e}</savedqueryid>
+    <layoutxml>
+      <grid name="resultset" jump="pvci_name" select="1" icon="1" preview="1">
+        <row name="result" id="pvci_transcriptsessionid">
+          <cell name="pvci_name" width="200" />
+          <cell name="pvci_userdisplayname" width="120" />
+          <cell name="pvci_channel" width="90" />
+          <cell name="pvci_startdatetimeutc" width="130" />
+          <cell name="pvci_messagecount" width="70" />
+          <cell name="pvci_firstresponsems" width="95" />
+          <cell name="pvci_maxresponsems" width="95" />
+          <cell name="pvci_toolcallcount" width="70" />
+          <cell name="pvci_toolerrorcount" width="75" />
+          <cell name="pvci_sessionoutcome" width="95" />
+          <cell name="pvci_istestmode" width="70" />
+        </row>
+      </grid>
+    </layoutxml>
+    <querytype>0</querytype>
+    <fetchxml>
+      <fetch version="1.0" mapping="logical">
+        <entity name="pvci_transcriptsession">
+          <attribute name="pvci_name" />
+          <attribute name="pvci_userdisplayname" />
+          <attribute name="pvci_channel" />
+          <attribute name="pvci_startdatetimeutc" />
+          <attribute name="pvci_messagecount" />
+          <attribute name="pvci_firstresponsems" />
+          <attribute name="pvci_maxresponsems" />
+          <attribute name="pvci_toolcallcount" />
+          <attribute name="pvci_toolerrorcount" />
+          <attribute name="pvci_sessionoutcome" />
+          <attribute name="pvci_istestmode" />
+          <attribute name="pvci_transcriptsessionid" />
+          <filter type="and">
+            <condition attribute="pvci_istestmode" operator="ne" value="1" />
+          </filter>
+          <order attribute="pvci_startdatetimeutc" descending="true" />
+        </entity>
+      </fetch>
+    </fetchxml>
+    <IntroducedVersion>1.0.0.0</IntroducedVersion>
+    <LocalizedNames>
+      <LocalizedName description="Sessions - Production Only" languagecode="1033" />
+    </LocalizedNames>
+    <Descriptions>
+      <Description description="Sessions - Production Only" languagecode="1033" />
+    </Descriptions>
+  </savedquery>
+</savedqueries>

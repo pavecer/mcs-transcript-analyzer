@@ -9,6 +9,15 @@
     },
     "version": "1.0.0.0"
   },
+  "environmentVariables": [
+    {
+      "schemaName": "pvci_CreditReportingTenantId",
+      "displayName": "Credit Reporting Tenant ID",
+      "description": "Microsoft Entra tenant GUID used by the read-only Copilot Credit licensing collector.",
+      "type": "string",
+      "required": true
+    }
+  ],
   "tables": [
     {
       "schemaName": "pvci_TranscriptSession",
@@ -134,6 +143,215 @@
         "pvci_RecordsProcessed": "int",
         "pvci_LastError": "text"
       }
+    },
+    {
+      "schemaName": "pvci_AgentInventory",
+      "displayName": "Agent Inventory",
+      "displayCollectionName": "Agent Inventory",
+      "ownershipType": "OrganizationOwned",
+      "primaryColumn": "pvci_Name",
+      "columns": {
+        "pvci_SourceKey": { "type": "string", "maxLength": 200, "displayName": "Source Key" },
+        "pvci_TenantId": { "type": "string", "displayName": "Tenant ID" },
+        "pvci_EnvironmentId": { "type": "string", "displayName": "Environment ID" },
+        "pvci_EnvironmentName": { "type": "string", "displayName": "Environment Name" },
+        "pvci_EnvironmentUrl": { "type": "string", "displayName": "Environment URL" },
+        "pvci_ResourceId": { "type": "string", "displayName": "Resource ID" },
+        "pvci_BotId": { "type": "string", "displayName": "Bot ID" },
+        "pvci_DisplayName": { "type": "string", "displayName": "Display Name" },
+        "pvci_SchemaName": { "type": "string", "displayName": "Schema Name" },
+        "pvci_ResourceType": { "type": "string", "displayName": "Resource Type" },
+        "pvci_Harness": { "type": "string", "displayName": "Harness" },
+        "pvci_ClassificationSource": { "type": "string", "displayName": "Classification Source" },
+        "pvci_ClassificationConfidence": { "type": "string", "displayName": "Classification Confidence" },
+        "pvci_OrchestrationType": { "type": "string", "displayName": "Orchestration Type" },
+        "pvci_Model": { "type": "string", "displayName": "Model" },
+        "pvci_AuthoringOrigin": { "type": "string", "displayName": "Authoring Origin" },
+        "pvci_Published": { "type": "bool", "displayName": "Published" },
+        "pvci_InventorySource": { "type": "string", "displayName": "Inventory Source" },
+        "pvci_EvidenceJson": { "type": "text", "displayName": "Evidence JSON" },
+        "pvci_LastSyncedOn": { "type": "datetime", "displayName": "Last Synced On" }
+      },
+      "alternateKeys": [
+        {
+          "schemaName": "pvci_AgentInventory_SourceKey",
+          "displayName": "Agent Inventory Source Key",
+          "columns": ["pvci_sourcekey"]
+        }
+      ]
+    },
+    {
+      "schemaName": "pvci_CreditUsage",
+      "displayName": "Credit Usage",
+      "displayCollectionName": "Credit Usage",
+      "ownershipType": "OrganizationOwned",
+      "primaryColumn": "pvci_Name",
+      "columns": {
+        "pvci_SourceKey": { "type": "string", "maxLength": 200, "displayName": "Source Key" },
+        "pvci_TenantId": { "type": "string", "displayName": "Tenant ID" },
+        "pvci_EnvironmentId": { "type": "string", "displayName": "Environment ID" },
+        "pvci_ResourceId": { "type": "string", "displayName": "Resource ID" },
+        "pvci_AgentName": { "type": "string", "displayName": "Agent or Resource" },
+        "pvci_UsageDate": { "type": "datetime", "displayName": "Usage Date" },
+        "pvci_FromDate": { "type": "datetime", "displayName": "From Date" },
+        "pvci_ToDate": { "type": "datetime", "displayName": "To Date" },
+        "pvci_EntitlementId": { "type": "string", "displayName": "Entitlement ID" },
+        "pvci_SourceUnit": { "type": "string", "displayName": "Source Unit" },
+        "pvci_BilledCredits": { "type": "decimal", "precision": 4, "minValue": 0, "displayName": "Billed Copilot Credits" },
+        "pvci_NonBilledCredits": { "type": "decimal", "precision": 4, "minValue": 0, "displayName": "Non-billed Copilot Credits" },
+        "pvci_FeatureName": { "type": "string", "displayName": "Feature Name" },
+        "pvci_ChannelId": { "type": "string", "displayName": "Channel ID" },
+        "pvci_ToolInvoked": { "type": "text", "displayName": "Tool Invoked" },
+        "pvci_KnowledgeSources": { "type": "text", "displayName": "Knowledge Sources" },
+        "pvci_LlmModel": { "type": "string", "displayName": "LLM Model" },
+        "pvci_Users": { "type": "text", "displayName": "Users" },
+        "pvci_ResourceType": { "type": "string", "displayName": "Resource Type" },
+        "pvci_Harness": { "type": "string", "displayName": "Harness" },
+        "pvci_ResolutionStatus": { "type": "string", "displayName": "Resolution Status" },
+        "pvci_SourceApi": { "type": "string", "displayName": "Source API" },
+        "pvci_SourceSchemaVersion": { "type": "string", "displayName": "Source Schema Version" },
+        "pvci_RawJson": { "type": "text", "displayName": "Raw Source JSON" },
+        "pvci_ImportedOn": { "type": "datetime", "displayName": "Imported On" }
+      },
+      "alternateKeys": [
+        {
+          "schemaName": "pvci_CreditUsage_SourceKey",
+          "displayName": "Credit Usage Source Key",
+          "columns": ["pvci_sourcekey"]
+        }
+      ],
+      "lookups": [
+        {
+          "schemaName": "pvci_AgentId",
+          "displayName": "Agent Inventory",
+          "referencedTable": "pvci_agentinventory",
+          "relationshipName": "pvci_agentinventory_creditusage"
+        }
+      ]
+    },
+    {
+      "schemaName": "pvci_CreditCapacitySnapshot",
+      "displayName": "Credit Capacity Snapshot",
+      "displayCollectionName": "Credit Capacity Snapshots",
+      "ownershipType": "OrganizationOwned",
+      "primaryColumn": "pvci_Name",
+      "columns": {
+        "pvci_SourceKey": { "type": "string", "maxLength": 200, "displayName": "Source Key" },
+        "pvci_TenantId": { "type": "string", "displayName": "Tenant ID" },
+        "pvci_EnvironmentId": { "type": "string", "displayName": "Environment ID" },
+        "pvci_EnvironmentName": { "type": "string", "displayName": "Environment Name" },
+        "pvci_EntitlementId": { "type": "string", "displayName": "Entitlement ID" },
+        "pvci_AsOfDate": { "type": "datetime", "displayName": "As Of Date" },
+        "pvci_Entitled": { "type": "decimal", "precision": 4, "minValue": 0, "displayName": "Entitled" },
+        "pvci_Allocated": { "type": "decimal", "precision": 4, "minValue": 0, "displayName": "Allocated" },
+        "pvci_AutoAllocated": { "type": "decimal", "precision": 4, "minValue": 0, "displayName": "Auto-allocated" },
+        "pvci_Consumed": { "type": "decimal", "precision": 4, "minValue": 0, "displayName": "Consumed" },
+        "pvci_Available": { "type": "decimal", "precision": 4, "displayName": "Available" },
+        "pvci_PayGoEntitled": { "type": "decimal", "precision": 4, "minValue": 0, "displayName": "Pay-as-you-go Entitled" },
+        "pvci_PayGoConsumed": { "type": "decimal", "precision": 4, "minValue": 0, "displayName": "Pay-as-you-go Consumed" },
+        "pvci_Status": { "type": "string", "displayName": "Capacity Status" },
+        "pvci_DrawFromTenantPool": { "type": "bool", "displayName": "Draw From Tenant Pool" },
+        "pvci_AlertEnabled": { "type": "bool", "displayName": "Alert Enabled" },
+        "pvci_AlertThreshold": { "type": "decimal", "precision": 2, "minValue": 0, "maxValue": 100, "displayName": "Alert Threshold" },
+        "pvci_SourceApi": { "type": "string", "displayName": "Source API" },
+        "pvci_RawJson": { "type": "text", "displayName": "Raw Source JSON" },
+        "pvci_CapturedOn": { "type": "datetime", "displayName": "Captured On" }
+      },
+      "alternateKeys": [
+        {
+          "schemaName": "pvci_CreditCapacity_SourceKey",
+          "displayName": "Credit Capacity Source Key",
+          "columns": ["pvci_sourcekey"]
+        }
+      ]
+    },
+    {
+      "schemaName": "pvci_CreditSyncRun",
+      "displayName": "Credit Sync Run",
+      "displayCollectionName": "Credit Sync Runs",
+      "ownershipType": "OrganizationOwned",
+      "primaryColumn": "pvci_Name",
+      "columns": {
+        "pvci_RunKey": { "type": "string", "maxLength": 200, "displayName": "Run Key" },
+        "pvci_Source": { "type": "string", "displayName": "Source" },
+        "pvci_StartedOn": { "type": "datetime", "displayName": "Started On" },
+        "pvci_CompletedOn": { "type": "datetime", "displayName": "Completed On" },
+        "pvci_Status": { "type": "string", "displayName": "Status" },
+        "pvci_FromDate": { "type": "datetime", "displayName": "From Date" },
+        "pvci_ToDate": { "type": "datetime", "displayName": "To Date" },
+        "pvci_PageCount": { "type": "int", "displayName": "Page Count" },
+        "pvci_SourceCount": { "type": "int", "displayName": "Source Count" },
+        "pvci_CreatedCount": { "type": "int", "displayName": "Created Count" },
+        "pvci_UpdatedCount": { "type": "int", "displayName": "Updated Count" },
+        "pvci_SkippedCount": { "type": "int", "displayName": "Skipped Count" },
+        "pvci_RejectedCount": { "type": "int", "displayName": "Rejected Count" },
+        "pvci_SchemaVersion": { "type": "string", "displayName": "Schema Version" },
+        "pvci_Error": { "type": "text", "displayName": "Error" }
+      },
+      "alternateKeys": [
+        {
+          "schemaName": "pvci_CreditSyncRun_RunKey",
+          "displayName": "Credit Sync Run Key",
+          "columns": ["pvci_runkey"]
+        }
+      ]
+    },
+    {
+      "schemaName": "pvci_CreditUserUsage",
+      "displayName": "Credit User Usage",
+      "displayCollectionName": "Credit User Usage",
+      "ownershipType": "OrganizationOwned",
+      "primaryColumn": "pvci_Name",
+      "columns": {
+        "pvci_SourceKey": { "type": "string", "maxLength": 200, "displayName": "Source Key" },
+        "pvci_TenantId": { "type": "string", "displayName": "Tenant ID" },
+        "pvci_UserId": { "type": "string", "displayName": "Source User ID" },
+        "pvci_UsageDate": { "type": "datetime", "displayName": "Usage Date" },
+        "pvci_FromDate": { "type": "datetime", "displayName": "From Date" },
+        "pvci_ToDate": { "type": "datetime", "displayName": "To Date" },
+        "pvci_EntitlementId": { "type": "string", "displayName": "Entitlement ID" },
+        "pvci_SourceUnit": { "type": "string", "displayName": "Source Unit" },
+        "pvci_BilledCredits": { "type": "decimal", "precision": 4, "minValue": 0, "displayName": "Billed Copilot Credits" },
+        "pvci_NonBilledCredits": { "type": "decimal", "precision": 4, "minValue": 0, "displayName": "Non-billed Copilot Credits" },
+        "pvci_Resources": { "type": "text", "displayName": "Contributing Resources" },
+        "pvci_UserDisplayName": { "type": "string", "displayName": "User Display Name" },
+        "pvci_UserPrincipalName": { "type": "string", "displayName": "User Principal Name" },
+        "pvci_SystemUserId": { "type": "string", "displayName": "Dataverse System User ID" },
+        "pvci_NameResolutionStatus": { "type": "string", "displayName": "Name Resolution Status" },
+        "pvci_SourceApi": { "type": "string", "displayName": "Source API" },
+        "pvci_SourceSchemaVersion": { "type": "string", "displayName": "Source Schema Version" },
+        "pvci_ImportedOn": { "type": "datetime", "displayName": "Imported On" }
+      },
+      "alternateKeys": [
+        {
+          "schemaName": "pvci_CreditUserUsage_SourceKey",
+          "displayName": "Credit User Usage Source Key",
+          "columns": ["pvci_sourcekey"]
+        }
+      ]
+    },
+    {
+      "schemaName": "pvci_CreditPrivacySetting",
+      "displayName": "Credit Privacy Approval",
+      "displayCollectionName": "Credit Privacy Approvals",
+      "ownershipType": "OrganizationOwned",
+      "primaryColumn": "pvci_Name",
+      "columns": {
+        "pvci_SettingKey": { "type": "string", "maxLength": 100, "displayName": "Setting Key" },
+        "pvci_RevealUserNames": { "type": "bool", "displayName": "Reveal User Names" },
+        "pvci_ApprovalStatement": { "type": "text", "displayName": "Approval Statement" },
+        "pvci_ApprovedById": { "type": "string", "displayName": "Approved By User ID" },
+        "pvci_ApprovedByName": { "type": "string", "displayName": "Approved By" },
+        "pvci_ApprovedOn": { "type": "datetime", "displayName": "Approved On" },
+        "pvci_RevokedOn": { "type": "datetime", "displayName": "Revoked On" }
+      },
+      "alternateKeys": [
+        {
+          "schemaName": "pvci_CreditPrivacySetting_SettingKey",
+          "displayName": "Credit Privacy Setting Key",
+          "columns": ["pvci_settingkey"]
+        }
+      ]
     }
   ],
   "ingestionProfiles": [

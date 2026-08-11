@@ -1,8 +1,8 @@
 # MCS Transcript Analyzer
 
-Ingest, correlate and analyse **Microsoft Copilot Studio** conversation transcripts in
-Dataverse — with end-user attribution, response latency, agent reasoning, tool calls, and
-correlated Power Automate flow runs.
+Ingest, correlate and analyse **Microsoft Copilot Studio** conversation transcripts and Copilot
+Credit consumption in Dataverse — with end-user attribution, response latency, agent reasoning,
+tool calls, correlated Power Automate flow runs, capacity, and billed/non-billed usage.
 
 Built because the Copilot Studio Monitor CSV export drops the two things you need most when
 a customer says *"the agent answered wrong"*: **who** was talking, and **why** the agent did
@@ -16,10 +16,10 @@ what it did.
 
 | Surface | What it is |
 |---|---|
-| **Dataverse solution** | 5 custom tables, views, forms, a model-driven app, a Custom API, and a scheduled flow |
-| **Model-driven app** | GA, standard-licensed. Grids + tabbed forms with a JSON viewer PCF control |
-| **Code app** (preview) | React/Vite triage UI: replay, trends, visual flow failure map, persisted theme |
-| **Custom API + plugin** | In-platform incremental sync — no token, no external host |
+| **Dataverse solution** | 11 custom tables, views, forms, a model-driven app, 2 Custom APIs, and 2 scheduled flows |
+| **Model-driven app** | GA, standard-licensed. Transcript operations plus Credits and Capacity grids and evidence forms |
+| **Code app** (preview) | React/Vite triage UI: replay, trends, flow failure map, and Copilot Credit reporting |
+| **Custom APIs + plugin** | Incremental transcript sync and validated, idempotent credit import |
 | **Python toolkit** | Bulk backfill, plugin registration, flow-run detail fetch |
 
 ### Captured per session
@@ -31,6 +31,15 @@ what it did.
 - **Flow runs** — correlated Power Automate runs, enrichable with action and loop-iteration inputs and outputs
 - **Outcome** — resolved / abandoned, reason, implied success, turn count
 - **Test-mode flag** — so maker-portal testing does not pollute production metrics
+
+### Captured for Copilot Credits
+
+- **Actual billed and non-billed credits** — resource/agent source-period facts from PPAC
+- **Capacity** — environment allocation, consumption, available quantity, PAYG, and policy state
+- **Granularity** — environment, agent/resource, source day or week, feature when supplied
+- **Lineage and quality** — source API/schema, freshness, unresolved resources, and unknown harnesses
+- **User support** — separate user-period facts display source GUIDs by default; an audited shared
+   approval can resolve names in both apps and revocation removes them again
 
 ---
 
@@ -86,10 +95,16 @@ python3 scripts/transcript_insights/create_model_driven_app.py --config $CFG
 
 cd pcf/JsonViewer && npm install && npm run build && pac pcf push --publisher-prefix pvci && cd ../..
 python3 scripts/transcript_insights/create_forms.py --config $CFG   # binds the PCF control
+python3 scripts/transcript_insights/create_credit_forms.py --config $CFG
 
 cd plugin && dotnet build -c Release && cd ..
 python3 scripts/transcript_insights/register_plugin.py  --config $CFG
+python3 scripts/transcript_insights/register_credit_plugin.py --config $CFG
 python3 scripts/transcript_insights/create_sync_flow.py --config $CFG --activate
+
+# Create a licensing connection first; see docs/credit-reporting.md and docs/operations.md.
+python3 scripts/transcript_insights/create_credit_sync_flow.py --config $CFG \
+   --http-connection-id shared-webcontents-00000000
 
 python3 scripts/transcript_insights/sync_transcripts.py --config $CFG --full   # initial load
 ```
@@ -102,6 +117,12 @@ npx power-apps init -n 'Conversation Insights Explorer' -e <environment-id>
 npx power-apps add-data-source --api-id dataverse --resource-name pvci_transcriptsession --org-url <org-url>
 npx power-apps add-data-source --api-id dataverse --resource-name pvci_transcriptturn   --org-url <org-url>
 npx power-apps add-data-source --api-id dataverse --resource-name pvci_flowrundetail    --org-url <org-url>
+npx power-apps add-data-source --api-id dataverse --resource-name pvci_agentinventory  --org-url <org-url>
+npx power-apps add-data-source --api-id dataverse --resource-name pvci_creditusage      --org-url <org-url>
+npx power-apps add-data-source --api-id dataverse --resource-name pvci_creditcapacitysnapshot --org-url <org-url>
+npx power-apps add-data-source --api-id dataverse --resource-name pvci_creditsyncrun    --org-url <org-url>
+npx power-apps add-data-source --api-id dataverse --resource-name pvci_credituserusage  --org-url <org-url>
+npx power-apps add-data-source --api-id dataverse --resource-name pvci_creditprivacysetting --org-url <org-url>
 npm run build && npx power-apps push
 ```
 
@@ -178,9 +199,11 @@ scripts/     Python toolkit — provisioning, sync, registration, fetch
 
 ## Documentation
 
-- [API reference](docs/api-reference.md) — the `conversationtranscripts` payload, field by field
+- [API reference](docs/api-reference.md) — transcript payloads, PPAC credit source routes, and Custom API contracts
 - [Dataverse data model](docs/data-model.md) — tables, columns, relationships, keys, and retention
 - [Architecture](docs/architecture.md) — data model, sync semantics, correlation strategy
+- [Cross-environment credit consumption design](docs/cross-environment-credit-consumption-design.md) — Copilot Studio harness usage, capacity, attribution, and reporting plan
+- [Copilot Credit reporting](docs/credit-reporting.md) — live components, source grain, agent/day/week reporting, per-user endpoint, security, and limitations
 - [Operations](docs/operations.md) — deploy, run, schedule, troubleshoot
 - [Flow run detail findings](docs/flow-run-detail-findings.md) — tested APIs, payload depth, DLP and deployment options
 - [Monitor endpoint findings](docs/monitor-endpoint-findings.md) — why the CSV export is not used

@@ -1,0 +1,9 @@
+<customapirequestparameter uniquename="Reprocess">
+  <displayname default="Rewrite already-ingested transcripts">
+    <label description="Rewrite already-ingested transcripts" languagecode="1033" />
+  </displayname>
+  <iscustomizable>1</iscustomizable>
+  <isoptional>1</isoptional>
+  <name>Reprocess</name>
+  <type>0</type>
+</customapirequestparameter>

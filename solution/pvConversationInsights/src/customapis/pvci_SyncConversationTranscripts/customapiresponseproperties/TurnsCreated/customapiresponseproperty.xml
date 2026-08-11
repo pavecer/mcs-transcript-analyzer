@@ -1,0 +1,8 @@
+<customapiresponseproperty uniquename="TurnsCreated">
+  <displayname default="Turns created">
+    <label description="Turns created" languagecode="1033" />
+  </displayname>
+  <iscustomizable>1</iscustomizable>
+  <name>TurnsCreated</name>
+  <type>7</type>
+</customapiresponseproperty>

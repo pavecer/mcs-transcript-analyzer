@@ -1,0 +1,49 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<savedqueries xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <savedquery>
+    <IsCustomizable>1</IsCustomizable>
+    <CanBeDeleted>1</CanBeDeleted>
+    <isquickfindquery>0</isquickfindquery>
+    <isprivate>0</isprivate>
+    <isdefault>0</isdefault>
+    <savedqueryid>{d4fb7c67-ed94-f111-8076-7ced8d95b46e}</savedqueryid>
+    <layoutxml>
+      <grid name="resultset" jump="pvci_name" select="1" icon="1" preview="1">
+        <row name="result" id="pvci_agentinventoryid">
+          <cell name="pvci_displayname" width="220" />
+          <cell name="pvci_environmentname" width="180" />
+          <cell name="pvci_resourceid" width="240" />
+          <cell name="pvci_resourcetype" width="130" />
+          <cell name="pvci_harness" width="110" />
+          <cell name="pvci_classificationconfidence" width="130" />
+          <cell name="pvci_model" width="120" />
+          <cell name="pvci_published" width="70" />
+        </row>
+      </grid>
+    </layoutxml>
+    <querytype>0</querytype>
+    <fetchxml>
+      <fetch version="1.0" mapping="logical">
+        <entity name="pvci_agentinventory">
+          <attribute name="pvci_displayname" />
+          <attribute name="pvci_environmentname" />
+          <attribute name="pvci_resourceid" />
+          <attribute name="pvci_resourcetype" />
+          <attribute name="pvci_harness" />
+          <attribute name="pvci_classificationconfidence" />
+          <attribute name="pvci_model" />
+          <attribute name="pvci_published" />
+          <attribute name="pvci_agentinventoryid" />
+          <order attribute="pvci_displayname" descending="false" />
+        </entity>
+      </fetch>
+    </fetchxml>
+    <IntroducedVersion>1.0.0.0</IntroducedVersion>
+    <LocalizedNames>
+      <LocalizedName description="Agent Inventory - All Resources" languagecode="1033" />
+    </LocalizedNames>
+    <Descriptions>
+      <Description description="Agent Inventory - All Resources" languagecode="1033" />
+    </Descriptions>
+  </savedquery>
+</savedqueries>

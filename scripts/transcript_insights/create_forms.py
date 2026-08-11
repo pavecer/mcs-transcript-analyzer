@@ -80,6 +80,7 @@ def field_cell(
     pcf: bool = False,
     depth: int = 2,
     height: int = 520,
+    disabled: bool = False,
 ) -> str:
     rs = f' rowspan="{rowspan}" colspan="1"' if rowspan > 1 else ""
     uid = gid(seed + "ctrl")
@@ -89,7 +90,7 @@ def field_cell(
         f'<cell id="{gid(seed)}"{rs} showlabel="true">'
         f"{label(caption)}"
         f'<control id="{name}" uniqueid="{uid}" classid="{classid}" '
-        f'datafieldname="{name}" disabled="false" />'
+        f'datafieldname="{name}" disabled="{str(disabled).lower()}" />'
         f"</cell>"
     )
 

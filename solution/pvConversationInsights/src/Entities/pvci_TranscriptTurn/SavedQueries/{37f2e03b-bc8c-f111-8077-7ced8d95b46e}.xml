@@ -1,0 +1,48 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<savedqueries xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <savedquery>
+    <IsCustomizable>1</IsCustomizable>
+    <CanBeDeleted>1</CanBeDeleted>
+    <isquickfindquery>0</isquickfindquery>
+    <isprivate>0</isprivate>
+    <isdefault>0</isdefault>
+    <savedqueryid>{37f2e03b-bc8c-f111-8077-7ced8d95b46e}</savedqueryid>
+    <layoutxml>
+      <grid name="resultset" jump="pvci_name" select="1" icon="1" preview="1">
+        <row name="result" id="pvci_transcriptturnid">
+          <cell name="pvci_name" width="160" />
+          <cell name="pvci_speaker" width="80" />
+          <cell name="pvci_activitytype" width="110" />
+          <cell name="pvci_eventname" width="180" />
+          <cell name="pvci_turntext" width="380" />
+          <cell name="pvci_timestamputc" width="140" />
+        </row>
+      </grid>
+    </layoutxml>
+    <querytype>0</querytype>
+    <fetchxml>
+      <fetch version="1.0" mapping="logical">
+        <entity name="pvci_transcriptturn">
+          <attribute name="pvci_name" />
+          <attribute name="pvci_speaker" />
+          <attribute name="pvci_activitytype" />
+          <attribute name="pvci_eventname" />
+          <attribute name="pvci_turntext" />
+          <attribute name="pvci_timestamputc" />
+          <attribute name="pvci_transcriptturnid" />
+          <filter type="and">
+            <condition attribute="pvci_activitytype" operator="eq" value="message" />
+          </filter>
+          <order attribute="pvci_timestamputc" descending="false" />
+        </entity>
+      </fetch>
+    </fetchxml>
+    <IntroducedVersion>1.0.0.0</IntroducedVersion>
+    <LocalizedNames>
+      <LocalizedName description="Turns - Conversation Only" languagecode="1033" />
+    </LocalizedNames>
+    <Descriptions>
+      <Description description="Turns - Conversation Only" languagecode="1033" />
+    </Descriptions>
+  </savedquery>
+</savedqueries>

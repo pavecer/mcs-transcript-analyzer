@@ -337,3 +337,84 @@ def parse(row):
 4. Retention is governed by environment settings — sync out anything you intend to keep long-term.
 5. Transcript bodies contain user-authored text and must be treated as personal data: restrict table privileges, apply retention, and audit access.
 6. `channelData.testMode` marks maker-portal test chats — exclude them before reporting on production volumes.
+
+---
+
+## 9. Copilot Credit source routes
+
+The scheduled collector uses **HTTP with Microsoft Entra ID (preauthorized)** against
+`https://licensing.powerplatform.microsoft.com/`. These observed routes are read-only reporting
+dependencies and are not published as a conventional stable REST contract. Persist source/schema
+versions and retain bounded raw lineage.
+
+| Projection | Request | Grain and use |
+| --- | --- | --- |
+| Resource usage | `GET /v2.0/tenants/{tenantId}/entitlements/MCSMessages/resources?fromDate={date}&toDate={date}&pageNumber={n}&pageSize=100&includeFields=users` | Aggregate resource/agent source-period billed and non-billed usage |
+| Environment capacity | `GET /v2.0/tenants/{tenantId}/environments/entitlementConsumptions/MCSMessages` | Environment allocation, consumption, available quantity, PAYG, and policy snapshot |
+| Tenant daily trend | `GET /v1.0/tenants/{tenantId}/capacityTypes/MCSMessages/trends?interval=daily` | Tenant-level capacity trend; not per-agent billing |
+| User usage | `GET /v2.0/tenants/{tenantId}/entitlements/MCSMessages/users?fromDate={date}&toDate={date}` | Separate user/source-period projection, stored GUID-first behind shared name approval |
+
+Resource rows observed in the test tenant contain `resourceId`, optional `environmentId`,
+`asOfDate`, `consumed`, `unit`, and metadata including `ResourceName`, `NonBillableQuantity`, and
+optional `Users`. The users response contains nested rows with `userId`, `asOfDate`, `consumed`,
+`unit`, `metadata.NonBillableQuantity`, and `metadata.Resources`.
+
+Resource and user projections are alternative views of consumption. Never sum them together.
+Neither supplies a shared billing-event ID for an exact transcript/action join. See
+[Copilot Credit reporting](credit-reporting.md) for source-period behavior and privacy controls.
+
+---
+
+## 10. `pvci_ImportCreditUsageBatch`
+
+Unbound Dataverse Custom API implemented by `PvciTranscripts.ImportCreditUsageBatch`:
+
+```http
+POST {dataverseUrl}/api/data/v9.1/pvci_ImportCreditUsageBatch
+Content-Type: application/json
+Authorization: Bearer {dataverse-token}
+```
+
+Request envelope:
+
+```json
+{
+  "PayloadJson": "{\"tenantId\":\"...\",\"agents\":[],\"usage\":[],\"capacity\":[],\"syncRun\":{...}}",
+  "SourceSchemaVersion": "ppac-v2-resource-aggregate-v1",
+  "DryRun": false
+}
+```
+
+`PayloadJson` accepts either normalized `agents`, `usage`, and `capacity` arrays or raw
+`ppacResourcePages` and `ppacCapacity` responses from the scheduled collector. Raw responses are
+normalized inside the plug-in so the flow does not duplicate source mapping logic.
+
+Response:
+
+```json
+{
+  "Created": 0,
+  "Updated": 12,
+  "Skipped": 0,
+  "Rejected": 0,
+  "Status": "success",
+  "Errors": ""
+}
+```
+
+Behavior and limits:
+
+- validates `tenantId` against the Dataverse organization tenant when that value is available;
+- computes stable SHA-256 source keys and upserts idempotently;
+- preserves unknown harnesses, features, and unresolved resources rather than guessing;
+- caps `PayloadJson` at 900,000 characters and each array at 2,000 records;
+- caps stored text/raw JSON and returned errors;
+- `DryRun: true` performs validation and reports would-create/would-update counts without writes;
+- one malformed record is rejected without discarding valid records in the same bounded batch;
+- the plug-in performs no outbound HTTP and holds no licensing-service credential.
+
+For raw `ppacUsers`, the importer stores source IDs and billing facts in `pvci_credituserusage`.
+It resolves names only when the singleton `pvci_creditprivacysetting.pvci_revealusernames` is true.
+Changing that field invokes `PvciTranscripts.CreditUserDisclosure` synchronously: approval records
+the initiating user/time and resolves names; revocation clears display name, UPN, system-user ID,
+and restores the source GUID as the primary label.

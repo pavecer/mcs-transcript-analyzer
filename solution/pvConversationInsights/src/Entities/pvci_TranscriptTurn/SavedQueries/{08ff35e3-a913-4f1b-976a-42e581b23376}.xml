@@ -1,0 +1,40 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<savedqueries xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <savedquery>
+    <IsCustomizable>1</IsCustomizable>
+    <CanBeDeleted>0</CanBeDeleted>
+    <isquickfindquery>1</isquickfindquery>
+    <isprivate>0</isprivate>
+    <isdefault>1</isdefault>
+    <savedqueryid>{08ff35e3-a913-4f1b-976a-42e581b23376}</savedqueryid>
+    <layoutxml>
+      <grid name="resultset" jump="pvci_name" select="1" icon="1" preview="1">
+        <row name="result" id="pvci_transcriptturnid">
+          <cell name="pvci_name" width="300" />
+          <cell name="createdon" width="125" />
+        </row>
+      </grid>
+    </layoutxml>
+    <querytype>4</querytype>
+    <fetchxml>
+      <fetch version="1.0" mapping="logical">
+        <entity name="pvci_transcriptturn">
+          <attribute name="pvci_transcriptturnid" />
+          <attribute name="pvci_name" />
+          <attribute name="createdon" />
+          <order attribute="pvci_name" descending="false" />
+          <filter type="and">
+            <condition attribute="statecode" operator="eq" value="0" />
+          </filter>
+          <filter type="or" isquickfindfields="1">
+            <condition attribute="pvci_name" operator="like" value="{0}" />
+          </filter>
+        </entity>
+      </fetch>
+    </fetchxml>
+    <IntroducedVersion>1.0.0.0</IntroducedVersion>
+    <LocalizedNames>
+      <LocalizedName description="Quick Find Active pvci_TranscriptTurns" languagecode="1033" />
+    </LocalizedNames>
+  </savedquery>
+</savedqueries>

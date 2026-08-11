@@ -17,6 +17,12 @@ from dv_token import get_token_from_config  # noqa: E402
 SESSION = "pvci_transcriptsession"
 TURN = "pvci_transcriptturn"
 IDENTITY = "pvci_transcriptidentitymap"
+AGENT = "pvci_agentinventory"
+CREDIT = "pvci_creditusage"
+CAPACITY = "pvci_creditcapacitysnapshot"
+CREDIT_SYNC = "pvci_creditsyncrun"
+USER_USAGE = "pvci_credituserusage"
+PRIVACY = "pvci_creditprivacysetting"
 SOLUTION = "pvConversationInsights"
 
 
@@ -105,6 +111,12 @@ def main() -> None:
         sc = otc(s, base, h, SESSION)
         tc = otc(s, base, h, TURN)
         ic = otc(s, base, h, IDENTITY)
+        ac = otc(s, base, h, AGENT)
+        cc = otc(s, base, h, CREDIT)
+        capc = otc(s, base, h, CAPACITY)
+        csc = otc(s, base, h, CREDIT_SYNC)
+        uuc = otc(s, base, h, USER_USAGE)
+        pc = otc(s, base, h, PRIVACY)
 
         results = []
 
@@ -128,6 +140,148 @@ def main() -> None:
                 s, base, token, SESSION, "Active Transcript Sessions",
                 fetch(SESSION, sess_attrs, "pvci_startdatetimeutc"),
                 grid(sc, "pvci_transcriptsessionid", sess_cols),
+            )
+        )
+
+        credit_cols = [
+            ("pvci_usagedate", 120),
+            ("pvci_agentname", 220),
+            ("pvci_environmentid", 240),
+            ("pvci_harness", 110),
+            ("pvci_featurename", 180),
+            ("pvci_billedcredits", 110),
+            ("pvci_nonbilledcredits", 120),
+            ("pvci_resolutionstatus", 120),
+        ]
+        credit_attrs = [c[0] for c in credit_cols] + ["pvci_creditusageid"]
+        results.append(
+            upsert_view(
+                s, base, token, CREDIT, "Credit Usage - Latest",
+                fetch(CREDIT, credit_attrs, "pvci_usagedate"),
+                grid(cc, "pvci_creditusageid", credit_cols),
+            )
+        )
+        results.append(
+            upsert_view(
+                s, base, token, CREDIT, "Credit Usage - Unresolved Resources",
+                fetch(
+                    CREDIT,
+                    credit_attrs,
+                    "pvci_usagedate",
+                    filt=(
+                        '<filter type="and"><condition attribute="pvci_resolutionstatus" '
+                        'operator="ne" value="exact" /></filter>'
+                    ),
+                ),
+                grid(cc, "pvci_creditusageid", credit_cols),
+            )
+        )
+
+        capacity_cols = [
+            ("pvci_asofdate", 120),
+            ("pvci_environmentname", 180),
+            ("pvci_entitlementid", 120),
+            ("pvci_allocated", 100),
+            ("pvci_consumed", 100),
+            ("pvci_available", 100),
+            ("pvci_status", 110),
+            ("pvci_drawfromtenantpool", 90),
+        ]
+        results.append(
+            upsert_view(
+                s, base, token, CAPACITY, "Credit Capacity - Latest",
+                fetch(
+                    CAPACITY,
+                    [c[0] for c in capacity_cols] + ["pvci_creditcapacitysnapshotid"],
+                    "pvci_asofdate",
+                ),
+                grid(capc, "pvci_creditcapacitysnapshotid", capacity_cols),
+            )
+        )
+
+        agent_cols = [
+            ("pvci_displayname", 220),
+            ("pvci_environmentname", 180),
+            ("pvci_resourceid", 240),
+            ("pvci_resourcetype", 130),
+            ("pvci_harness", 110),
+            ("pvci_classificationconfidence", 130),
+            ("pvci_model", 120),
+            ("pvci_published", 70),
+        ]
+        agent_attrs = [c[0] for c in agent_cols] + ["pvci_agentinventoryid"]
+        results.append(
+            upsert_view(
+                s, base, token, AGENT, "Agent Inventory - All Resources",
+                fetch(AGENT, agent_attrs, "pvci_displayname", desc=False),
+                grid(ac, "pvci_agentinventoryid", agent_cols),
+            )
+        )
+        results.append(
+            upsert_view(
+                s, base, token, AGENT, "Agent Inventory - Unknown Harness",
+                fetch(
+                    AGENT,
+                    agent_attrs,
+                    "pvci_displayname",
+                    desc=False,
+                    filt='<filter type="and"><condition attribute="pvci_harness" operator="eq" value="unknown" /></filter>',
+                ),
+                grid(ac, "pvci_agentinventoryid", agent_cols),
+            )
+        )
+
+        sync_cols = [
+            ("pvci_name", 220),
+            ("pvci_source", 120),
+            ("pvci_startedon", 130),
+            ("pvci_completedon", 130),
+            ("pvci_status", 90),
+            ("pvci_sourcecount", 90),
+            ("pvci_createdcount", 90),
+            ("pvci_updatedcount", 90),
+            ("pvci_rejectedcount", 90),
+        ]
+        results.append(
+            upsert_view(
+                s, base, token, CREDIT_SYNC, "Credit Sync Runs - Latest",
+                fetch(
+                    CREDIT_SYNC,
+                    [c[0] for c in sync_cols] + ["pvci_creditsyncrunid"],
+                    "pvci_startedon",
+                ),
+                grid(csc, "pvci_creditsyncrunid", sync_cols),
+            )
+        )
+
+        user_cols = [
+            ("pvci_name", 220),
+            ("pvci_userid", 260),
+            ("pvci_usagedate", 120),
+            ("pvci_billedcredits", 110),
+            ("pvci_nonbilledcredits", 120),
+            ("pvci_nameresolutionstatus", 150),
+        ]
+        results.append(
+            upsert_view(
+                s, base, token, USER_USAGE, "Credit User Usage - Latest",
+                fetch(USER_USAGE, [c[0] for c in user_cols] + ["pvci_credituserusageid"], "pvci_usagedate"),
+                grid(uuc, "pvci_credituserusageid", user_cols),
+            )
+        )
+
+        privacy_cols = [
+            ("pvci_name", 240),
+            ("pvci_revealusernames", 140),
+            ("pvci_approvedbyname", 180),
+            ("pvci_approvedon", 140),
+            ("pvci_revokedon", 140),
+        ]
+        results.append(
+            upsert_view(
+                s, base, token, PRIVACY, "Credit Privacy Approval",
+                fetch(PRIVACY, [c[0] for c in privacy_cols] + ["pvci_creditprivacysettingid"], "pvci_name", desc=False),
+                grid(pc, "pvci_creditprivacysettingid", privacy_cols),
             )
         )
         results.append(
@@ -201,8 +355,15 @@ def main() -> None:
         pub = s.post(
             f"{base}/PublishXml",
             headers=headers(token),
-            json={"ParameterXml": f"<importexportxml><entities><entity>{SESSION}</entity>"
-                                  f"<entity>{TURN}</entity><entity>{IDENTITY}</entity></entities></importexportxml>"},
+            json={"ParameterXml": "<importexportxml><entities>"
+                                  + "".join(
+                                      f"<entity>{entity}</entity>"
+                                      for entity in (
+                                          SESSION, TURN, IDENTITY, AGENT, CREDIT, CAPACITY, CREDIT_SYNC,
+                                          USER_USAGE, PRIVACY,
+                                      )
+                                  )
+                                  + "</entities></importexportxml>"},
             timeout=180,
         )
         print("publish:", pub.status_code if pub.ok else f"{pub.status_code} {pub.text[:200]}")
