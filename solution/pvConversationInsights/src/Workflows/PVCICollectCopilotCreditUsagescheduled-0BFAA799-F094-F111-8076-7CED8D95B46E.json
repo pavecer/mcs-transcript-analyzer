@@ -1,0 +1,501 @@
+{
+  "properties": {
+    "connectionReferences": {
+      "shared_webcontents": {
+        "runtimeSource": "embedded",
+        "connection": {
+          "connectionReferenceLogicalName": "pvci_licensinghttp"
+        },
+        "api": {
+          "name": "shared_webcontents"
+        }
+      },
+      "shared_commondataserviceforapps": {
+        "runtimeSource": "embedded",
+        "connection": {
+          "connectionReferenceLogicalName": "pvci_dataversesync"
+        },
+        "api": {
+          "name": "shared_commondataserviceforapps"
+        }
+      }
+    },
+    "definition": {
+      "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+      "contentVersion": "1.0.0.0",
+      "parameters": {
+        "$connections": {
+          "defaultValue": {},
+          "type": "Object"
+        },
+        "$authentication": {
+          "defaultValue": {},
+          "type": "SecureObject"
+        },
+        "pvci_CreditReportingTenantId (pvci_CreditReportingTenantId)": {
+          "defaultValue": "",
+          "type": "String",
+          "metadata": {
+            "schemaName": "pvci_CreditReportingTenantId"
+          }
+        }
+      },
+      "triggers": {
+        "Daily": {
+          "type": "Recurrence",
+          "recurrence": {
+            "frequency": "Day",
+            "interval": 1,
+            "startTime": "2026-01-01T02:00:00Z"
+          }
+        }
+      },
+      "actions": {
+        "Initialize_usage_pages": {
+          "type": "InitializeVariable",
+          "runAfter": {},
+          "inputs": {
+            "variables": [
+              {
+                "name": "UsagePages",
+                "type": "array",
+                "value": []
+              }
+            ]
+          }
+        },
+        "Initialize_page_number": {
+          "type": "InitializeVariable",
+          "runAfter": {
+            "Initialize_usage_pages": [
+              "Succeeded"
+            ]
+          },
+          "inputs": {
+            "variables": [
+              {
+                "name": "PageNumber",
+                "type": "integer",
+                "value": 1
+              }
+            ]
+          }
+        },
+        "Initialize_has_more": {
+          "type": "InitializeVariable",
+          "runAfter": {
+            "Initialize_page_number": [
+              "Succeeded"
+            ]
+          },
+          "inputs": {
+            "variables": [
+              {
+                "name": "HasMore",
+                "type": "boolean",
+                "value": true
+              }
+            ]
+          }
+        },
+        "Initialize_source_count": {
+          "type": "InitializeVariable",
+          "runAfter": {
+            "Initialize_has_more": [
+              "Succeeded"
+            ]
+          },
+          "inputs": {
+            "variables": [
+              {
+                "name": "SourceCount",
+                "type": "integer",
+                "value": 0
+              }
+            ]
+          }
+        },
+        "Initialize_user_created_count": {
+          "type": "InitializeVariable",
+          "runAfter": {
+            "Initialize_source_count": [
+              "Succeeded"
+            ]
+          },
+          "inputs": {
+            "variables": [
+              {
+                "name": "UserCreatedCount",
+                "type": "integer",
+                "value": 0
+              }
+            ]
+          }
+        },
+        "Initialize_user_updated_count": {
+          "type": "InitializeVariable",
+          "runAfter": {
+            "Initialize_user_created_count": [
+              "Succeeded"
+            ]
+          },
+          "inputs": {
+            "variables": [
+              {
+                "name": "UserUpdatedCount",
+                "type": "integer",
+                "value": 0
+              }
+            ]
+          }
+        },
+        "Initialize_user_rejected_count": {
+          "type": "InitializeVariable",
+          "runAfter": {
+            "Initialize_user_updated_count": [
+              "Succeeded"
+            ]
+          },
+          "inputs": {
+            "variables": [
+              {
+                "name": "UserRejectedCount",
+                "type": "integer",
+                "value": 0
+              }
+            ]
+          }
+        },
+        "Initialize_user_failed_chunk_count": {
+          "type": "InitializeVariable",
+          "runAfter": {
+            "Initialize_user_rejected_count": [
+              "Succeeded"
+            ]
+          },
+          "inputs": {
+            "variables": [
+              {
+                "name": "UserFailedChunkCount",
+                "type": "integer",
+                "value": 0
+              }
+            ]
+          }
+        },
+        "Until_usage_complete": {
+          "type": "Until",
+          "runAfter": {
+            "Initialize_user_failed_chunk_count": [
+              "Succeeded"
+            ]
+          },
+          "expression": "@equals(variables('HasMore'), false)",
+          "limit": {
+            "count": 20,
+            "timeout": "PT1H"
+          },
+          "actions": {
+            "Get_usage_page": {
+              "type": "OpenApiConnection",
+              "runAfter": {},
+              "inputs": {
+                "host": {
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_webcontents",
+                  "connectionName": "shared_webcontents",
+                  "operationId": "InvokeHttp"
+                },
+                "parameters": {
+                  "request/method": "GET",
+                  "request/url": "@concat('/v2.0/tenants/',parameters('pvci_CreditReportingTenantId (pvci_CreditReportingTenantId)'),'/entitlements/MCSMessages/resources?fromDate=',formatDateTime(addDays(utcNow(), -7), 'yyyy-MM-dd'),'&toDate=',formatDateTime(utcNow(), 'yyyy-MM-dd'),'&pageNumber=',string(variables('PageNumber')),'&pageSize=100&searchRequest=&includeFields=users')"
+                }
+              }
+            },
+            "Append_usage_page": {
+              "type": "AppendToArrayVariable",
+              "runAfter": {
+                "Get_usage_page": [
+                  "Succeeded"
+                ]
+              },
+              "inputs": {
+                "name": "UsagePages",
+                "value": "@body('Get_usage_page')"
+              }
+            },
+            "Increment_resource_source_count": {
+              "type": "IncrementVariable",
+              "runAfter": {
+                "Append_usage_page": [
+                  "Succeeded"
+                ]
+              },
+              "inputs": {
+                "name": "SourceCount",
+                "value": "@length(coalesce(first(body('Get_usage_page')?['value'])?['resources'], createArray()))"
+              }
+            },
+            "Set_has_more": {
+              "type": "SetVariable",
+              "runAfter": {
+                "Increment_resource_source_count": [
+                  "Succeeded"
+                ]
+              },
+              "inputs": {
+                "name": "HasMore",
+                "value": "@equals(length(coalesce(first(body('Get_usage_page')?['value'])?['resources'], createArray())), 100)"
+              }
+            },
+            "Increment_page_number": {
+              "type": "IncrementVariable",
+              "runAfter": {
+                "Set_has_more": [
+                  "Succeeded"
+                ]
+              },
+              "inputs": {
+                "name": "PageNumber",
+                "value": 1
+              }
+            }
+          }
+        },
+        "Get_capacity": {
+          "type": "OpenApiConnection",
+          "runAfter": {
+            "Import_user_chunks": [
+              "Succeeded",
+              "Failed",
+              "TimedOut"
+            ]
+          },
+          "inputs": {
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_webcontents",
+              "connectionName": "shared_webcontents",
+              "operationId": "InvokeHttp"
+            },
+            "parameters": {
+              "request/method": "GET",
+              "request/url": "@concat('/v2.0/tenants/',parameters('pvci_CreditReportingTenantId (pvci_CreditReportingTenantId)'),'/environments/entitlementConsumptions/MCSMessages')"
+            }
+          }
+        },
+        "Increment_capacity_source_count": {
+          "type": "IncrementVariable",
+          "runAfter": {
+            "Get_capacity": [
+              "Succeeded"
+            ]
+          },
+          "inputs": {
+            "name": "SourceCount",
+            "value": "@length(coalesce(body('Get_capacity')?['value'], createArray()))"
+          }
+        },
+        "Get_user_usage": {
+          "type": "OpenApiConnection",
+          "runAfter": {
+            "Until_usage_complete": [
+              "Succeeded"
+            ]
+          },
+          "inputs": {
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_webcontents",
+              "connectionName": "shared_webcontents",
+              "operationId": "InvokeHttp"
+            },
+            "parameters": {
+              "request/method": "GET",
+              "request/url": "@concat('/v2.0/tenants/',parameters('pvci_CreditReportingTenantId (pvci_CreditReportingTenantId)'),'/entitlements/MCSMessages/users?fromDate=',formatDateTime(addDays(utcNow(), -7), 'yyyy-MM-dd'),'&toDate=',formatDateTime(utcNow(), 'yyyy-MM-dd'))"
+            }
+          }
+        },
+        "Compose_user_rows": {
+          "type": "Compose",
+          "runAfter": {
+            "Get_user_usage": [
+              "Succeeded"
+            ]
+          },
+          "inputs": "@coalesce(first(body('Get_user_usage')?['value'])?['users'], createArray())"
+        },
+        "Increment_user_source_count": {
+          "type": "IncrementVariable",
+          "runAfter": {
+            "Compose_user_rows": [
+              "Succeeded"
+            ]
+          },
+          "inputs": {
+            "name": "SourceCount",
+            "value": "@length(outputs('Compose_user_rows'))"
+          }
+        },
+        "Compose_user_chunks": {
+          "type": "Compose",
+          "runAfter": {
+            "Increment_user_source_count": [
+              "Succeeded"
+            ]
+          },
+          "inputs": "@chunk(outputs('Compose_user_rows'), 250)"
+        },
+        "Import_user_chunks": {
+          "type": "Foreach",
+          "runAfter": {
+            "Compose_user_chunks": [
+              "Succeeded"
+            ]
+          },
+          "foreach": "@outputs('Compose_user_chunks')",
+          "runtimeConfiguration": {
+            "concurrency": {
+              "repetitions": 1
+            }
+          },
+          "actions": {
+            "Compose_user_chunk_payload": {
+              "type": "Compose",
+              "runAfter": {},
+              "inputs": {
+                "tenantId": "@parameters('pvci_CreditReportingTenantId (pvci_CreditReportingTenantId)')",
+                "ppacUsers": {
+                  "value": [
+                    {
+                      "users": "@items('Import_user_chunks')"
+                    }
+                  ]
+                }
+              }
+            },
+            "Import_user_chunk": {
+              "type": "OpenApiConnection",
+              "runAfter": {
+                "Compose_user_chunk_payload": [
+                  "Succeeded"
+                ]
+              },
+              "inputs": {
+                "host": {
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+                  "connectionName": "shared_commondataserviceforapps",
+                  "operationId": "PerformUnboundAction"
+                },
+                "parameters": {
+                  "actionName": "pvci_ImportCreditUsageBatch",
+                  "item/PayloadJson": "@string(outputs('Compose_user_chunk_payload'))",
+                  "item/SourceSchemaVersion": "ppac-v2-resource-aggregate-v1",
+                  "item/DryRun": false
+                }
+              }
+            },
+            "Increment_user_created_count": {
+              "type": "IncrementVariable",
+              "runAfter": {
+                "Import_user_chunk": [
+                  "Succeeded"
+                ]
+              },
+              "inputs": {
+                "name": "UserCreatedCount",
+                "value": "@int(coalesce(body('Import_user_chunk')?['Created'], 0))"
+              }
+            },
+            "Increment_user_updated_count": {
+              "type": "IncrementVariable",
+              "runAfter": {
+                "Increment_user_created_count": [
+                  "Succeeded"
+                ]
+              },
+              "inputs": {
+                "name": "UserUpdatedCount",
+                "value": "@int(coalesce(body('Import_user_chunk')?['Updated'], 0))"
+              }
+            },
+            "Increment_user_rejected_count": {
+              "type": "IncrementVariable",
+              "runAfter": {
+                "Increment_user_updated_count": [
+                  "Succeeded"
+                ]
+              },
+              "inputs": {
+                "name": "UserRejectedCount",
+                "value": "@int(coalesce(body('Import_user_chunk')?['Rejected'], 0))"
+              }
+            },
+            "Increment_user_failed_chunk_count": {
+              "type": "IncrementVariable",
+              "runAfter": {
+                "Import_user_chunk": [
+                  "Failed",
+                  "TimedOut"
+                ]
+              },
+              "inputs": {
+                "name": "UserFailedChunkCount",
+                "value": 1
+              }
+            }
+          }
+        },
+        "Compose_import_payload": {
+          "type": "Compose",
+          "runAfter": {
+            "Increment_capacity_source_count": [
+              "Succeeded"
+            ]
+          },
+          "inputs": {
+            "tenantId": "@parameters('pvci_CreditReportingTenantId (pvci_CreditReportingTenantId)')",
+            "ppacResourcePages": "@variables('UsagePages')",
+            "ppacCapacity": "@body('Get_capacity')",
+            "syncRun": {
+              "runKey": "@concat('ppac-', formatDateTime(utcNow(), 'yyyyMMddHHmmss'))",
+              "name": "@concat('PPAC credit collection - ', formatDateTime(utcNow(), 'yyyy-MM-dd HH:mm'))",
+              "source": "PPAC licensing API",
+              "startedOn": "@utcNow()",
+              "completedOn": "@utcNow()",
+              "fromDate": "@formatDateTime(addDays(utcNow(), -7), 'yyyy-MM-dd')",
+              "toDate": "@formatDateTime(utcNow(), 'yyyy-MM-dd')",
+              "pageCount": "@sub(variables('PageNumber'), 1)",
+              "sourceCount": "@variables('SourceCount')",
+              "priorCreatedCount": "@variables('UserCreatedCount')",
+              "priorUpdatedCount": "@variables('UserUpdatedCount')",
+              "priorRejectedCount": "@variables('UserRejectedCount')",
+              "priorFailedChunkCount": "@variables('UserFailedChunkCount')",
+              "schemaVersion": "ppac-v2-resource-aggregate-v1"
+            }
+          }
+        },
+        "Import_credit_usage": {
+          "type": "OpenApiConnection",
+          "runAfter": {
+            "Compose_import_payload": [
+              "Succeeded"
+            ]
+          },
+          "inputs": {
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+              "connectionName": "shared_commondataserviceforapps",
+              "operationId": "PerformUnboundAction"
+            },
+            "parameters": {
+              "actionName": "pvci_ImportCreditUsageBatch",
+              "item/PayloadJson": "@string(outputs('Compose_import_payload'))",
+              "item/SourceSchemaVersion": "ppac-v2-resource-aggregate-v1",
+              "item/DryRun": false
+            }
+          }
+        }
+      }
+    },
+    "templateName": null
+  },
+  "schemaVersion": "1.0.0.0"
+}

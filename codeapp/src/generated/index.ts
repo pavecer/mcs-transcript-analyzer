@@ -5,11 +5,23 @@
 
 // Models
 export * as CommonModels from './models/CommonModels';
+export * as Pvci_agentinventoriesModel from './models/Pvci_agentinventoriesModel';
+export * as Pvci_creditcapacitysnapshotsModel from './models/Pvci_creditcapacitysnapshotsModel';
+export * as Pvci_creditprivacysettingsModel from './models/Pvci_creditprivacysettingsModel';
+export * as Pvci_creditsyncrunsModel from './models/Pvci_creditsyncrunsModel';
+export * as Pvci_creditusagesModel from './models/Pvci_creditusagesModel';
+export * as Pvci_credituserusagesModel from './models/Pvci_credituserusagesModel';
 export * as Pvci_flowrundetailsModel from './models/Pvci_flowrundetailsModel';
 export * as Pvci_transcriptsessionsModel from './models/Pvci_transcriptsessionsModel';
 export * as Pvci_transcriptturnsModel from './models/Pvci_transcriptturnsModel';
 
 // Services
+export * from './services/Pvci_agentinventoriesService';
+export * from './services/Pvci_creditcapacitysnapshotsService';
+export * from './services/Pvci_creditprivacysettingsService';
+export * from './services/Pvci_creditsyncrunsService';
+export * from './services/Pvci_creditusagesService';
+export * from './services/Pvci_credituserusagesService';
 export * from './services/Pvci_flowrundetailsService';
 export * from './services/Pvci_transcriptsessionsService';
 export * from './services/Pvci_transcriptturnsService';

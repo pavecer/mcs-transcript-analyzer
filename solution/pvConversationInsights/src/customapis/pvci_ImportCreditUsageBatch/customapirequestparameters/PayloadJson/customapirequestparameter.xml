@@ -1,0 +1,9 @@
+<customapirequestparameter uniquename="PayloadJson">
+  <displayname default="Normalized credit usage payload">
+    <label description="Normalized credit usage payload" languagecode="1033" />
+  </displayname>
+  <iscustomizable>1</iscustomizable>
+  <isoptional>0</isoptional>
+  <name>PayloadJson</name>
+  <type>10</type>
+</customapirequestparameter>

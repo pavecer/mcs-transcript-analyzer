@@ -5,6 +5,48 @@
  */
 
 export const dataSourcesInfo = {
+  "pvci_agentinventories": {
+    "tableId": "",
+    "version": "",
+    "primaryKey": "pvci_agentinventoryid",
+    "dataSourceType": "Dataverse",
+    "apis": {}
+  },
+  "pvci_creditcapacitysnapshots": {
+    "tableId": "",
+    "version": "",
+    "primaryKey": "pvci_creditcapacitysnapshotid",
+    "dataSourceType": "Dataverse",
+    "apis": {}
+  },
+  "pvci_creditprivacysettings": {
+    "tableId": "",
+    "version": "",
+    "primaryKey": "pvci_creditprivacysettingid",
+    "dataSourceType": "Dataverse",
+    "apis": {}
+  },
+  "pvci_creditsyncruns": {
+    "tableId": "",
+    "version": "",
+    "primaryKey": "pvci_creditsyncrunid",
+    "dataSourceType": "Dataverse",
+    "apis": {}
+  },
+  "pvci_creditusages": {
+    "tableId": "",
+    "version": "",
+    "primaryKey": "pvci_creditusageid",
+    "dataSourceType": "Dataverse",
+    "apis": {}
+  },
+  "pvci_credituserusages": {
+    "tableId": "",
+    "version": "",
+    "primaryKey": "pvci_credituserusageid",
+    "dataSourceType": "Dataverse",
+    "apis": {}
+  },
   "pvci_flowrundetails": {
     "tableId": "",
     "version": "",

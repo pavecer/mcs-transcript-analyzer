@@ -1,0 +1,34 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<AppModule>
+  <UniqueName>pvci_conversationinsights</UniqueName>
+  <IntroducedVersion>1.0.0.0</IntroducedVersion>
+  <WebResourceId>1316f45f-d73b-ee11-bdf2-000d3a334de7</WebResourceId>
+  <OptimizedFor></OptimizedFor>
+  <statecode>0</statecode>
+  <statuscode>1</statuscode>
+  <FormFactor>1</FormFactor>
+  <ClientType>4</ClientType>
+  <NavigationType>1</NavigationType>
+  <AppModuleComponents>
+    <AppModuleComponent type="1" schemaName="entity" />
+    <AppModuleComponent type="1" schemaName="entity" />
+    <AppModuleComponent type="1" schemaName="entity" />
+    <AppModuleComponent type="62" schemaName="pvci_conversationinsights_sitemap" />
+  </AppModuleComponents>
+  <AppModuleRoleMaps>
+    <Role id="{627090ff-40a3-4053-8790-584edc5be201}" />
+    <Role id="{119f245c-3cc8-4b62-b31c-d1a046ced15d}" />
+  </AppModuleRoleMaps>
+  <LocalizedNames>
+    <LocalizedName description="Conversation Insights" languagecode="1033" />
+  </LocalizedNames>
+  <Descriptions>
+    <Description description="Analyse Copilot Studio conversation transcripts" languagecode="1033" />
+  </Descriptions>
+  <appsettings>
+    <appsetting settingdefinitionid.uniquename="AppChannel">
+      <iscustomizable>1</iscustomizable>
+      <value>1</value>
+    </appsetting>
+  </appsettings>
+</AppModule>

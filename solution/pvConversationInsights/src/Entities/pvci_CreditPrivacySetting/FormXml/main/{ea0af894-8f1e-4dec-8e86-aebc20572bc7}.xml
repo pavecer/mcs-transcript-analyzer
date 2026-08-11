@@ -1,0 +1,106 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<forms xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <systemform>
+    <formid>{ea0af894-8f1e-4dec-8e86-aebc20572bc7}</formid>
+    <IntroducedVersion>1.0.0.0</IntroducedVersion>
+    <FormPresentation>1</FormPresentation>
+    <FormActivationState>1</FormActivationState>
+    <form>
+      <tabs>
+        <tab id="{cfeadbec-97ca-5f0f-9c2d-17c7150ea1e5}" name="ps_summary" verticallayout="true" showlabel="true" expanded="true">
+          <labels>
+            <label description="Privacy Approval" languagecode="1033" />
+          </labels>
+          <columns>
+            <column width="100%">
+              <sections>
+                <section id="{13054995-0cb0-51e3-80ce-7d9339b15981}" name="ps_approval" showlabel="true" showbar="false" columns="1" labelwidth="140" celllabelalignment="Left" celllabelposition="Left">
+                  <labels>
+                    <label description="Shared user-name disclosure approval" languagecode="1033" />
+                  </labels>
+                  <rows>
+                    <row>
+                      <cell id="{c169dbdd-7af7-5cef-8b7d-0bd944454b72}" showlabel="true">
+                        <labels>
+                          <label description="Setting" languagecode="1033" />
+                        </labels>
+                        <control id="pvci_name" uniqueid="{2c5e2d33-3991-546b-9459-66740123495f}" classid="{4273EDBD-AC1D-40d3-9FB2-095C621B552D}" datafieldname="pvci_name" disabled="true" />
+                      </cell>
+                    </row>
+                    <row>
+                      <cell id="{188f2556-6488-5540-b28a-3dbbf9faadbd}" rowspan="10" colspan="1" showlabel="true">
+                        <labels>
+                          <label description="Approval statement" languagecode="1033" />
+                        </labels>
+                        <control id="pvci_approvalstatement" uniqueid="{7d807f9a-506d-5535-8b27-17eb3b5af068}" classid="{E0DECE4B-6FC8-4a8f-A065-082708572369}" datafieldname="pvci_approvalstatement" disabled="true" />
+                      </cell>
+                    </row>
+                    <row>
+                      <cell id="{9d02fe5b-fa92-5aa4-a02b-7425a321974d}" showlabel="true">
+                        <labels>
+                          <label description="Reveal user names" languagecode="1033" />
+                        </labels>
+                        <control id="pvci_revealusernames" uniqueid="{e9812e1a-5050-58a1-b5a9-3cc2d5395d4f}" classid="{B0C6723A-8503-4fd7-BB28-C8A06AC933C2}" datafieldname="pvci_revealusernames" disabled="false" />
+                      </cell>
+                    </row>
+                  </rows>
+                </section>
+                <section id="{1d58d75f-92c3-5581-ad66-a13e121b8e84}" name="ps_audit" showlabel="true" showbar="false" columns="11" labelwidth="140" celllabelalignment="Left" celllabelposition="Left">
+                  <labels>
+                    <label description="Approval audit" languagecode="1033" />
+                  </labels>
+                  <rows>
+                    <row>
+                      <cell id="{ac8ed964-5e11-5268-8a49-98bef4fc23ec}" showlabel="true">
+                        <labels>
+                          <label description="Changed by" languagecode="1033" />
+                        </labels>
+                        <control id="pvci_approvedbyname" uniqueid="{2fee65bb-5e01-509e-a811-79e6a5a91876}" classid="{4273EDBD-AC1D-40d3-9FB2-095C621B552D}" datafieldname="pvci_approvedbyname" disabled="true" />
+                      </cell>
+                      <cell id="{b0c6f9f3-b26f-5614-bddd-0d3e2913ebe1}" showlabel="true">
+                        <labels>
+                          <label description="Changed by user ID" languagecode="1033" />
+                        </labels>
+                        <control id="pvci_approvedbyid" uniqueid="{87533941-61ae-5bf8-bea0-fe51c3361597}" classid="{4273EDBD-AC1D-40d3-9FB2-095C621B552D}" datafieldname="pvci_approvedbyid" disabled="true" />
+                      </cell>
+                    </row>
+                    <row>
+                      <cell id="{356ac5a5-2c4e-512a-97f5-1069ad59c178}" showlabel="true">
+                        <labels>
+                          <label description="Approved on" languagecode="1033" />
+                        </labels>
+                        <control id="pvci_approvedon" uniqueid="{4e03450b-81cc-5f0d-8d9b-c62227fb5253}" classid="{5B773807-9FB2-42db-97C3-7A91EFF8ADFF}" datafieldname="pvci_approvedon" disabled="true" />
+                      </cell>
+                      <cell id="{90bd8822-01cc-52ed-acbd-cd6873765e9b}" showlabel="true">
+                        <labels>
+                          <label description="Revoked on" languagecode="1033" />
+                        </labels>
+                        <control id="pvci_revokedon" uniqueid="{b10cb5c6-d601-5edc-a8bc-8085767f6af9}" classid="{5B773807-9FB2-42db-97C3-7A91EFF8ADFF}" datafieldname="pvci_revokedon" disabled="true" />
+                      </cell>
+                    </row>
+                    <row>
+                      <cell id="{fbce8f91-a371-5889-82ef-6aa1b8eb3b43}" showlabel="true">
+                        <labels>
+                          <label description="Setting key" languagecode="1033" />
+                        </labels>
+                        <control id="pvci_settingkey" uniqueid="{535d0bdc-f238-5ad6-8f2e-1fc8ef2c8224}" classid="{4273EDBD-AC1D-40d3-9FB2-095C621B552D}" datafieldname="pvci_settingkey" disabled="true" />
+                      </cell>
+                    </row>
+                  </rows>
+                </section>
+              </sections>
+            </column>
+          </columns>
+        </tab>
+      </tabs>
+    </form>
+    <IsCustomizable>1</IsCustomizable>
+    <CanBeDeleted>1</CanBeDeleted>
+    <LocalizedNames>
+      <LocalizedName description="Information" languagecode="1033" />
+    </LocalizedNames>
+    <Descriptions>
+      <Description description="A form for this entity." languagecode="1033" />
+    </Descriptions>
+  </systemform>
+</forms>

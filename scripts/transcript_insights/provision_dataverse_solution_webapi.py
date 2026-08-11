@@ -147,22 +147,63 @@ def ensure_solution(session: requests.Session, cfg: Config, token: str, publishe
     r.raise_for_status()
 
 
+def ensure_environment_variable(
+    session: requests.Session,
+    cfg: Config,
+    token: str,
+    variable: dict[str, Any],
+) -> str:
+    base = f"{cfg.dataverse_url}/api/data/v9.1"
+    schema_name = variable["schemaName"]
+    existing = query_one(
+        session,
+        f"{base}/environmentvariabledefinitions?$select=environmentvariabledefinitionid"
+        f"&$filter=schemaname eq '{schema_name}'&$top=1",
+        dv_headers(token),
+    )
+    if existing:
+        return existing["environmentvariabledefinitionid"]
+
+    if variable.get("type", "string") != "string":
+        raise ValueError(f"Unsupported environment variable type for {schema_name}")
+    payload: dict[str, Any] = {
+        "schemaname": schema_name,
+        "displayname": variable.get("displayName", schema_name),
+        "description": variable.get("description", ""),
+        "type": 100000000,
+        "isrequired": bool(variable.get("required", False)),
+    }
+    if variable.get("defaultValue") is not None:
+        payload["defaultvalue"] = str(variable["defaultValue"])
+    response = session.post(
+        f"{base}/environmentvariabledefinitions",
+        headers=dv_headers(token, cfg.solution_unique),
+        json=payload,
+        timeout=90,
+    )
+    response.raise_for_status()
+    entity_url = response.headers.get("OData-EntityId") or response.headers.get("odata-entityid") or ""
+    return entity_url.split("(")[-1].split(")")[0]
+
+
 def ensure_entity(
     session: requests.Session,
     cfg: Config,
     token: str,
-    schema_name: str,
-    display_name: str,
+    table: dict[str, Any],
 ) -> str:
     meta_base = f"{cfg.dataverse_url}/api/data/v9.1"
+    schema_name = table["schemaName"]
+    display_name = table.get("displayName", schema_name)
+    display_collection_name = table.get("displayCollectionName", display_name + "s")
     logical_name = schema_name.lower()
     entity_payload = {
         "@odata.type": "Microsoft.Dynamics.CRM.EntityMetadata",
         "SchemaName": schema_name,
         "DisplayName": label(display_name),
-        "DisplayCollectionName": label(display_name + "s"),
+        "DisplayCollectionName": label(display_collection_name),
         "Description": label(display_name),
-        "OwnershipType": "UserOwned",
+        "OwnershipType": table.get("ownershipType", "UserOwned"),
         "HasActivities": False,
         "HasNotes": True,
         "IsActivity": False,
@@ -198,23 +239,26 @@ def add_attribute(
     token: str,
     entity_logical: str,
     schema_name: str,
-    col_type: str,
+    column: str | dict[str, Any],
 ) -> None:
     base = f"{cfg.dataverse_url}/api/data/v9.1"
+    spec = {"type": column} if isinstance(column, str) else column
+    col_type = spec["type"]
+    display_name = spec.get("displayName", schema_name)
 
     if col_type in ("string",):
         payload = {
             "@odata.type": "Microsoft.Dynamics.CRM.StringAttributeMetadata",
             "SchemaName": schema_name,
-            "DisplayName": label(schema_name),
-            "MaxLength": 1000,
+            "DisplayName": label(display_name),
+            "MaxLength": spec.get("maxLength", 1000),
             "RequiredLevel": {"Value": "None"},
         }
     elif col_type in ("text",):
         payload = {
             "@odata.type": "Microsoft.Dynamics.CRM.MemoAttributeMetadata",
             "SchemaName": schema_name,
-            "DisplayName": label(schema_name),
+            "DisplayName": label(display_name),
             "MaxLength": 1048576,
             "Format": "TextArea",
             "RequiredLevel": {"Value": "None"},
@@ -223,7 +267,7 @@ def add_attribute(
         payload = {
             "@odata.type": "Microsoft.Dynamics.CRM.DateTimeAttributeMetadata",
             "SchemaName": schema_name,
-            "DisplayName": label(schema_name),
+            "DisplayName": label(display_name),
             "Format": "DateAndTime",
             "ImeMode": "Auto",
             "RequiredLevel": {"Value": "None"},
@@ -232,7 +276,7 @@ def add_attribute(
         payload = {
             "@odata.type": "Microsoft.Dynamics.CRM.IntegerAttributeMetadata",
             "SchemaName": schema_name,
-            "DisplayName": label(schema_name),
+            "DisplayName": label(display_name),
             "MinValue": -2147483648,
             "MaxValue": 2147483647,
             "RequiredLevel": {"Value": "None"},
@@ -241,7 +285,7 @@ def add_attribute(
         payload = {
             "@odata.type": "Microsoft.Dynamics.CRM.BooleanAttributeMetadata",
             "SchemaName": schema_name,
-            "DisplayName": label(schema_name),
+            "DisplayName": label(display_name),
             "RequiredLevel": {"Value": "None"},
             "DefaultValue": False,
             "OptionSet": {
@@ -250,11 +294,21 @@ def add_attribute(
                 "FalseOption": {"Value": 0, "Label": label("No")},
             },
         }
+    elif col_type in ("decimal",):
+        payload = {
+            "@odata.type": "Microsoft.Dynamics.CRM.DecimalAttributeMetadata",
+            "SchemaName": schema_name,
+            "DisplayName": label(display_name),
+            "MinValue": spec.get("minValue", -100000000000.0),
+            "MaxValue": spec.get("maxValue", 100000000000.0),
+            "Precision": spec.get("precision", 4),
+            "RequiredLevel": {"Value": "None"},
+        }
     else:
         payload = {
             "@odata.type": "Microsoft.Dynamics.CRM.StringAttributeMetadata",
             "SchemaName": schema_name,
-            "DisplayName": label(schema_name),
+            "DisplayName": label(display_name),
             "MaxLength": 1000,
             "RequiredLevel": {"Value": "None"},
         }
@@ -269,6 +323,34 @@ def add_attribute(
         body = r.text.lower()
         if "already exists" not in body and "duplicate" not in body:
             r.raise_for_status()
+
+
+def add_alternate_key(
+    session: requests.Session,
+    cfg: Config,
+    token: str,
+    entity_logical: str,
+    key: dict[str, Any],
+) -> str:
+    base = f"{cfg.dataverse_url}/api/data/v9.1"
+    payload = {
+        "@odata.type": "Microsoft.Dynamics.CRM.EntityKeyMetadata",
+        "SchemaName": key["schemaName"],
+        "DisplayName": label(key.get("displayName", key["schemaName"])),
+        "KeyAttributes": key["columns"],
+    }
+    r = session.post(
+        f"{base}/EntityDefinitions(LogicalName='{entity_logical}')/Keys",
+        headers=dv_headers(token, cfg.solution_unique),
+        json=payload,
+        timeout=120,
+    )
+    if r.ok:
+        return "created"
+    body = r.text.lower()
+    if "already exists" in body or "duplicate" in body or "0x80048d0b" in body:
+        return "exists"
+    return f"failed: {r.status_code} {r.text[:200]}"
 
 
 def add_lookup(
@@ -322,18 +404,22 @@ def main() -> None:
         publisher_id = ensure_publisher(session, cfg, token)
         ensure_solution(session, cfg, token, publisher_id)
 
+        for variable in definition.get("environmentVariables", []):
+            variable_id = ensure_environment_variable(session, cfg, token, variable)
+            print(f"environment variable {variable['schemaName']}: {variable_id}")
+
         created_tables = []
         for table in definition.get("tables", []):
-            logical = ensure_entity(
-                session,
-                cfg,
-                token,
-                table["schemaName"],
-                table["schemaName"],
-            )
+            logical = ensure_entity(session, cfg, token, table)
             for col_name, col_type in table.get("columns", {}).items():
                 add_attribute(session, cfg, token, logical, col_name, col_type)
             created_tables.append({"schemaName": table["schemaName"], "logicalName": logical})
+
+        for table in definition.get("tables", []):
+            logical = table["schemaName"].lower()
+            for key in table.get("alternateKeys", []):
+                state = add_alternate_key(session, cfg, token, logical, key)
+                print(f"alternate key {key['schemaName']} on {logical}: {state}")
 
         for table in definition.get("tables", []):
             logical = table["schemaName"].lower()

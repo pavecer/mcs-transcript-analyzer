@@ -1,0 +1,18 @@
+<customapi uniquename="pvci_ImportCreditUsageBatch">
+  <allowedcustomprocessingsteptype>0</allowedcustomprocessingsteptype>
+  <bindingtype>0</bindingtype>
+  <description default="Validates and idempotently imports normalized Copilot credit reporting facts.">
+    <label description="Validates and idempotently imports normalized Copilot credit reporting facts." languagecode="1033" />
+  </description>
+  <displayname default="Import Copilot Credit Usage Batch">
+    <label description="Import Copilot Credit Usage Batch" languagecode="1033" />
+  </displayname>
+  <iscustomizable>1</iscustomizable>
+  <isfunction>0</isfunction>
+  <isprivate>0</isprivate>
+  <name>pvci_ImportCreditUsageBatch</name>
+  <plugintypeid>
+    <plugintypeexportkey>521eb685-ed94-f111-8076-7ced8d95b46e</plugintypeexportkey>
+  </plugintypeid>
+  <workflowsdkstepenabled>0</workflowsdkstepenabled>
+</customapi>

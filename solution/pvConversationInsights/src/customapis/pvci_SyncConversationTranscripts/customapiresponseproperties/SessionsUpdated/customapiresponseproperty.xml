@@ -1,0 +1,8 @@
+<customapiresponseproperty uniquename="SessionsUpdated">
+  <displayname default="Sessions updated">
+    <label description="Sessions updated" languagecode="1033" />
+  </displayname>
+  <iscustomizable>1</iscustomizable>
+  <name>SessionsUpdated</name>
+  <type>7</type>
+</customapiresponseproperty>

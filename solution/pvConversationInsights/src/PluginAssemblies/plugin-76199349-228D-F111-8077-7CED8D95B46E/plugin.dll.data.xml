@@ -1,0 +1,18 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<PluginAssembly FullName="plugin, Version=1.0.0.0, Culture=neutral, PublicKeyToken=a944d352ade9edd8" PluginAssemblyId="76199349-228d-f111-8077-7ced8d95b46e" CustomizationLevel="1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <IsolationMode>2</IsolationMode>
+  <SourceType>0</SourceType>
+  <IntroducedVersion>1.0.0.0</IntroducedVersion>
+  <FileName>/PluginAssemblies/plugin-76199349-228D-F111-8077-7CED8D95B46E/plugin.dll</FileName>
+  <PluginTypes>
+    <PluginType AssemblyQualifiedName="PvciTranscripts.CreditUserDisclosure, plugin, Version=1.0.0.0, Culture=neutral, PublicKeyToken=a944d352ade9edd8" PluginTypeId="d09166a8-fc94-f111-8076-7ced8d95b46e" Name="PvciTranscripts.CreditUserDisclosure">
+      <FriendlyName>Apply Credit User Name Disclosure</FriendlyName>
+    </PluginType>
+    <PluginType AssemblyQualifiedName="PvciTranscripts.ImportCreditUsageBatch, plugin, Version=1.0.0.0, Culture=neutral, PublicKeyToken=a944d352ade9edd8" PluginTypeId="521eb685-ed94-f111-8076-7ced8d95b46e" Name="PvciTranscripts.ImportCreditUsageBatch">
+      <FriendlyName>Import Copilot Credit Usage Batch</FriendlyName>
+    </PluginType>
+    <PluginType AssemblyQualifiedName="PvciTranscripts.SyncConversationTranscripts, plugin, Version=1.0.0.0, Culture=neutral, PublicKeyToken=a944d352ade9edd8" PluginTypeId="79199349-228d-f111-8077-7ced8d95b46e" Name="PvciTranscripts.SyncConversationTranscripts">
+      <FriendlyName>Sync Conversation Transcripts</FriendlyName>
+    </PluginType>
+  </PluginTypes>
+</PluginAssembly>

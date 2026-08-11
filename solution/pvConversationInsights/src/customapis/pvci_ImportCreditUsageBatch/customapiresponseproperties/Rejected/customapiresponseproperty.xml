@@ -1,0 +1,8 @@
+<customapiresponseproperty uniquename="Rejected">
+  <displayname default="Records rejected">
+    <label description="Records rejected" languagecode="1033" />
+  </displayname>
+  <iscustomizable>1</iscustomizable>
+  <name>Rejected</name>
+  <type>7</type>
+</customapiresponseproperty>

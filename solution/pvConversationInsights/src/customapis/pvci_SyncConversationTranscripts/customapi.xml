@@ -1,0 +1,18 @@
+<customapi uniquename="pvci_SyncConversationTranscripts">
+  <allowedcustomprocessingsteptype>0</allowedcustomprocessingsteptype>
+  <bindingtype>0</bindingtype>
+  <description default="Reads conversationtranscript rows and upserts transcript analytics tables.">
+    <label description="Reads conversationtranscript rows and upserts transcript analytics tables." languagecode="1033" />
+  </description>
+  <displayname default="Sync Conversation Transcripts">
+    <label description="Sync Conversation Transcripts" languagecode="1033" />
+  </displayname>
+  <iscustomizable>1</iscustomizable>
+  <isfunction>0</isfunction>
+  <isprivate>0</isprivate>
+  <name>pvci_SyncConversationTranscripts</name>
+  <plugintypeid>
+    <plugintypeexportkey>79199349-228d-f111-8077-7ced8d95b46e</plugintypeexportkey>
+  </plugintypeid>
+  <workflowsdkstepenabled>0</workflowsdkstepenabled>
+</customapi>

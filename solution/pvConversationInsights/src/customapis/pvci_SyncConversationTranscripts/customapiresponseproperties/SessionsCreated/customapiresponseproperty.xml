@@ -1,0 +1,8 @@
+<customapiresponseproperty uniquename="SessionsCreated">
+  <displayname default="Sessions created">
+    <label description="Sessions created" languagecode="1033" />
+  </displayname>
+  <iscustomizable>1</iscustomizable>
+  <name>SessionsCreated</name>
+  <type>7</type>
+</customapiresponseproperty>

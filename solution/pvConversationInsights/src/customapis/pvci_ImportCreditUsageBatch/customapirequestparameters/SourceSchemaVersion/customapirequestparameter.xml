@@ -1,0 +1,9 @@
+<customapirequestparameter uniquename="SourceSchemaVersion">
+  <displayname default="Source schema version">
+    <label description="Source schema version" languagecode="1033" />
+  </displayname>
+  <iscustomizable>1</iscustomizable>
+  <isoptional>1</isoptional>
+  <name>SourceSchemaVersion</name>
+  <type>10</type>
+</customapirequestparameter>

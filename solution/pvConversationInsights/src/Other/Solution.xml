@@ -1,0 +1,124 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<ImportExportXml version="9.2.26072.144" SolutionPackageVersion="9.2" languagecode="1033" generatedBy="CrmLive" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" OrganizationVersion="9.2.26072.144" OrganizationSchemaType="Standard" CRMServerServiceabilityVersion="9.2.26072.00144">
+  <SolutionManifest>
+    <UniqueName>pvConversationInsights</UniqueName>
+    <LocalizedNames>
+      <LocalizedName description="PV Conversation Insights" languagecode="1033" />
+    </LocalizedNames>
+    <Descriptions />
+    <Version>1.0.0.0</Version>
+    <Managed>0</Managed>
+    <Publisher>
+      <UniqueName>pvConversationInsightsPublisher</UniqueName>
+      <LocalizedNames>
+        <LocalizedName description="PV Conversation Insights Publisher" languagecode="1033" />
+      </LocalizedNames>
+      <Descriptions>
+        <Description description="Publisher for transcript analytics" languagecode="1033" />
+      </Descriptions>
+      <EMailAddress xsi:nil="true"></EMailAddress>
+      <SupportingWebsiteUrl xsi:nil="true"></SupportingWebsiteUrl>
+      <CustomizationPrefix>pvci</CustomizationPrefix>
+      <CustomizationOptionValuePrefix>95000</CustomizationOptionValuePrefix>
+      <Addresses>
+        <Address>
+          <AddressNumber>1</AddressNumber>
+          <AddressTypeCode>1</AddressTypeCode>
+          <City xsi:nil="true"></City>
+          <County xsi:nil="true"></County>
+          <Country xsi:nil="true"></Country>
+          <Fax xsi:nil="true"></Fax>
+          <FreightTermsCode xsi:nil="true"></FreightTermsCode>
+          <ImportSequenceNumber xsi:nil="true"></ImportSequenceNumber>
+          <Latitude xsi:nil="true"></Latitude>
+          <Line1 xsi:nil="true"></Line1>
+          <Line2 xsi:nil="true"></Line2>
+          <Line3 xsi:nil="true"></Line3>
+          <Longitude xsi:nil="true"></Longitude>
+          <Name xsi:nil="true"></Name>
+          <PostalCode xsi:nil="true"></PostalCode>
+          <PostOfficeBox xsi:nil="true"></PostOfficeBox>
+          <PrimaryContactName xsi:nil="true"></PrimaryContactName>
+          <ShippingMethodCode>1</ShippingMethodCode>
+          <StateOrProvince xsi:nil="true"></StateOrProvince>
+          <Telephone1 xsi:nil="true"></Telephone1>
+          <Telephone2 xsi:nil="true"></Telephone2>
+          <Telephone3 xsi:nil="true"></Telephone3>
+          <TimeZoneRuleVersionNumber xsi:nil="true"></TimeZoneRuleVersionNumber>
+          <UPSZone xsi:nil="true"></UPSZone>
+          <UTCOffset xsi:nil="true"></UTCOffset>
+          <UTCConversionTimeZoneCode xsi:nil="true"></UTCConversionTimeZoneCode>
+        </Address>
+        <Address>
+          <AddressNumber>2</AddressNumber>
+          <AddressTypeCode>1</AddressTypeCode>
+          <City xsi:nil="true"></City>
+          <County xsi:nil="true"></County>
+          <Country xsi:nil="true"></Country>
+          <Fax xsi:nil="true"></Fax>
+          <FreightTermsCode xsi:nil="true"></FreightTermsCode>
+          <ImportSequenceNumber xsi:nil="true"></ImportSequenceNumber>
+          <Latitude xsi:nil="true"></Latitude>
+          <Line1 xsi:nil="true"></Line1>
+          <Line2 xsi:nil="true"></Line2>
+          <Line3 xsi:nil="true"></Line3>
+          <Longitude xsi:nil="true"></Longitude>
+          <Name xsi:nil="true"></Name>
+          <PostalCode xsi:nil="true"></PostalCode>
+          <PostOfficeBox xsi:nil="true"></PostOfficeBox>
+          <PrimaryContactName xsi:nil="true"></PrimaryContactName>
+          <ShippingMethodCode>1</ShippingMethodCode>
+          <StateOrProvince xsi:nil="true"></StateOrProvince>
+          <Telephone1 xsi:nil="true"></Telephone1>
+          <Telephone2 xsi:nil="true"></Telephone2>
+          <Telephone3 xsi:nil="true"></Telephone3>
+          <TimeZoneRuleVersionNumber xsi:nil="true"></TimeZoneRuleVersionNumber>
+          <UPSZone xsi:nil="true"></UPSZone>
+          <UTCOffset xsi:nil="true"></UTCOffset>
+          <UTCConversionTimeZoneCode xsi:nil="true"></UTCConversionTimeZoneCode>
+        </Address>
+      </Addresses>
+    </Publisher>
+    <RootComponents>
+      <RootComponent type="1" schemaName="pvci_agentinventory" behavior="0" />
+      <RootComponent type="1" schemaName="pvci_creditcapacitysnapshot" behavior="0" />
+      <RootComponent type="1" schemaName="pvci_creditprivacysetting" behavior="0" />
+      <RootComponent type="1" schemaName="pvci_creditsyncrun" behavior="0" />
+      <RootComponent type="1" schemaName="pvci_creditusage" behavior="0" />
+      <RootComponent type="1" schemaName="pvci_credituserusage" behavior="0" />
+      <RootComponent type="1" schemaName="pvci_flowrundetail" behavior="0" />
+      <RootComponent type="1" schemaName="pvci_syncstate" behavior="0" />
+      <RootComponent type="1" schemaName="pvci_transcriptidentitymap" behavior="0" />
+      <RootComponent type="1" schemaName="pvci_transcriptsession" behavior="0" />
+      <RootComponent type="1" schemaName="pvci_transcriptturn" behavior="0" />
+      <RootComponent type="1" schemaName="systemuser" behavior="1" />
+      <RootComponent type="29" id="{0bfaa799-f094-f111-8076-7ced8d95b46e}" behavior="0" />
+      <RootComponent type="29" id="{eee71534-988d-f111-8077-7ced8d95b46e}" behavior="0" />
+      <RootComponent type="62" schemaName="pvci_conversationinsights_sitemap" behavior="0" />
+      <RootComponent type="66" schemaName="pvci_PvciControls.JsonViewer" behavior="0" />
+      <RootComponent type="80" schemaName="pvci_conversationinsights" behavior="0" />
+      <RootComponent type="91" id="{76199349-228d-f111-8077-7ced8d95b46e}" schemaName="plugin, Version=1.0.0.0, Culture=neutral, PublicKeyToken=a944d352ade9edd8" behavior="0" />
+      <RootComponent type="92" id="{d29166a8-fc94-f111-8076-7ced8d95b46e}" behavior="0" />
+    </RootComponents>
+    <MissingDependencies>
+      <MissingDependency>
+        <Required type="1" schemaName="systemuser" displayName="SystemUser" parentSchemaName="" solution="msdyn_UserShareSecuredFields (1.0.0.0)" />
+        <Dependent type="1" schemaName="systemuser" displayName="SystemUser" />
+      </MissingDependency>
+      <MissingDependency>
+        <Required type="61" schemaName="msdyn_CopilotIcon.svg" displayName="msdyn_CopilotIcon.svg" solution="msdyn_AppCopilotFeatures (9.2.2026052.260501061)">
+          <package appName="PowerAppsAppCopilotApp Package" version="9.2.0.1">PowerAppsAppCopilotApp_Anchor (9.2.0.1)</package>
+          <package appName="PowerAppsAppCopilotApp Package" version="1.0.0.2">msdyn_SuggestedAction (1.0.0.2)</package>
+          <package appName="PowerAppsAppCopilotApp Package" version="9.2.0.5">msdyn_M365CopilotAppInfraSettings (9.2.0.5)</package>
+        </Required>
+        <Dependent type="80" schemaName="pvci_conversationinsights" displayName="Conversation Insights" />
+      </MissingDependency>
+      <MissingDependency>
+        <Required type="SettingDefinition" displayName="AppChannel" solution="msdyn_AppFrameworkInfraExtensions (1.0.0.19)" id.uniquename="AppChannel">
+          <package appName="PowerAppsAppFramework Package" version="1.0.0.25">PowerAppsAppFramework_Anchor (1.0.0.25)</package>
+        </Required>
+        <Dependent type="AppSetting" displayName="parentappmoduleid.uniquename=pvci_conversationinsights,settingdefinitionid.uniquename=AppChannel" id.parentappmoduleid.uniquename="pvci_conversationinsights" id.settingdefinitionid.uniquename="AppChannel" />
+      </MissingDependency>
+    </MissingDependencies>
+  </SolutionManifest>
+</ImportExportXml>

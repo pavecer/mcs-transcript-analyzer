@@ -1,0 +1,8 @@
+<customapiresponseproperty uniquename="UsersResolved">
+  <displayname default="Users resolved">
+    <label description="Users resolved" languagecode="1033" />
+  </displayname>
+  <iscustomizable>1</iscustomizable>
+  <name>UsersResolved</name>
+  <type>7</type>
+</customapiresponseproperty>

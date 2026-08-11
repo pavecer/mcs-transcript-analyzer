@@ -1,0 +1,51 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<savedqueries xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <savedquery>
+    <IsCustomizable>1</IsCustomizable>
+    <CanBeDeleted>1</CanBeDeleted>
+    <isquickfindquery>0</isquickfindquery>
+    <isprivate>0</isprivate>
+    <isdefault>0</isdefault>
+    <savedqueryid>{dafb7c67-ed94-f111-8076-7ced8d95b46e}</savedqueryid>
+    <layoutxml>
+      <grid name="resultset" jump="pvci_name" select="1" icon="1" preview="1">
+        <row name="result" id="pvci_creditsyncrunid">
+          <cell name="pvci_name" width="220" />
+          <cell name="pvci_source" width="120" />
+          <cell name="pvci_startedon" width="130" />
+          <cell name="pvci_completedon" width="130" />
+          <cell name="pvci_status" width="90" />
+          <cell name="pvci_sourcecount" width="90" />
+          <cell name="pvci_createdcount" width="90" />
+          <cell name="pvci_updatedcount" width="90" />
+          <cell name="pvci_rejectedcount" width="90" />
+        </row>
+      </grid>
+    </layoutxml>
+    <querytype>0</querytype>
+    <fetchxml>
+      <fetch version="1.0" mapping="logical">
+        <entity name="pvci_creditsyncrun">
+          <attribute name="pvci_name" />
+          <attribute name="pvci_source" />
+          <attribute name="pvci_startedon" />
+          <attribute name="pvci_completedon" />
+          <attribute name="pvci_status" />
+          <attribute name="pvci_sourcecount" />
+          <attribute name="pvci_createdcount" />
+          <attribute name="pvci_updatedcount" />
+          <attribute name="pvci_rejectedcount" />
+          <attribute name="pvci_creditsyncrunid" />
+          <order attribute="pvci_startedon" descending="true" />
+        </entity>
+      </fetch>
+    </fetchxml>
+    <IntroducedVersion>1.0.0.0</IntroducedVersion>
+    <LocalizedNames>
+      <LocalizedName description="Credit Sync Runs - Latest" languagecode="1033" />
+    </LocalizedNames>
+    <Descriptions>
+      <Description description="Credit Sync Runs - Latest" languagecode="1033" />
+    </Descriptions>
+  </savedquery>
+</savedqueries>

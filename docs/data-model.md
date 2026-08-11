@@ -1,7 +1,8 @@
 # Dataverse data model
 
-PV Conversation Insights stores derived transcript analytics in five custom Dataverse tables. It
-reads native Dataverse tables but does not modify them. Logical names are used throughout this
+PV Conversation Insights stores derived transcript analytics and Copilot Credit reporting facts in
+eleven custom Dataverse tables. It reads native Dataverse and Power Platform licensing data but does
+not modify the source records or capacity settings. Logical names are used throughout this
 reference because they are shared by the plugin, Python tools, code app, and Web API.
 
 ## Relationship model
@@ -15,6 +16,10 @@ erDiagram
     FLOWRUN }o--o{ PVCI_TRANSCRIPTSESSION : "time correlation"
     PVCI_TRANSCRIPTSESSION ||--o{ PVCI_FLOWRUNDETAIL : "pvci_transcriptid"
     PVCI_SYNCSTATE ||--|| CONVERSATIONTRANSCRIPT : "watermark"
+    PVCI_AGENTINVENTORY ||--o{ PVCI_CREDITUSAGE : "pvci_agentid"
+    PVCI_CREDITCAPACITYSNAPSHOT }o--|| ENVIRONMENT : "source identity"
+    PVCI_CREDITSYNCRUN ||--o{ PVCI_CREDITUSAGE : "import audit"
+    PVCI_CREDITPRIVACYSETTING ||--o{ PVCI_CREDITUSERUSAGE : "controls name disclosure"
 ```
 
 The session-to-turn relationship is the custom parent/child relationship. Flow details use
@@ -30,9 +35,71 @@ map rows cache resolution results; each session also retains a direct `systemuse
 | Identity map | `pvci_transcriptidentitymap` | One row per observed Entra object ID | `pvci_aadobjectid` |
 | Flow run detail | `pvci_flowrundetail` | One row per correlated Power Automate run | `pvci_runname` |
 | Sync state | `pvci_syncstate` | One row per sync scope | `pvci_name` (`default`) |
+| Agent inventory | `pvci_agentinventory` | One row per tenant, environment, and observed resource | `pvci_sourcekey` alternate key |
+| Credit usage | `pvci_creditusage` | One row per PPAC resource/source-period fact | `pvci_sourcekey` alternate key |
+| Capacity snapshot | `pvci_creditcapacitysnapshot` | One row per tenant, environment, entitlement, and as-of date | `pvci_sourcekey` alternate key |
+| Credit sync run | `pvci_creditsyncrun` | One row per collector/import invocation | `pvci_runkey` alternate key |
+| Credit user usage | `pvci_credituserusage` | One row per PPAC user/source-period fact | `pvci_sourcekey` alternate key |
+| Credit privacy approval | `pvci_creditprivacysetting` | Singleton shared disclosure setting | `pvci_settingkey` alternate key |
 
-These are idempotency keys used by the sync implementations. They are not Dataverse alternate-key
-metadata.
+The first five application keys are idempotency keys used by transcript sync and are not Dataverse
+alternate-key metadata. The four credit tables have real Dataverse alternate keys provisioned by
+the solution.
+
+## Credit reporting tables
+
+### `pvci_agentinventory`
+
+Stores resource identity, environment, display/schema names, resource type, lifecycle metadata,
+and harness classification evidence. The PPAC bootstrap currently creates rows for every reported
+resource. Harness remains `unknown` unless a verified source or audited override supports a more
+specific value.
+
+### `pvci_creditusage`
+
+Stores authoritative billed and non-billed PPAC facts at the source grain. Important groups are:
+
+| Group | Columns |
+|---|---|
+| Scope | `pvci_tenantid`, `pvci_environmentid`, `pvci_resourceid`, `pvci_agentid`, `pvci_agentname` |
+| Period | `pvci_usagedate`, `pvci_fromdate`, `pvci_todate`, `pvci_importedon` |
+| Billing | `pvci_entitlementid`, `pvci_sourceunit`, `pvci_billedcredits`, `pvci_nonbilledcredits` |
+| Drivers | `pvci_featurename`, `pvci_channelid`, `pvci_toolinvoked`, `pvci_knowledgesources`, `pvci_llmmodel`, `pvci_users` |
+| Quality | `pvci_harness`, `pvci_resourcetype`, `pvci_resolutionstatus` |
+| Lineage | `pvci_sourcekey`, `pvci_sourceapi`, `pvci_sourceschemaversion`, `pvci_rawjson` |
+
+`pvci_usagedate` is the source row's `asOfDate`; it is not automatically evidence of daily billing
+grain. Preserve `from/to` dates when supplied, and never split weekly or aggregate facts into
+manufactured daily/session values.
+
+### `pvci_creditcapacitysnapshot`
+
+Stores entitled, allocated, auto-allocated, consumed, available, and PAYG quantities with source
+date, environment, tenant-pool policy, alert state/threshold, source route, and bounded raw JSON.
+This table is read-only reporting; the solution does not call PPAC allocation mutation routes.
+
+### `pvci_creditsyncrun`
+
+Stores source/schema, requested period, page and source counts, create/update/skip/reject counts,
+status, timestamps, and bounded errors. Credit history can revise, so this audit is separate from
+the transcript watermark.
+
+### `pvci_credituserusage`
+
+The observed users endpoint has a different grain from resource usage and includes source user ID,
+billed/non-billed values, resource metadata, source date, and unit. The organization-owned table
+stores those facts separately with an alternate source key. Its primary name equals `pvci_userid`
+until shared disclosure is approved. Optional resolved fields are `pvci_userdisplayname`,
+`pvci_userprincipalname`, `pvci_systemuserid`, and `pvci_nameresolutionstatus`.
+
+### `pvci_creditprivacysetting`
+
+The singleton key `credit-user-disclosure` controls both apps. `pvci_revealusernames` defaults to
+false; approval statement, initiating user ID/name, approved date, and revoked date provide the
+audit. A synchronous post-update plug-in resolves or clears every user fact. Approval is global,
+not per viewer, so write access to this table must be restricted to authorized approvers. Resource
+and user projections retain independent totals to prevent double-counting. See
+[Copilot Credit reporting](credit-reporting.md#per-user-consumption).
 
 ## `pvci_transcriptsession`
 

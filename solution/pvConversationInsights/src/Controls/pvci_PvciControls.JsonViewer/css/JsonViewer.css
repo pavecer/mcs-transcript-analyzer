@@ -1,0 +1,111 @@
+.pvci-json {
+  font-family: "Cascadia Code", "SF Mono", Menlo, Consolas, monospace;
+  font-size: 12px;
+  line-height: 1.55;
+  border: 1px solid #d1d1d1;
+  border-radius: 4px;
+  background: #ffffff;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.pvci-json__bar {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  padding: 6px 8px;
+  background: #faf9f8;
+  border-bottom: 1px solid #edebe9;
+  flex: 0 0 auto;
+  flex-wrap: wrap;
+}
+
+.pvci-json__bar button {
+  font: inherit;
+  font-size: 11px;
+  padding: 3px 9px;
+  border: 1px solid #c8c6c4;
+  border-radius: 3px;
+  background: #fff;
+  cursor: pointer;
+  color: #201f1e;
+}
+
+.pvci-json__bar button:hover { background: #f3f2f1; }
+.pvci-json__bar button:active { background: #edebe9; }
+.pvci-json__bar button[aria-pressed="true"] {
+  background: #0f6cbd;
+  border-color: #0f6cbd;
+  color: #fff;
+}
+
+.pvci-json__search {
+  font: inherit;
+  font-size: 11px;
+  padding: 3px 7px;
+  border: 1px solid #c8c6c4;
+  border-radius: 3px;
+  min-width: 150px;
+  flex: 1 1 150px;
+}
+
+.pvci-json__stat {
+  font-size: 11px;
+  color: #605e5c;
+  margin-left: auto;
+  white-space: nowrap;
+}
+
+.pvci-json__body {
+  overflow: auto;
+  padding: 8px 10px;
+  flex: 1 1 auto;
+}
+
+.pvci-json__raw {
+  margin: 0;
+  white-space: pre;
+  font: inherit;
+}
+
+.pvci-json__row {
+  display: flex;
+  align-items: flex-start;
+  white-space: pre;
+  border-radius: 2px;
+}
+
+.pvci-json__row:hover { background: #f3f2f1; }
+.pvci-json__row--hit { background: #fff4ce; }
+
+.pvci-json__toggle {
+  width: 13px;
+  flex: 0 0 13px;
+  cursor: pointer;
+  color: #605e5c;
+  user-select: none;
+  text-align: center;
+}
+
+.pvci-json__toggle--leaf { cursor: default; color: transparent; }
+
+.pvci-json__key { color: #0451a5; }
+.pvci-json__str { color: #a31515; white-space: pre-wrap; word-break: break-word; }
+.pvci-json__num { color: #098658; }
+.pvci-json__bool { color: #0000ff; }
+.pvci-json__null { color: #808080; font-style: italic; }
+.pvci-json__punct { color: #444; }
+.pvci-json__meta { color: #808080; font-style: italic; }
+
+.pvci-json__error {
+  color: #a4262c;
+  padding: 10px;
+  white-space: pre-wrap;
+}
+
+.pvci-json__empty {
+  color: #605e5c;
+  padding: 10px;
+  font-style: italic;
+}

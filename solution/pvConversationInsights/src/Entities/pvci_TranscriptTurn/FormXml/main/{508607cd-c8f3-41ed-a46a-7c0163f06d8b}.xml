@@ -1,0 +1,183 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<forms xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <systemform>
+    <formid>{508607cd-c8f3-41ed-a46a-7c0163f06d8b}</formid>
+    <IntroducedVersion>1.0.0.0</IntroducedVersion>
+    <FormPresentation>1</FormPresentation>
+    <FormActivationState>1</FormActivationState>
+    <form>
+      <tabs>
+        <tab id="{a64046fb-1aaa-5d13-a447-487d5f91bd4f}" name="t_tab_main" verticallayout="true" showlabel="true" expanded="true">
+          <labels>
+            <label description="Turn" languagecode="1033" />
+          </labels>
+          <columns>
+            <column width="100%">
+              <sections>
+                <section id="{e7a9f315-5da1-5a8f-8a52-a1c776d04454}" name="t_sec_main" showlabel="true" showbar="false" columns="11" labelwidth="140" celllabelalignment="Left" celllabelposition="Left">
+                  <labels>
+                    <label description="Activity" languagecode="1033" />
+                  </labels>
+                  <rows>
+                    <row>
+                      <cell id="{d0b1414b-3577-5358-8ebe-1872d62aed42}" showlabel="true">
+                        <labels>
+                          <label description="Name" languagecode="1033" />
+                        </labels>
+                        <control id="pvci_name" uniqueid="{242df362-3240-5ccc-81c7-4c0a3deb33fd}" classid="{4273EDBD-AC1D-40d3-9FB2-095C621B552D}" datafieldname="pvci_name" disabled="false" />
+                      </cell>
+                      <cell id="{850409d6-3479-5152-8109-682a0ad6e998}" showlabel="true">
+                        <labels>
+                          <label description="Session" languagecode="1033" />
+                        </labels>
+                        <control id="pvci_sessionid" uniqueid="{69bf1468-3723-544f-9263-f2b5ead197d0}" classid="{270BD3DB-D9AF-4782-9025-509E298DEC0A}" datafieldname="pvci_sessionid" disabled="false" />
+                      </cell>
+                    </row>
+                    <row>
+                      <cell id="{1a84df9c-b763-51ba-b6a0-8f8d48744291}" showlabel="true">
+                        <labels>
+                          <label description="Index" languagecode="1033" />
+                        </labels>
+                        <control id="pvci_turnindex" uniqueid="{6725d9b6-2946-5aa6-8900-839669961648}" classid="{C6D124CA-7EDA-4a60-AEA9-7FB8D318B68F}" datafieldname="pvci_turnindex" disabled="false" />
+                      </cell>
+                      <cell id="{6761a7ee-86b4-5a60-acb0-0f3aa1fda962}" showlabel="true">
+                        <labels>
+                          <label description="Activity type" languagecode="1033" />
+                        </labels>
+                        <control id="pvci_activitytype" uniqueid="{dd8ea839-0b81-547d-8dcf-f0ef6b538572}" classid="{4273EDBD-AC1D-40d3-9FB2-095C621B552D}" datafieldname="pvci_activitytype" disabled="false" />
+                      </cell>
+                    </row>
+                    <row>
+                      <cell id="{7c2c1163-2855-5aeb-b982-b232ac7fc7b3}" showlabel="true">
+                        <labels>
+                          <label description="Speaker" languagecode="1033" />
+                        </labels>
+                        <control id="pvci_speaker" uniqueid="{2c975913-1774-5dbb-bd8e-f1f296c0c3b2}" classid="{4273EDBD-AC1D-40d3-9FB2-095C621B552D}" datafieldname="pvci_speaker" disabled="false" />
+                      </cell>
+                      <cell id="{008640b3-7cb8-5596-ac7b-464c7394e896}" showlabel="true">
+                        <labels>
+                          <label description="Role" languagecode="1033" />
+                        </labels>
+                        <control id="pvci_role" uniqueid="{3a92c92d-de23-568b-9fc4-4a7d2a365caf}" classid="{C6D124CA-7EDA-4a60-AEA9-7FB8D318B68F}" datafieldname="pvci_role" disabled="false" />
+                      </cell>
+                    </row>
+                    <row>
+                      <cell id="{66dac759-5e8d-569b-882e-0272725b52eb}" showlabel="true">
+                        <labels>
+                          <label description="Event name" languagecode="1033" />
+                        </labels>
+                        <control id="pvci_eventname" uniqueid="{e5a378fc-2198-57cb-a47f-a6b4587e1e39}" classid="{4273EDBD-AC1D-40d3-9FB2-095C621B552D}" datafieldname="pvci_eventname" disabled="false" />
+                      </cell>
+                      <cell id="{f7b52125-fda4-5b0a-adbf-64925fd38091}" showlabel="true">
+                        <labels>
+                          <label description="Timestamp (UTC)" languagecode="1033" />
+                        </labels>
+                        <control id="pvci_timestamputc" uniqueid="{151da6b7-872b-5aef-87af-452240e6d854}" classid="{5B773807-9FB2-42db-97C3-7A91EFF8ADFF}" datafieldname="pvci_timestamputc" disabled="false" />
+                      </cell>
+                    </row>
+                    <row>
+                      <cell id="{1a705627-b30e-5978-8d70-1daf581a97e4}" showlabel="true">
+                        <labels>
+                          <label description="Channel" languagecode="1033" />
+                        </labels>
+                        <control id="pvci_channelid" uniqueid="{0a2d8cad-0b7d-5f62-a242-e8a3d6855e0a}" classid="{4273EDBD-AC1D-40d3-9FB2-095C621B552D}" datafieldname="pvci_channelid" disabled="false" />
+                      </cell>
+                      <cell id="{25641abc-36dc-5928-9eff-818c40cc3bd0}" showlabel="true">
+                        <labels>
+                          <label description="Entra Object Id" languagecode="1033" />
+                        </labels>
+                        <control id="pvci_aadobjectid" uniqueid="{40a4c9af-ca59-5534-a5a9-c01980d775fd}" classid="{4273EDBD-AC1D-40d3-9FB2-095C621B552D}" datafieldname="pvci_aadobjectid" disabled="false" />
+                      </cell>
+                    </row>
+                    <row>
+                      <cell id="{3ab4bf89-97b5-5409-8ad2-247c308ed869}" showlabel="true">
+                        <labels>
+                          <label description="Reply latency (ms)" languagecode="1033" />
+                        </labels>
+                        <control id="pvci_latencyms" uniqueid="{64db1dee-efbb-50c1-84e7-3e2f22b40777}" classid="{C6D124CA-7EDA-4a60-AEA9-7FB8D318B68F}" datafieldname="pvci_latencyms" disabled="false" />
+                      </cell>
+                    </row>
+                  </rows>
+                </section>
+                <section id="{9ed77ebb-c3eb-5429-8e34-cb12631304ed}" name="t_sec_text" showlabel="true" showbar="false" columns="1" labelwidth="140" celllabelalignment="Left" celllabelposition="Left">
+                  <labels>
+                    <label description="Text" languagecode="1033" />
+                  </labels>
+                  <rows>
+                    <row>
+                      <cell id="{199226f0-d377-5582-b1eb-19327f1cef61}" rowspan="8" colspan="1" showlabel="true">
+                        <labels>
+                          <label description="Text" languagecode="1033" />
+                        </labels>
+                        <control id="pvci_turntext" uniqueid="{e4f95e47-5473-5f37-abb1-af33f599aaad}" classid="{E0DECE4B-6FC8-4a8f-A065-082708572369}" datafieldname="pvci_turntext" disabled="false" />
+                      </cell>
+                    </row>
+                  </rows>
+                </section>
+              </sections>
+            </column>
+          </columns>
+        </tab>
+        <tab id="{ac351e50-8bd6-5f2a-8476-16357658ebd5}" name="t_tab_value" verticallayout="true" showlabel="true" expanded="true">
+          <labels>
+            <label description="Value JSON" languagecode="1033" />
+          </labels>
+          <columns>
+            <column width="100%">
+              <sections>
+                <section id="{0ada29ff-9471-594c-96ea-c5dd3bdaa943}" name="t_sec_value" showlabel="true" showbar="false" columns="1" labelwidth="140" celllabelalignment="Left" celllabelposition="Left">
+                  <labels>
+                    <label description="Activity value payload" languagecode="1033" />
+                  </labels>
+                  <rows>
+                    <row>
+                      <cell id="{bb8bd4ce-8574-57fa-a17f-6fb5f6b3be8d}" rowspan="30" colspan="1" showlabel="true">
+                        <labels>
+                          <label description="Value JSON" languagecode="1033" />
+                        </labels>
+                        <control id="pvci_valuejson" uniqueid="{d8a59ec3-ced7-5063-8fde-bf2ab8fcd661}" classid="{E0DECE4B-6FC8-4a8f-A065-082708572369}" datafieldname="pvci_valuejson" disabled="false" />
+                      </cell>
+                    </row>
+                  </rows>
+                </section>
+              </sections>
+            </column>
+          </columns>
+        </tab>
+      </tabs>
+      <controlDescriptions>
+        <controlDescription forControl="{d8a59ec3-ced7-5063-8fde-bf2ab8fcd661}">
+          <customControl formFactor="0" name="pvci_PvciControls.JsonViewer">
+            <parameters>
+              <jsonValue>pvci_valuejson</jsonValue>
+              <startCollapsedDepth static="true" type="Whole.None">4</startCollapsedDepth>
+              <viewerHeight static="true" type="Whole.None">620</viewerHeight>
+            </parameters>
+          </customControl>
+          <customControl formFactor="1" name="pvci_PvciControls.JsonViewer">
+            <parameters>
+              <jsonValue>pvci_valuejson</jsonValue>
+              <startCollapsedDepth static="true" type="Whole.None">4</startCollapsedDepth>
+              <viewerHeight static="true" type="Whole.None">620</viewerHeight>
+            </parameters>
+          </customControl>
+          <customControl formFactor="2" name="pvci_PvciControls.JsonViewer">
+            <parameters>
+              <jsonValue>pvci_valuejson</jsonValue>
+              <startCollapsedDepth static="true" type="Whole.None">4</startCollapsedDepth>
+              <viewerHeight static="true" type="Whole.None">620</viewerHeight>
+            </parameters>
+          </customControl>
+        </controlDescription>
+      </controlDescriptions>
+    </form>
+    <IsCustomizable>1</IsCustomizable>
+    <CanBeDeleted>1</CanBeDeleted>
+    <LocalizedNames>
+      <LocalizedName description="Information" languagecode="1033" />
+    </LocalizedNames>
+    <Descriptions>
+      <Description description="A form for this entity." languagecode="1033" />
+    </Descriptions>
+  </systemform>
+</forms>

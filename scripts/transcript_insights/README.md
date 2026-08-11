@@ -72,9 +72,51 @@ If tokens expire: `az login --tenant <tenantId>`.
 - `probe_dual_endpoints.py` — tests Monitor and Dataverse v9.1 side by side into one report.
 - `correlate_monitor_to_dataverse.py` — GUID-candidate matching between the two sources.
 - `extract_har_contract.py` — recovers the Monitor endpoint contract from a HAR capture.
+- `extract_credit_har_contract.py` — emits a schema-only, sanitized Power Platform licensing
+  contract from a PPAC HAR capture. It never copies headers, cookies, tenant/user/resource IDs,
+  names, or response values.
+- `create_credit_sync_flow.py` — creates the solution-aware daily PPAC Copilot Credit resource,
+  user-usage, and capacity collector with a seven-day overlap and bounded paging.
+- `create_credit_forms.py` — publishes operator forms for Agent Inventory, Credit Usage, Credit
+  Capacity Snapshots, and Credit Sync Runs.
 - `ingest_monitor_transcripts.py` — Monitor CSV ingestion (**blocked**: gateway returns
   `403 UnauthenticatedUser` for non-first-party tokens).
 - `build_dataverse_upsert_payload.py` — shapes Monitor CSV rows for upsert.
+
+Extract the Copilot Credit endpoint and payload contract from a local PPAC capture:
+
+```bash
+python3 scripts/transcript_insights/extract_credit_har_contract.py \
+  logs/admin.powerplatform.microsoft.com.har \
+  --output output/credit-har-contract.json
+
+python3 -m unittest scripts.transcript_insights.test_extract_credit_har_contract -v
+```
+
+The generated `output/` artifact is intentionally gitignored. Commit only reviewed synthetic or
+schema-only fixtures; never commit the source HAR.
+
+Create the stopped scheduled collector after creating an **HTTP with Microsoft Entra ID
+(preauthorized)** connection whose Base Resource URL and Microsoft Entra ID Resource URI are both
+`https://licensing.powerplatform.microsoft.com/`:
+
+```bash
+python3 scripts/transcript_insights/create_credit_sync_flow.py \
+  --config config/transcript_solution_config.dev.json \
+  --http-connection-id shared-webcontents-00000000
+```
+
+Provision the solution schema first. The script writes the configured tenant ID as the current
+value of `pvci_CreditReportingTenantId` outside the solution. On subsequent deployments,
+`--http-connection-id` is optional and the existing target-environment `pvci_licensinghttp`
+binding is reused. Neither the current tenant value nor the physical connection ID is exported.
+
+The flow reads only the observed PPAC resource-usage, user-usage, and environment-capacity routes,
+follows up to 20 pages of 100 resource rows, splits the unpaged tenant-wide user projection into
+250-row chunks, and imports through `pvci_ImportCreditUsageBatch`. User facts are GUID-only unless
+the shared audited privacy setting is approved. Authenticate and save the stopped solution flow
+once, run a smoke test, inspect the Credit Sync Run row, then activate the daily schedule. Do not
+use `--activate` before that smoke test succeeds.
 
 ## Setup
 

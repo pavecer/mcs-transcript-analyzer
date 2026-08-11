@@ -1,0 +1,13 @@
+<environmentvariabledefinition schemaname="pvci_CreditReportingTenantId">
+  <description default="Microsoft Entra tenant GUID used by the read-only Copilot Credit licensing collector.">
+    <label description="Microsoft Entra tenant GUID used by the read-only Copilot Credit licensing collector." languagecode="1033" />
+  </description>
+  <displayname default="Credit Reporting Tenant ID">
+    <label description="Credit Reporting Tenant ID" languagecode="1033" />
+  </displayname>
+  <introducedversion>1.0.0.0</introducedversion>
+  <iscustomizable>1</iscustomizable>
+  <isrequired>1</isrequired>
+  <secretstore>0</secretstore>
+  <type>100000000</type>
+</environmentvariabledefinition>

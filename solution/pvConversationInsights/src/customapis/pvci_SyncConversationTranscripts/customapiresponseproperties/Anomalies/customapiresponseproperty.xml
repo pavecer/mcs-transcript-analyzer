@@ -1,0 +1,8 @@
+<customapiresponseproperty uniquename="Anomalies">
+  <displayname default="Anomalies">
+    <label description="Anomalies" languagecode="1033" />
+  </displayname>
+  <iscustomizable>1</iscustomizable>
+  <name>Anomalies</name>
+  <type>7</type>
+</customapiresponseproperty>

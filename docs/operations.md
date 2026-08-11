@@ -44,10 +44,12 @@ python3 scripts/transcript_insights/create_model_driven_app.py --config $CFG
 # 3. PCF control, then forms (forms bind to the control, so order matters)
 cd pcf/JsonViewer && npm install && npm run build && pac pcf push --publisher-prefix pvci && cd ../..
 python3 scripts/transcript_insights/create_forms.py --config $CFG
+python3 scripts/transcript_insights/create_credit_forms.py --config $CFG
 
 # 4. Plugin + Custom API
 cd plugin && dotnet build -c Release && cd ..
 python3 scripts/transcript_insights/register_plugin.py --config $CFG
+python3 scripts/transcript_insights/register_credit_plugin.py --config $CFG
 
 # 5. Schedule
 python3 scripts/transcript_insights/create_sync_flow.py --config $CFG --frequency Hour --interval 1 --activate
@@ -59,6 +61,65 @@ python3 scripts/transcript_insights/sync_transcripts.py --config $CFG --full
 `pac pcf push` prefixes the publisher, registering the control as
 `pvci_PvciControls.JsonViewer`. `create_forms.py` resolves that name at runtime, so it works in
 any environment.
+
+## Copilot Credit collector
+
+Create an **HTTP with Microsoft Entra ID (preauthorized)** connection before creating the flow. In
+commercial cloud, set both connection fields to:
+
+```text
+Base Resource URL:             https://licensing.powerplatform.microsoft.com/
+Microsoft Entra ID Resource URI: https://licensing.powerplatform.microsoft.com/
+```
+
+The connection owner needs the Power Platform administrative access required by the licensing
+service. DLP/ACP must allow this premium connector and Microsoft Dataverse in the collector
+environment. Provision the solution schema first so `pvci_CreditReportingTenantId` exists. On the
+first source deployment, bind the physical connection to the solution-aware flow:
+
+```bash
+python3 scripts/transcript_insights/create_credit_sync_flow.py \
+    --config $CFG \
+    --http-connection-id shared-webcontents-00000000
+```
+
+The script stores the tenant ID as an environment-variable current value outside the solution. On
+later updates, omit `--http-connection-id` to reuse the target environment's existing
+`pvci_licensinghttp` binding. The solution contains neither the current tenant value nor a physical
+connection ID.
+
+The script creates the flow stopped. Authenticate/save its solution connection references, run one
+manual smoke test, and verify a successful `pvci_creditsyncrun` before activation. The flow runs
+daily, re-reads seven days, requests pages of 100 up to a hard cap of 20, captures current capacity,
+splits the unpaged user projection into bounded 250-row imports, and invokes
+`pvci_ImportCreditUsageBatch`. Re-reading is intentional because PPAC can revise recent facts and
+the importer is idempotent.
+
+Health query:
+
+```http
+GET {dataverseUrl}/api/data/v9.1/pvci_creditsyncruns
+        ?$select=pvci_name,pvci_source,pvci_status,pvci_completedon,pvci_pagecount,
+                         pvci_sourcecount,pvci_createdcount,pvci_updatedcount,pvci_rejectedcount,pvci_error
+        &$orderby=pvci_completedon desc&$top=10
+```
+
+`success` with a recent completion time and zero rejected rows is healthy. A source count of zero
+can be valid when PPAC has no reportable usage, but should be compared with PPAC and previous runs.
+Created, updated, and rejected counts combine all user chunks with the final resource/capacity
+batch. A row rejection or transport-level user-chunk failure makes the persisted run `partial`;
+failed chunks are recorded even when they return no row-level outcome. Do not activate a flow whose
+physical licensing connection targets a different Base Resource URL.
+
+Per-user usage is collected into `pvci_credituserusage`, separately from resource totals. The PPAC
+user projection has no environment ID, so its totals remain tenant-wide when resource reporting is
+environment-filtered. The default display is the source GUID. To approve name disclosure in the
+code app, use **Reveal user names** and confirm the dialog. In the model-driven app, open **Privacy
+Approval**, read the shared statement, set **Reveal User Names** to Yes, and save. Approval is global
+and audited. Revocation and unresolved re-imports clear all resolved names, UPNs, and system-user
+IDs. Restrict update access on
+`pvci_creditprivacysetting` to authorized approvers and define retention/export policy before
+enabling names outside the test tenant.
 
 ## Routine operation
 
@@ -190,11 +251,15 @@ pac solution import --path ./pvConversationInsights.zip --activate-plugins
 
 Afterwards, in the target environment:
 
-1. Rebind the connection reference `pvci_dataversesync` to a connection that exists there.
-2. Re-activate the flow.
-3. Run the initial `--full` load.
-4. Redeploy the code app (`npx power-apps init` + `push`) — it lives outside the solution.
-5. Configure either a DLP-approved Flow API connection or the headless run-detail worker.
+1. Supply a current value for the required `pvci_CreditReportingTenantId` environment variable.
+    Do not add a default value to the solution.
+2. Rebind `pvci_dataversesync` to a Dataverse connection that exists in the target environment.
+3. Rebind `pvci_licensinghttp` to a target-local licensing-service connection with the correct
+    cloud URL. Credentials and physical connection IDs are deployment bindings, not solution data.
+4. Save and smoke-test both flows, then activate them.
+5. Run the initial `--full` transcript load.
+6. Redeploy the code app (`npx power-apps init` + `push`) — it lives outside the solution.
+7. Configure either a DLP-approved Flow API connection or the headless run-detail worker.
 
 ## Troubleshooting
 
@@ -208,6 +273,9 @@ Afterwards, in the target environment:
 | `401` from a script | `az login --tenant <tenantId>` |
 | Plugin returns `Status: failed` | Read `Errors` in the response and `pvci_lasterror` |
 | Flow does not start | Check the connection reference is bound and the flow is activated |
+| Credit collector fails at `Get_usage_page` | Verify `pvci_licensinghttp` is connected and both licensing connection URLs match the tenant cloud |
+| Credit sync is stale | Check the latest `pvci_creditsyncrun`, physical connection health, flow state, and recurrence history |
+| Agent day/week chart has sparse dates | PPAC returned aggregate or weekly source periods; do not manufacture daily rows |
 
 ## Data protection
 
