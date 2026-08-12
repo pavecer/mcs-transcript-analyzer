@@ -1,0 +1,133 @@
+{
+  "properties": {
+    "connectionReferences": {
+      "shared_webcontents": {
+        "runtimeSource": "embedded",
+        "connection": {
+          "connectionReferenceLogicalName": "pvci_powerplatformapi"
+        },
+        "api": {
+          "name": "shared_webcontents"
+        }
+      },
+      "shared_commondataserviceforapps": {
+        "runtimeSource": "embedded",
+        "connection": {
+          "connectionReferenceLogicalName": "pvci_dataversesync"
+        },
+        "api": {
+          "name": "shared_commondataserviceforapps"
+        }
+      }
+    },
+    "definition": {
+      "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+      "contentVersion": "1.0.0.0",
+      "parameters": {
+        "$connections": {
+          "defaultValue": {},
+          "type": "Object"
+        },
+        "$authentication": {
+          "defaultValue": {},
+          "type": "SecureObject"
+        },
+        "pvci_CreditReportingTenantId (pvci_CreditReportingTenantId)": {
+          "defaultValue": "",
+          "type": "String",
+          "metadata": {
+            "schemaName": "pvci_CreditReportingTenantId"
+          }
+        }
+      },
+      "triggers": {
+        "Daily": {
+          "type": "Recurrence",
+          "recurrence": {
+            "frequency": "Day",
+            "interval": 1,
+            "startTime": "2026-01-01T03:00:00Z"
+          }
+        }
+      },
+      "actions": {
+        "Initialize_started_on": {
+          "type": "InitializeVariable",
+          "runAfter": {},
+          "inputs": {
+            "variables": [
+              {
+                "name": "StartedOn",
+                "type": "string",
+                "value": "@utcNow()"
+              }
+            ]
+          }
+        },
+        "Get_resource_thresholds": {
+          "type": "OpenApiConnection",
+          "runAfter": {
+            "Initialize_started_on": [
+              "Succeeded"
+            ]
+          },
+          "inputs": {
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_webcontents",
+              "connectionName": "shared_webcontents",
+              "operationId": "InvokeHttp"
+            },
+            "parameters": {
+              "request/method": "GET",
+              "request/url": "/licensing/entitlements/MCSMessages/resourceThresholds?api-version=2024-10-01"
+            }
+          }
+        },
+        "Compose_governance_payload": {
+          "type": "Compose",
+          "runAfter": {
+            "Get_resource_thresholds": [
+              "Succeeded"
+            ]
+          },
+          "inputs": {
+            "tenantId": "@parameters('pvci_CreditReportingTenantId (pvci_CreditReportingTenantId)')",
+            "resourceThresholds": "@body('Get_resource_thresholds')",
+            "governanceSyncRun": {
+              "runKey": "@concat('governance-', formatDateTime(utcNow(), 'yyyyMMddHHmmss'))",
+              "name": "@concat('Credit governance - ', formatDateTime(utcNow(), 'yyyy-MM-dd HH:mm'))",
+              "source": "Power Platform resource thresholds",
+              "startedOn": "@variables('StartedOn')",
+              "completedOn": "@utcNow()",
+              "thresholdCount": "@length(body('Get_resource_thresholds'))",
+              "schemaVersion": "power-platform-resource-threshold-v1"
+            }
+          }
+        },
+        "Import_governance_snapshot": {
+          "type": "OpenApiConnection",
+          "runAfter": {
+            "Compose_governance_payload": [
+              "Succeeded"
+            ]
+          },
+          "inputs": {
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+              "connectionName": "shared_commondataserviceforapps",
+              "operationId": "PerformUnboundAction"
+            },
+            "parameters": {
+              "actionName": "pvci_ImportCreditUsageBatch",
+              "item/PayloadJson": "@string(outputs('Compose_governance_payload'))",
+              "item/SourceSchemaVersion": "power-platform-resource-threshold-v1",
+              "item/DryRun": false
+            }
+          }
+        }
+      }
+    },
+    "templateName": null
+  },
+  "schemaVersion": "1.0.0.0"
+}

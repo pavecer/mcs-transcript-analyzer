@@ -1,0 +1,287 @@
+{
+  "properties": {
+    "connectionReferences": {
+      "shared_webcontents": {
+        "runtimeSource": "embedded",
+        "connection": {
+          "connectionReferenceLogicalName": "pvci_powerplatformapi"
+        },
+        "api": {
+          "name": "shared_webcontents"
+        }
+      },
+      "shared_commondataserviceforapps": {
+        "runtimeSource": "embedded",
+        "connection": {
+          "connectionReferenceLogicalName": "pvci_dataversesync"
+        },
+        "api": {
+          "name": "shared_commondataserviceforapps"
+        }
+      }
+    },
+    "definition": {
+      "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+      "contentVersion": "1.0.0.0",
+      "parameters": {
+        "$connections": {
+          "defaultValue": {},
+          "type": "Object"
+        },
+        "$authentication": {
+          "defaultValue": {},
+          "type": "SecureObject"
+        }
+      },
+      "triggers": {
+        "Every_minute": {
+          "type": "Recurrence",
+          "recurrence": {
+            "frequency": "Minute",
+            "interval": 1
+          },
+          "runtimeConfiguration": {
+            "concurrency": {
+              "runs": 1
+            }
+          }
+        }
+      },
+      "actions": {
+        "List_pending_requests": {
+          "type": "OpenApiConnection",
+          "runAfter": {},
+          "inputs": {
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+              "connectionName": "shared_commondataserviceforapps",
+              "operationId": "ListRecords"
+            },
+            "parameters": {
+              "entityName": "pvci_thresholdchangerequests",
+              "$select": "pvci_thresholdchangerequestid,pvci_environmentid,pvci_resourceid,pvci_entitlementid,pvci_requestedlimit,pvci_requestednotificationthreshold,pvci_requestednotifyifovercapacity,pvci_requestedstopifovercapacity,pvci_requestedstopresource,pvci_expectedlimit,pvci_expectednotificationthreshold,pvci_expectednotifyifovercapacity,pvci_expectedstopifovercapacity,pvci_expectedstopresource,pvci_justification",
+              "$filter": "pvci_status eq 'Pending'",
+              "$orderby": "createdon asc",
+              "$top": 20
+            }
+          }
+        },
+        "Process_pending_requests": {
+          "type": "Foreach",
+          "runAfter": {
+            "List_pending_requests": [
+              "Succeeded"
+            ]
+          },
+          "foreach": "@body('List_pending_requests')?['value']",
+          "runtimeConfiguration": {
+            "concurrency": {
+              "repetitions": 1
+            }
+          },
+          "actions": {
+            "Mark_processing": {
+              "type": "OpenApiConnection",
+              "runAfter": {},
+              "inputs": {
+                "host": {
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+                  "connectionName": "shared_commondataserviceforapps",
+                  "operationId": "UpdateOnlyRecord"
+                },
+                "parameters": {
+                  "entityName": "pvci_thresholdchangerequests",
+                  "recordId": "@items('Process_pending_requests')?['pvci_thresholdchangerequestid']",
+                  "item/pvci_status": "Processing"
+                }
+              }
+            },
+            "Apply_request": {
+              "type": "Scope",
+              "runAfter": {
+                "Mark_processing": [
+                  "Succeeded"
+                ]
+              },
+              "actions": {
+                "Get_current_thresholds": {
+                  "type": "OpenApiConnection",
+                  "runAfter": {},
+                  "inputs": {
+                    "host": {
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_webcontents",
+                      "connectionName": "shared_webcontents",
+                      "operationId": "InvokeHttp"
+                    },
+                    "parameters": {
+                      "request/method": "GET",
+                      "request/url": "/licensing/entitlements/MCSMessages/resourceThresholds?api-version=2024-10-01"
+                    }
+                  }
+                },
+                "Filter_current_threshold": {
+                  "type": "Query",
+                  "runAfter": {
+                    "Get_current_thresholds": [
+                      "Succeeded"
+                    ]
+                  },
+                  "inputs": {
+                    "from": "@body('Get_current_thresholds')",
+                    "where": "@and(equals(toLower(item()?['environmentId']), toLower(items('Process_pending_requests')?['pvci_environmentid'])),equals(toLower(item()?['resourceId']), toLower(items('Process_pending_requests')?['pvci_resourceid'])))"
+                  }
+                },
+                "Compose_current_threshold": {
+                  "type": "Compose",
+                  "runAfter": {
+                    "Filter_current_threshold": [
+                      "Succeeded"
+                    ]
+                  },
+                  "inputs": "@first(body('Filter_current_threshold'))"
+                },
+                "Current_state_matches_request": {
+                  "type": "If",
+                  "runAfter": {
+                    "Compose_current_threshold": [
+                      "Succeeded"
+                    ]
+                  },
+                  "expression": "@and(equals(items('Process_pending_requests')?['pvci_entitlementid'], 'MCSMessages'),greaterOrEquals(length(trim(string(coalesce(items('Process_pending_requests')?['pvci_justification'], '')))), 10),greaterOrEquals(float(items('Process_pending_requests')?['pvci_requestedlimit']), 0),equals(float(items('Process_pending_requests')?['pvci_requestedlimit']), float(formatNumber(float(items('Process_pending_requests')?['pvci_requestedlimit']), '0', 'en-US'))),greaterOrEquals(int(items('Process_pending_requests')?['pvci_requestednotificationthreshold']), 0),lessOrEquals(int(items('Process_pending_requests')?['pvci_requestednotificationthreshold']), 100),not(empty(outputs('Compose_current_threshold'))),equals(float(coalesce(outputs('Compose_current_threshold')?['limit'], 0)), float(coalesce(items('Process_pending_requests')?['pvci_expectedlimit'], 0))),equals(int(coalesce(outputs('Compose_current_threshold')?['notificationThreshold'], 0)), int(coalesce(items('Process_pending_requests')?['pvci_expectednotificationthreshold'], 0))),equals(bool(coalesce(outputs('Compose_current_threshold')?['notifyIfOverCapacity'], false)), bool(coalesce(items('Process_pending_requests')?['pvci_expectednotifyifovercapacity'], false))),equals(bool(coalesce(outputs('Compose_current_threshold')?['stopIfOverCapacity'], false)), bool(coalesce(items('Process_pending_requests')?['pvci_expectedstopifovercapacity'], false))),equals(bool(coalesce(outputs('Compose_current_threshold')?['stopResource'], false)), bool(coalesce(items('Process_pending_requests')?['pvci_expectedstopresource'], false))))",
+                  "actions": {
+                    "Apply_threshold": {
+                      "type": "OpenApiConnection",
+                      "runAfter": {},
+                      "inputs": {
+                        "host": {
+                          "apiId": "/providers/Microsoft.PowerApps/apis/shared_webcontents",
+                          "connectionName": "shared_webcontents",
+                          "operationId": "InvokeHttp"
+                        },
+                        "parameters": {
+                          "request/method": "PUT",
+                          "request/url": "@concat('/licensing/environments/',items('Process_pending_requests')?['pvci_environmentid'],'/entitlements/MCSMessages/resources/',items('Process_pending_requests')?['pvci_resourceid'],'/threshold?api-version=2024-10-01')",
+                          "request/body": {
+                            "stopResource": "@bool(items('Process_pending_requests')?['pvci_requestedstopresource'])",
+                            "limit": "@int(items('Process_pending_requests')?['pvci_requestedlimit'])",
+                            "stopIfOverCapacity": "@bool(items('Process_pending_requests')?['pvci_requestedstopifovercapacity'])",
+                            "notifyIfOverCapacity": "@bool(items('Process_pending_requests')?['pvci_requestednotifyifovercapacity'])",
+                            "notificationThreshold": "@int(items('Process_pending_requests')?['pvci_requestednotificationthreshold'])",
+                            "resourceConsumption": "@float(coalesce(outputs('Compose_current_threshold')?['resourceConsumption'], 0))"
+                          }
+                        }
+                      }
+                    },
+                    "Get_thresholds_after": {
+                      "type": "OpenApiConnection",
+                      "runAfter": {
+                        "Apply_threshold": [
+                          "Succeeded"
+                        ]
+                      },
+                      "inputs": {
+                        "host": {
+                          "apiId": "/providers/Microsoft.PowerApps/apis/shared_webcontents",
+                          "connectionName": "shared_webcontents",
+                          "operationId": "InvokeHttp"
+                        },
+                        "parameters": {
+                          "request/method": "GET",
+                          "request/url": "/licensing/entitlements/MCSMessages/resourceThresholds?api-version=2024-10-01"
+                        }
+                      }
+                    },
+                    "Filter_threshold_after": {
+                      "type": "Query",
+                      "runAfter": {
+                        "Get_thresholds_after": [
+                          "Succeeded"
+                        ]
+                      },
+                      "inputs": {
+                        "from": "@body('Get_thresholds_after')",
+                        "where": "@and(equals(toLower(item()?['environmentId']), toLower(items('Process_pending_requests')?['pvci_environmentid'])),equals(toLower(item()?['resourceId']), toLower(items('Process_pending_requests')?['pvci_resourceid'])))"
+                      }
+                    },
+                    "Mark_succeeded": {
+                      "type": "OpenApiConnection",
+                      "runAfter": {
+                        "Filter_threshold_after": [
+                          "Succeeded"
+                        ]
+                      },
+                      "inputs": {
+                        "host": {
+                          "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+                          "connectionName": "shared_commondataserviceforapps",
+                          "operationId": "UpdateOnlyRecord"
+                        },
+                        "parameters": {
+                          "entityName": "pvci_thresholdchangerequests",
+                          "recordId": "@items('Process_pending_requests')?['pvci_thresholdchangerequestid']",
+                          "item/pvci_status": "Succeeded",
+                          "item/pvci_processedon": "@utcNow()",
+                          "item/pvci_beforejson": "@string(outputs('Compose_current_threshold'))",
+                          "item/pvci_afterjson": "@string(first(body('Filter_threshold_after')))",
+                          "item/pvci_error": ""
+                        }
+                      }
+                    }
+                  },
+                  "else": {
+                    "actions": {
+                      "Mark_stale": {
+                        "type": "OpenApiConnection",
+                        "runAfter": {},
+                        "inputs": {
+                          "host": {
+                            "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+                            "connectionName": "shared_commondataserviceforapps",
+                            "operationId": "UpdateOnlyRecord"
+                          },
+                          "parameters": {
+                            "entityName": "pvci_thresholdchangerequests",
+                            "recordId": "@items('Process_pending_requests')?['pvci_thresholdchangerequestid']",
+                            "item/pvci_status": "Stale",
+                            "item/pvci_processedon": "@utcNow()",
+                            "item/pvci_beforejson": "@string(outputs('Compose_current_threshold'))",
+                            "item/pvci_error": "Current threshold state or request validation no longer matches. Review and submit a new request."
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "Mark_processor_failed": {
+              "type": "OpenApiConnection",
+              "runAfter": {
+                "Apply_request": [
+                  "Failed",
+                  "TimedOut"
+                ]
+              },
+              "inputs": {
+                "host": {
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+                  "connectionName": "shared_commondataserviceforapps",
+                  "operationId": "UpdateOnlyRecord"
+                },
+                "parameters": {
+                  "entityName": "pvci_thresholdchangerequests",
+                  "recordId": "@items('Process_pending_requests')?['pvci_thresholdchangerequestid']",
+                  "item/pvci_status": "@if(equals(actions('Apply_threshold')?['status'], 'Skipped'), 'Failed', 'AppliedUnverified')",
+                  "item/pvci_processedon": "@utcNow()",
+                  "item/pvci_error": "@concat(if(equals(actions('Apply_threshold')?['status'], 'Skipped'), 'Request processing failed before the threshold PUT. ', 'Threshold PUT was attempted but read-back or audit persistence failed. Verify current platform state before resubmitting. '), string(result('Apply_request')))"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "templateName": null
+  },
+  "schemaVersion": "1.0.0.0"
+}

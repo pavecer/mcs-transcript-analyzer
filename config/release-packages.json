@@ -1,10 +1,11 @@
 {
   "core": {
     "solutionUniqueName": "pvConversationInsights",
-    "version": "1.2.0.0",
-    "filename": "pvConversationInsights-managed-1.2.0.0.zip",
+    "version": "1.3.0.0",
+    "filename": "pvConversationInsights-managed-1.3.0.0.zip",
     "requiredTables": [
       "pvci_agentinventory",
+      "pvci_agentthresholdsnapshot",
       "pvci_creditcapacitysnapshot",
       "pvci_creditprivacysetting",
       "pvci_creditsyncrun",
@@ -12,6 +13,8 @@
       "pvci_credituserusage",
       "pvci_environmentinventory",
       "pvci_flowrundetail",
+      "pvci_governancesyncrun",
+      "pvci_thresholdchangerequest",
       "pvci_inventorysyncrun",
       "pvci_syncstate",
       "pvci_transcriptidentitymap",
@@ -21,22 +24,26 @@
     ],
     "requiredWorkflows": [
       "PVCI Collect Copilot Credit Usage (scheduled)",
+      "PVCI Collect Credit Governance (scheduled)",
+      "PVCI Apply Credit Governance Requests (scheduled)",
       "PVCI Collect Tenant Agent Inventory (scheduled)",
       "PVCI Sync Conversation Transcripts (scheduled)"
     ],
     "requiredRoles": [
       "PVCI Analyst",
-      "PVCI Privacy Approver"
+      "PVCI Privacy Approver",
+      "PVCI Credit Administrator"
     ]
   },
   "codeApp": {
     "solutionUniqueName": "pvConversationInsightsCodeApp",
-    "version": "1.2.0.0",
-    "filename": "pvConversationInsightsCodeApp-managed-1.2.0.0.zip",
+    "version": "1.3.0.0",
+    "filename": "pvConversationInsightsCodeApp-managed-1.3.0.0.zip",
     "appId": "cdab27a0-70fe-4819-a0c1-230e6ca99cc4",
     "componentSchemaName": "pve_conversationinsightsexplorer_a5d19",
     "requiredCoreTables": [
       "pvci_agentinventory",
+      "pvci_agentthresholdsnapshot",
       "pvci_creditcapacitysnapshot",
       "pvci_creditprivacysetting",
       "pvci_creditsyncrun",
@@ -44,6 +51,8 @@
       "pvci_credituserusage",
       "pvci_environmentinventory",
       "pvci_flowrundetail",
+      "pvci_governancesyncrun",
+      "pvci_thresholdchangerequest",
       "pvci_inventorysyncrun",
       "pvci_transcriptsession",
       "pvci_transcriptturn"

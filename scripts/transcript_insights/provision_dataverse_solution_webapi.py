@@ -382,7 +382,7 @@ def add_lookup(
     if r.ok:
         return "created"
     body = r.text.lower()
-    if "already exists" in body or "duplicate" in body:
+    if "already exists" in body or "duplicate" in body or "navigationpropertyname" in body and "not unique" in body:
         return "exists"
     return f"failed: {r.status_code} {r.text[:200]}"
 

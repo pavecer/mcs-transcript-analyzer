@@ -24,6 +24,8 @@ namespace PvciTranscripts
         private const string PrivacySettingEntity = "pvci_creditprivacysetting";
         private const string CapacityEntity = "pvci_creditcapacitysnapshot";
         private const string SyncRunEntity = "pvci_creditsyncrun";
+        private const string ThresholdEntity = "pvci_agentthresholdsnapshot";
+        private const string GovernanceSyncRunEntity = "pvci_governancesyncrun";
         private const int PayloadLimit = 900000;
         private const int TextLimit = 1000;
         private const int MemoLimit = 900000;
@@ -61,14 +63,17 @@ namespace PvciTranscripts
             var usage = Json.Arr(Json.Get(root, "usage")) ?? new List<object>();
             var userUsage = Json.Arr(Json.Get(root, "userUsage")) ?? new List<object>();
             var capacity = Json.Arr(Json.Get(root, "capacity")) ?? new List<object>();
+            var thresholds = new List<object>();
             NormalizePpac(root, tenantId, agents, usage, userUsage, capacity);
             NormalizeAdminInventory(root, tenantId, environments, agents);
+            NormalizeResourceThresholds(root, tenantId, thresholds);
 
             ImportEnvironments(service, environments, tenantId, schemaVersion, dryRun, environmentIds, result, errors);
             ImportAgents(service, agents, tenantId, dryRun, environmentIds, agentIds, result, errors);
             ImportUsage(service, usage, tenantId, schemaVersion, dryRun, agentIds, result, errors);
             ImportUserUsage(service, userUsage, tenantId, schemaVersion, dryRun, result, errors);
             ImportCapacity(service, capacity, tenantId, dryRun, result, errors);
+            ImportThresholds(service, thresholds, tenantId, schemaVersion, dryRun, result, errors);
 
             object syncRun = Json.Get(root, "syncRun");
             if (syncRun != null && !dryRun)
@@ -76,6 +81,9 @@ namespace PvciTranscripts
             object inventorySyncRun = Json.Get(root, "inventorySyncRun");
             if (inventorySyncRun != null && !dryRun)
                 UpsertInventorySyncRun(service, inventorySyncRun, schemaVersion, result, errors);
+            object governanceSyncRun = Json.Get(root, "governanceSyncRun");
+            if (governanceSyncRun != null && !dryRun)
+                UpsertGovernanceSyncRun(service, governanceSyncRun, schemaVersion, result, errors);
 
             string status = errors.Count == 0 ? "success" : (result.Created + result.Updated > 0 ? "partial" : "failed");
             tracing.Trace("credit import: created={0} updated={1} rejected={2} dryRun={3}",
@@ -365,8 +373,19 @@ namespace PvciTranscripts
                 Put(agent, "displayName", displayName);
                 Put(agent, "schemaName", Json.Str(properties, "schemaName"));
                 Put(agent, "resourceType", "agent");
-                Put(agent, "classificationSource", "power_platform_inventory");
-                Put(agent, "classificationConfidence", "inventory_exact_id");
+                object isCliAgent = Json.Get(properties, "isCLIAgent");
+                if (isCliAgent is bool)
+                {
+                    Put(agent, "harness", (bool)isCliAgent ? "github_copilot" : "not_github_copilot");
+                    Put(agent, "classificationSource", "power_platform_inventory.isCLIAgent");
+                    Put(agent, "classificationConfidence", "inventory_direct_property");
+                }
+                else
+                {
+                    Put(agent, "harness", "unknown");
+                    Put(agent, "classificationSource", "power_platform_inventory");
+                    Put(agent, "classificationConfidence", "inventory_missing_harness_property");
+                }
                 Put(agent, "orchestrationType", Json.Str(properties, "orchestrationType")
                     ?? Json.Str(properties, "orchestration"));
                 Put(agent, "model", Json.Str(properties, "model"));
@@ -389,6 +408,42 @@ namespace PvciTranscripts
         private static void Put(Dictionary<string, object> target, string key, object value)
         {
             if (value != null && (!(value is string) || !string.IsNullOrWhiteSpace((string)value))) target[key] = value;
+        }
+
+        private static void NormalizeResourceThresholds(
+            Dictionary<string, object> root,
+            string tenantId,
+            List<object> thresholds)
+        {
+            List<object> rows = Json.Arr(Json.Get(root, "resourceThresholds")) ?? new List<object>();
+            ValidateRecordCount(rows, "resourceThresholds");
+            string capturedOn = DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture);
+            foreach (object row in rows)
+            {
+                string environmentId = NormalizeEnvironmentId(Json.Str(row, "environmentId"));
+                string resourceId = NormalizeId(Json.Str(row, "resourceId"));
+                string entitlementId = Json.Str(row, "entitlementId") ?? "MCSMessages";
+                if (string.IsNullOrWhiteSpace(environmentId) || string.IsNullOrWhiteSpace(resourceId)) continue;
+                thresholds.Add(new Dictionary<string, object>
+                {
+                    { "sourceKey", StableKey(tenantId, environmentId, resourceId, entitlementId, DatePart(capturedOn)) },
+                    { "tenantId", tenantId },
+                    { "environmentId", environmentId },
+                    { "resourceId", resourceId },
+                    { "entitlementId", entitlementId },
+                    { "name", resourceId + " - " + DatePart(capturedOn) },
+                    { "limit", Json.Get(row, "limit") },
+                    { "resourceConsumption", Json.Get(row, "resourceConsumption") },
+                    { "notificationThreshold", Json.Get(row, "notificationThreshold") },
+                    { "notifyIfOverCapacity", Json.Get(row, "notifyIfOverCapacity") },
+                    { "stopIfOverCapacity", Json.Get(row, "stopIfOverCapacity") },
+                    { "stopResource", Json.Get(row, "stopResource") },
+                    { "createdOnSource", Json.Get(row, "createdOn") },
+                    { "capturedOn", capturedOn },
+                    { "sourceApi", "/licensing/entitlements/MCSMessages/resourceThresholds" },
+                    { "raw", row },
+                });
+            }
         }
 
         private static object FindRule(List<object> rules, string ruleType)
@@ -722,6 +777,56 @@ namespace PvciTranscripts
             }
         }
 
+        private static void ImportThresholds(
+            IOrganizationService service,
+            List<object> records,
+            string tenantId,
+            string schemaVersion,
+            bool dryRun,
+            ImportResult result,
+            List<string> errors)
+        {
+            records = records ?? new List<object>();
+            ValidateRecordCount(records, "thresholds");
+            foreach (object item in records)
+            {
+                try
+                {
+                    string sourceKey = Required(item, "sourceKey");
+                    string environmentId = NormalizeEnvironmentId(Required(item, "environmentId"));
+                    string resourceId = NormalizeId(Required(item, "resourceId"));
+                    Entity existing = FindByString(service, ThresholdEntity, "pvci_sourcekey", sourceKey,
+                        "pvci_agentthresholdsnapshotid");
+                    var record = new Entity(ThresholdEntity);
+                    SetString(record, "pvci_name", Json.Str(item, "name") ?? sourceKey, 200);
+                    SetString(record, "pvci_sourcekey", sourceKey, 200);
+                    SetString(record, "pvci_tenantid", Json.Str(item, "tenantId") ?? tenantId);
+                    SetString(record, "pvci_environmentid", environmentId);
+                    SetString(record, "pvci_resourceid", resourceId);
+                    SetString(record, "pvci_entitlementid", Json.Str(item, "entitlementId") ?? "MCSMessages");
+                    SetDecimal(record, "pvci_limit", Json.Get(item, "limit"));
+                    SetDecimal(record, "pvci_resourceconsumption", Json.Get(item, "resourceConsumption"));
+                    SetInteger(record, "pvci_notificationthreshold", Json.Get(item, "notificationThreshold"));
+                    SetBoolean(record, "pvci_notifyifovercapacity", Json.Get(item, "notifyIfOverCapacity"));
+                    SetBoolean(record, "pvci_stopifovercapacity", Json.Get(item, "stopIfOverCapacity"));
+                    SetBoolean(record, "pvci_stopresource", Json.Get(item, "stopResource"));
+                    SetDate(record, "pvci_createdonsource", Json.Get(item, "createdOnSource"), null);
+                    SetDate(record, "pvci_capturedon", Json.Get(item, "capturedOn"), DateTime.UtcNow);
+                    SetString(record, "pvci_sourceapi", Json.Str(item, "sourceApi"));
+                    SetString(record, "pvci_sourceschemaversion", schemaVersion);
+                    SetMemo(record, "pvci_rawjson", Json.Get(item, "raw"));
+                    Entity agent = FindAgentByIdentity(service, tenantId, environmentId, resourceId);
+                    if (agent != null)
+                        record["pvci_agentid"] = new EntityReference(AgentEntity, agent.Id);
+                    Upsert(service, existing, record, dryRun, result);
+                }
+                catch (Exception ex)
+                {
+                    Reject(result, errors, "threshold", item, ex);
+                }
+            }
+        }
+
         private static bool IsUserNameDisclosureApproved(IOrganizationService service)
         {
             Entity setting = FindByString(service, PrivacySettingEntity, "pvci_settingkey", "credit-user-disclosure",
@@ -862,6 +967,39 @@ namespace PvciTranscripts
             catch (Exception ex)
             {
                 Reject(result, errors, "inventory sync run", item, ex);
+            }
+        }
+
+        private static void UpsertGovernanceSyncRun(
+            IOrganizationService service,
+            object item,
+            string schemaVersion,
+            ImportResult result,
+            List<string> errors)
+        {
+            try
+            {
+                string runKey = Required(item, "runKey");
+                Entity existing = FindByString(service, GovernanceSyncRunEntity, "pvci_runkey", runKey,
+                    "pvci_governancesyncrunid");
+                var record = new Entity(GovernanceSyncRunEntity);
+                SetString(record, "pvci_name", Json.Str(item, "name") ?? runKey, 200);
+                SetString(record, "pvci_runkey", runKey, 200);
+                SetString(record, "pvci_source", Json.Str(item, "source") ?? "Power Platform resource thresholds");
+                SetDate(record, "pvci_startedon", Json.Get(item, "startedOn"), null);
+                SetDate(record, "pvci_completedon", Json.Get(item, "completedOn"), DateTime.UtcNow);
+                SetString(record, "pvci_status", errors.Count == 0 ? "success" : "partial");
+                SetInteger(record, "pvci_thresholdcount", Json.Get(item, "thresholdCount"));
+                SetInteger(record, "pvci_createdcount", Json.Get(item, "createdCount") ?? result.Created);
+                SetInteger(record, "pvci_updatedcount", Json.Get(item, "updatedCount") ?? result.Updated);
+                SetInteger(record, "pvci_rejectedcount", Json.Get(item, "rejectedCount") ?? result.Rejected);
+                SetString(record, "pvci_schemaversion", Json.Str(item, "schemaVersion") ?? schemaVersion);
+                SetMemo(record, "pvci_error", errors.Count == 0 ? null : string.Join("\n", errors.ToArray()));
+                Upsert(service, existing, record, false, new ImportResult());
+            }
+            catch (Exception ex)
+            {
+                Reject(result, errors, "governance sync run", item, ex);
             }
         }
 

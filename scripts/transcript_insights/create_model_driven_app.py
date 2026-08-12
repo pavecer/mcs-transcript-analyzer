@@ -22,6 +22,9 @@ TABLES = [
     "pvci_transcriptidentitymap",
     "pvci_environmentinventory",
     "pvci_inventorysyncrun",
+    "pvci_agentthresholdsnapshot",
+    "pvci_governancesyncrun",
+    "pvci_thresholdchangerequest",
     "pvci_agentinventory",
     "pvci_creditusage",
     "pvci_creditcapacitysnapshot",
@@ -40,6 +43,9 @@ SITEMAP_XML = """<SiteMap IntroducedVersion="1.0">
         <Group Id="pvci_group_credits" Title="Credits and Capacity">
             <SubArea Id="pvci_sa_environments" Entity="pvci_environmentinventory" Title="Environment Inventory" />
             <SubArea Id="pvci_sa_inventorysync" Entity="pvci_inventorysyncrun" Title="Inventory Sync Runs" />
+            <SubArea Id="pvci_sa_thresholds" Entity="pvci_agentthresholdsnapshot" Title="Agent Credit Limits" />
+            <SubArea Id="pvci_sa_governancesync" Entity="pvci_governancesyncrun" Title="Governance Sync Runs" />
+            <SubArea Id="pvci_sa_thresholdrequests" Entity="pvci_thresholdchangerequest" Title="Threshold Requests" />
             <SubArea Id="pvci_sa_creditusage" Entity="pvci_creditusage" Title="Credit Usage" />
             <SubArea Id="pvci_sa_capacity" Entity="pvci_creditcapacitysnapshot" Title="Capacity" />
             <SubArea Id="pvci_sa_agents" Entity="pvci_agentinventory" Title="Agent Inventory" />

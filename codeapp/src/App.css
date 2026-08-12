@@ -449,7 +449,7 @@ body {
 .user-credit-head .sub { margin: 0; }
 .privacy-action { border: 1px solid var(--accent); border-radius: 5px; background: var(--accent); color: var(--accent-fg); padding: 7px 11px; font: inherit; cursor: pointer; }
 .privacy-action.revoke { border-color: var(--bad-border); background: var(--bad-bg); color: var(--bad-fg); }
-.privacy-action:disabled { cursor: wait; opacity: .65; }
+.privacy-action:disabled { cursor: not-allowed; opacity: .65; }
 .privacy-statement { color: var(--muted); font-size: 11px; line-height: 1.45; margin: 6px 0 10px; max-width: 900px; }
 .user-credit-table { min-width: 780px; }
 .user-credit-table td:first-child { max-width: 300px; overflow-wrap: anywhere; }
@@ -525,6 +525,23 @@ body {
 .conf.high { background: var(--good-bg); color: var(--good-fg); }
 .conf.multiple { background: var(--warn-bg); color: var(--warn-fg); }
 .conf.none { background: var(--chip-bg); color: var(--muted); }
+.conf.risk-critical { background: var(--bad-bg); color: var(--bad-fg); }
+.conf.risk-high { background: var(--warn-bg); color: var(--warn-fg); }
+.conf.risk-watch { background: var(--chip-bg); color: var(--warn-fg); }
+.conf.risk-healthy { background: var(--good-bg); color: var(--good-fg); }
+.conf.risk-unconfigured { background: var(--chip-bg); color: var(--muted); }
+.governance-editor { border: 1px solid var(--line); background: var(--bg-2); padding: 14px; margin: 10px 0 14px; }
+.governance-editor-head { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 12px; }
+.governance-editor-head > div { display: flex; flex-direction: column; gap: 3px; }
+.governance-editor-head span { color: var(--muted); font-size: 12px; }
+.governance-editor-grid { display: grid; grid-template-columns: repeat(2, minmax(180px, 1fr)); gap: 10px 14px; margin-bottom: 12px; }
+.governance-editor-grid label { display: flex; flex-direction: column; gap: 5px; color: var(--muted); font-size: 12px; }
+.governance-editor-grid input[type="number"], .governance-editor-grid textarea { width: 100%; border: 1px solid var(--line); background: var(--bg); color: var(--fg); padding: 7px 8px; font: inherit; }
+.governance-editor-grid .governance-check { flex-direction: row; align-items: center; color: var(--fg); }
+.governance-editor-grid .governance-justification { grid-column: 1 / -1; }
+.request-state { min-width: 130px; display: flex; flex-direction: column; align-items: flex-start; gap: 4px; }
+.request-state small { color: var(--muted); font-size: 10px; white-space: nowrap; }
+@media (max-width: 720px) { .governance-editor-grid { grid-template-columns: 1fr; } .governance-editor-grid .governance-justification { grid-column: auto; } }
 
 .runtable { width: 100%; border-collapse: collapse; margin-top: 7px; font-size: 12px; }
 .runtable th {

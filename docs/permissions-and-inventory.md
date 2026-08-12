@@ -2,16 +2,19 @@
 
 ## What the managed solution includes
 
-Version `1.2.0.0` includes two least-privilege Dataverse application roles. Both roles are mapped
+Version `1.3.0.0` includes three least-privilege Dataverse application roles. All are mapped
 to the model-driven app and apply to the same Dataverse data sources used by the code app:
 
 - **PVCI Analyst** provides organization-level read access to transcript, flow, inventory, credit,
-   capacity, privacy-status, and sync tables. Analysts can read names after disclosure is approved,
-   but cannot change the approval or stored identities.
+   capacity, threshold, governance-health, privacy-status, and sync tables. Analysts can read names
+   after disclosure is approved, but cannot change approval, stored identities, or platform limits.
 - **PVCI Privacy Approver** has the same read access plus organization-level write on
    `pvci_creditprivacysetting` and `pvci_credituserusage`, and read on `systemuser`. These privileges
    let the synchronous disclosure plug-in record the initiating user/time and resolve or revoke all
    stored names.
+- **PVCI Credit Administrator** has Analyst read access plus create/read and the narrow append
+   privileges required to bind audited requests to Agent Inventory. It cannot update outcomes or
+   call licensing APIs directly.
 
 The preview code app must still be shared with users or groups through **Manage access**. App
 sharing grants the app shell; one of the packaged Dataverse roles grants its additional data
@@ -26,7 +29,9 @@ There are three independent permission boundaries:
 | Collect Copilot Credit usage | Owner of `pvci_licensinghttp` with the Power Platform administrative access accepted by the licensing service, plus a premium Power Automate entitlement | No; the connection is target-local |
 | Read and write PVCI data | Owner of `pvci_dataversesync` with access to the PVCI tables and Custom APIs in the collector environment | No; the connection is target-local |
 | Enumerate tenant environments and base agents | Owner of `pvci_powerplatformadminv2` with **Power Platform Administrator** tenant role | Flow and reference packaged; target connection/role external |
-| Read detailed agent configuration in every environment | Inventory identity with appropriate Dataverse access in every source environment | Detailed enrichment not implemented in `1.2.0.0` |
+| Read agent credit threshold controls | Owner of `pvci_powerplatformapi` with Power Platform licensing administration access | Read-only flow/reference packaged; target connection/role external |
+| Submit agent threshold changes | **PVCI Credit Administrator** plus app sharing | Role/request table/processor packaged; privileged flow connection external |
+| Read detailed agent configuration in every environment | Inventory identity with appropriate Dataverse access in every source environment | Detailed enrichment not implemented in `1.3.0.0` |
 | Open the apps as an analyst | **PVCI Analyst** plus model-driven/code-app sharing | Role packaged; assignments and code-app sharing external |
 | Reveal or revoke stored user names | **PVCI Privacy Approver** plus app sharing | Role and audited plug-in packaged; assignment external |
 
@@ -110,7 +115,7 @@ Copilot Agent Kit obtains broader visibility through separate sources:
    environment where the connection identity has System Administrator.
 4. The licensing endpoint supplies usage metrics independently.
 
-PVCI `1.2.0.0` implements items 1, 2, and 4. Item 3 remains future work: the current inventory
+PVCI `1.3.0.0` implements items 1, 2, and 4. Item 3 remains future work: the current inventory
 records `Has Detailed Access = No` rather than pretending unavailable feature metadata means “no
 agent.” Base inventory, environment names, and agent names do not require activity or local
 Dataverse access in every source environment.

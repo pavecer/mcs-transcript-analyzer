@@ -81,6 +81,10 @@ If tokens expire: `az login --tenant <tenantId>`.
   Capacity, Environment Inventory, Inventory Sync Runs, user usage, and privacy approval.
 - `create_inventory_sync_flow.py` — creates the stopped Admin V2/One Inventory tenant inventory
   collector; bind a target-local Power Platform Administrator connection before activation.
+- `create_credit_governance_flow.py` — creates the stopped read-only Power Platform resource-
+  threshold collector using a dedicated `api.powerplatform.com` HTTP with Entra ID connection.
+- `create_credit_governance_processor_flow.py` — creates the stopped privileged processor for
+  validated threshold requests with stale-state detection and before/after audit.
 - `create_security_roles.py` — creates PVCI Analyst and PVCI Privacy Approver from the App Opener
   baseline, adds least-privilege table access, and maps both roles to the model-driven app.
 - `ingest_monitor_transcripts.py` — Monitor CSV ingestion (**blocked**: gateway returns

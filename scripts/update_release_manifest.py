@@ -108,6 +108,20 @@ def inspect_package(key: str, config: dict[str, Any]) -> dict[str, Any]:
             raise RuntimeError("Core package does not contain the JSON Viewer PCF")
         if any(item.get("type") == "66" for item in missing_dependencies):
             raise RuntimeError("Core package still has an unresolved PCF dependency")
+        plugin_types = {
+            item.get("Name")
+            for item in customizations.findall(".//PluginType")
+            if item.get("Name")
+        }
+        processing_steps = {
+            item.get("Name")
+            for item in customizations.findall(".//SdkMessageProcessingStep")
+            if item.get("Name")
+        }
+        if "PvciTranscripts.ThresholdChangeRequestGuard" not in plugin_types:
+            raise RuntimeError("Core package does not contain the threshold request guard plugin")
+        if "PVCI Guard Threshold Change Request Create" not in processing_steps:
+            raise RuntimeError("Core package does not contain the threshold request create guard step")
         actual_tables = {
             item.get("schemaName")
             for item in root_components

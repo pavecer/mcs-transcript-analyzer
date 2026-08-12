@@ -17,6 +17,7 @@ from register_plugin import BOOLEAN, INTEGER, STRING, ASSEMBLY_NAME, Dv  # noqa:
 SOLUTION = "pvConversationInsights"
 PLUGIN_TYPE = "PvciTranscripts.ImportCreditUsageBatch"
 DISCLOSURE_PLUGIN_TYPE = "PvciTranscripts.CreditUserDisclosure"
+REQUEST_GUARD_PLUGIN_TYPE = "PvciTranscripts.ThresholdChangeRequestGuard"
 API_UNIQUE = "pvci_ImportCreditUsageBatch"
 PRIVACY_SETTING_KEY = "credit-user-disclosure"
 PRIVACY_STATEMENT = (
@@ -95,6 +96,22 @@ def main() -> None:
             },
         )
         print(f"disclosure plugintype created: {disclosure_type_id}")
+
+    request_guard = dv.find("plugintypes", f"typename eq '{REQUEST_GUARD_PLUGIN_TYPE}'", "plugintypeid,typename")
+    if request_guard:
+        request_guard_type_id = request_guard["plugintypeid"]
+        print(f"request guard plugintype exists: {request_guard_type_id}")
+    else:
+        request_guard_type_id = dv.create(
+            "plugintypes",
+            {
+                "typename": REQUEST_GUARD_PLUGIN_TYPE,
+                "friendlyname": "Guard Threshold Change Request Create",
+                "name": REQUEST_GUARD_PLUGIN_TYPE,
+                "pluginassemblyid@odata.bind": f"/pluginassemblies({assembly_id})",
+            },
+        )
+        print(f"request guard plugintype created: {request_guard_type_id}")
 
     existing = dv.find("customapis", f"uniquename eq '{API_UNIQUE}'", "customapiid,uniquename")
     if existing:
@@ -192,6 +209,37 @@ def main() -> None:
         )
         print(f"disclosure step created: {step_id}")
 
+    create_message = dv.find("sdkmessages", "name eq 'Create'", "sdkmessageid,name")
+    if not create_message:
+        raise SystemExit("Dataverse Create SDK message was not found.")
+    create_filter = dv.find(
+        "sdkmessagefilters",
+        f"_sdkmessageid_value eq {create_message['sdkmessageid']} and primaryobjecttypecode eq 'pvci_thresholdchangerequest'",
+        "sdkmessagefilterid,primaryobjecttypecode",
+    )
+    if not create_filter:
+        raise SystemExit("Create message filter for pvci_thresholdchangerequest was not found; publish the table first.")
+    guard_step_name = "PVCI Guard Threshold Change Request Create"
+    guard_step = dv.find("sdkmessageprocessingsteps", f"name eq '{guard_step_name}'", "sdkmessageprocessingstepid,name")
+    if guard_step:
+        print(f"request guard step exists: {guard_step['sdkmessageprocessingstepid']}")
+    else:
+        guard_step_id = dv.create(
+            "sdkmessageprocessingsteps",
+            {
+                "name": guard_step_name,
+                "description": "Validates request inputs and reserves status and audit fields for the privileged processor.",
+                "mode": 0,
+                "rank": 1,
+                "stage": 20,
+                "supporteddeployment": 0,
+                "eventhandler_plugintype@odata.bind": f"/plugintypes({request_guard_type_id})",
+                "sdkmessageid@odata.bind": f"/sdkmessages({create_message['sdkmessageid']})",
+                "sdkmessagefilterid@odata.bind": f"/sdkmessagefilters({create_filter['sdkmessagefilterid']})",
+            },
+        )
+        print(f"request guard step created: {guard_step_id}")
+
     privacy = dv.find(
         "pvci_creditprivacysettings",
         f"pvci_settingkey eq '{PRIVACY_SETTING_KEY}'",
@@ -218,6 +266,7 @@ def main() -> None:
                 "pluginType": plugin_type_id,
                 "customApi": api_id,
                 "disclosurePluginType": disclosure_type_id,
+                "requestGuardPluginType": request_guard_type_id,
                 "privacySettingKey": PRIVACY_SETTING_KEY,
                 "invoke": f"POST {dv_url}/api/data/v9.1/{API_UNIQUE}",
             },

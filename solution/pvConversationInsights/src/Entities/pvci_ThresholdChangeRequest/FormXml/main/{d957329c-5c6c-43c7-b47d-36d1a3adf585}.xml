@@ -1,0 +1,285 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<forms xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <systemform>
+    <formid>{d957329c-5c6c-43c7-b47d-36d1a3adf585}</formid>
+    <IntroducedVersion>1.3.0.0</IntroducedVersion>
+    <FormPresentation>1</FormPresentation>
+    <FormActivationState>1</FormActivationState>
+    <form>
+      <tabs>
+        <tab id="{e300b13a-95e9-59c8-ad6f-1b83d934a93c}" name="tr_summary" verticallayout="true" showlabel="true" expanded="true">
+          <labels>
+            <label description="Request" languagecode="1033" />
+          </labels>
+          <columns>
+            <column width="100%">
+              <sections>
+                <section id="{0fb4d83c-371c-52f6-9f1c-8b3a59acac99}" name="tr_request" showlabel="true" showbar="false" columns="11" labelwidth="140" celllabelalignment="Left" celllabelposition="Left">
+                  <labels>
+                    <label description="Requested control" languagecode="1033" />
+                  </labels>
+                  <rows>
+                    <row>
+                      <cell id="{5571bc7e-56cc-5a6b-9df0-2d2d661f5f81}" showlabel="true">
+                        <labels>
+                          <label description="Agent" languagecode="1033" />
+                        </labels>
+                        <control id="pvci_name" uniqueid="{4030f757-ccf3-5c3d-bd75-ebde6072c0b5}" classid="{4273EDBD-AC1D-40d3-9FB2-095C621B552D}" datafieldname="pvci_name" disabled="false" />
+                      </cell>
+                      <cell id="{32d2317d-03fb-59aa-ba43-e8dbc85878d9}" showlabel="true">
+                        <labels>
+                          <label description="Status" languagecode="1033" />
+                        </labels>
+                        <control id="pvci_status" uniqueid="{11027225-e50e-5f47-b63e-a2c7de5fcfdd}" classid="{4273EDBD-AC1D-40d3-9FB2-095C621B552D}" datafieldname="pvci_status" disabled="false" />
+                      </cell>
+                    </row>
+                    <row>
+                      <cell id="{21f951ac-a6d2-5d83-9d19-3dfd22cdb819}" showlabel="true">
+                        <labels>
+                          <label description="Requested limit" languagecode="1033" />
+                        </labels>
+                        <control id="pvci_requestedlimit" uniqueid="{04ece3d7-9ff1-5896-b64b-f26d4abb0299}" classid="{C3EFE0C3-0EC6-42be-8349-CBD9079DFD8E}" datafieldname="pvci_requestedlimit" disabled="false" />
+                      </cell>
+                      <cell id="{dcc40838-b441-5ecc-bf4c-b6fdac2d2c55}" showlabel="true">
+                        <labels>
+                          <label description="Notify at percent" languagecode="1033" />
+                        </labels>
+                        <control id="pvci_requestednotificationthreshold" uniqueid="{1e7e77fb-9e11-5e7e-be80-8749f601639f}" classid="{C6D124CA-7EDA-4a60-AEA9-7FB8D318B68F}" datafieldname="pvci_requestednotificationthreshold" disabled="false" />
+                      </cell>
+                    </row>
+                    <row>
+                      <cell id="{3778c203-fe1c-5193-908a-2ba5ba20142b}" showlabel="true">
+                        <labels>
+                          <label description="Notify near limit" languagecode="1033" />
+                        </labels>
+                        <control id="pvci_requestednotifyifovercapacity" uniqueid="{3e82eb95-d90e-58fe-827b-f4616ec58068}" classid="{B0C6723A-8503-4fd7-BB28-C8A06AC933C2}" datafieldname="pvci_requestednotifyifovercapacity" disabled="false" />
+                      </cell>
+                      <cell id="{de880efb-68d9-5edb-85c7-754a0b400756}" showlabel="true">
+                        <labels>
+                          <label description="Stop at limit" languagecode="1033" />
+                        </labels>
+                        <control id="pvci_requestedstopifovercapacity" uniqueid="{e5be2e3a-e773-5814-b39f-26464a68d3d0}" classid="{B0C6723A-8503-4fd7-BB28-C8A06AC933C2}" datafieldname="pvci_requestedstopifovercapacity" disabled="false" />
+                      </cell>
+                    </row>
+                    <row>
+                      <cell id="{241a32c6-f774-5775-b72a-8ce8f46c9965}" showlabel="true">
+                        <labels>
+                          <label description="Stop immediately" languagecode="1033" />
+                        </labels>
+                        <control id="pvci_requestedstopresource" uniqueid="{716d251e-9e9e-5c90-8f51-dd402c8fda81}" classid="{B0C6723A-8503-4fd7-BB28-C8A06AC933C2}" datafieldname="pvci_requestedstopresource" disabled="false" />
+                      </cell>
+                      <cell id="{dfb88f81-4af5-535e-a320-f44da1c0fdea}" showlabel="true">
+                        <labels>
+                          <label description="Requested on" languagecode="1033" />
+                        </labels>
+                        <control id="pvci_requestedon" uniqueid="{9746ff41-f0fb-5eb9-b475-b8214c589b55}" classid="{5B773807-9FB2-42db-97C3-7A91EFF8ADFF}" datafieldname="pvci_requestedon" disabled="false" />
+                      </cell>
+                    </row>
+                    <row>
+                      <cell id="{972db70a-6fbc-5823-ab1e-cd6f7774f223}" showlabel="true">
+                        <labels>
+                          <label description="Processed on" languagecode="1033" />
+                        </labels>
+                        <control id="pvci_processedon" uniqueid="{7e08be21-497e-5b4d-a73c-0502e6ed0892}" classid="{5B773807-9FB2-42db-97C3-7A91EFF8ADFF}" datafieldname="pvci_processedon" disabled="false" />
+                      </cell>
+                      <cell id="{d139eab2-181c-53e6-aa97-4f802e7da946}" showlabel="true">
+                        <labels>
+                          <label description="Agent inventory" languagecode="1033" />
+                        </labels>
+                        <control id="pvci_agentid" uniqueid="{0bd023f5-1261-5e69-96b9-de937add8587}" classid="{270BD3DB-D9AF-4782-9025-509E298DEC0A}" datafieldname="pvci_agentid" disabled="false" />
+                      </cell>
+                    </row>
+                  </rows>
+                </section>
+                <section id="{f8ed0988-bdc6-5a33-ac4f-b95971b37d9f}" name="tr_scope" showlabel="true" showbar="false" columns="11" labelwidth="140" celllabelalignment="Left" celllabelposition="Left">
+                  <labels>
+                    <label description="Scope and expected state" languagecode="1033" />
+                  </labels>
+                  <rows>
+                    <row>
+                      <cell id="{51fa5393-a433-5eea-b590-b8bcc7d18b8e}" showlabel="true">
+                        <labels>
+                          <label description="Environment ID" languagecode="1033" />
+                        </labels>
+                        <control id="pvci_environmentid" uniqueid="{0fd3da50-2fc7-5617-be22-52e0f3155533}" classid="{4273EDBD-AC1D-40d3-9FB2-095C621B552D}" datafieldname="pvci_environmentid" disabled="false" />
+                      </cell>
+                      <cell id="{9cdd22d5-5c77-5d31-985e-4c0c63e7976d}" showlabel="true">
+                        <labels>
+                          <label description="Resource ID" languagecode="1033" />
+                        </labels>
+                        <control id="pvci_resourceid" uniqueid="{25a19647-2771-56e5-af49-7d67a7af3ad6}" classid="{4273EDBD-AC1D-40d3-9FB2-095C621B552D}" datafieldname="pvci_resourceid" disabled="false" />
+                      </cell>
+                    </row>
+                    <row>
+                      <cell id="{988c1139-afab-589b-a4f0-837d11721cab}" showlabel="true">
+                        <labels>
+                          <label description="Entitlement" languagecode="1033" />
+                        </labels>
+                        <control id="pvci_entitlementid" uniqueid="{38d8de70-5f8e-5afa-b5f3-e07c38ed658e}" classid="{4273EDBD-AC1D-40d3-9FB2-095C621B552D}" datafieldname="pvci_entitlementid" disabled="false" />
+                      </cell>
+                      <cell id="{38d920d1-0b43-5915-9713-ed88fbf6eba5}" showlabel="true">
+                        <labels>
+                          <label description="Request key" languagecode="1033" />
+                        </labels>
+                        <control id="pvci_requestkey" uniqueid="{287f1d4b-045a-549b-afca-430eaacd85f1}" classid="{4273EDBD-AC1D-40d3-9FB2-095C621B552D}" datafieldname="pvci_requestkey" disabled="false" />
+                      </cell>
+                    </row>
+                    <row>
+                      <cell id="{47cd6efa-b7ad-59c7-9a7c-c941ae0b02fe}" showlabel="true">
+                        <labels>
+                          <label description="Expected limit" languagecode="1033" />
+                        </labels>
+                        <control id="pvci_expectedlimit" uniqueid="{586cf206-fec1-513f-adeb-600d3c834dda}" classid="{C3EFE0C3-0EC6-42be-8349-CBD9079DFD8E}" datafieldname="pvci_expectedlimit" disabled="false" />
+                      </cell>
+                      <cell id="{13d45799-4f02-54a4-9257-26306d810d4b}" showlabel="true">
+                        <labels>
+                          <label description="Expected notify percent" languagecode="1033" />
+                        </labels>
+                        <control id="pvci_expectednotificationthreshold" uniqueid="{6bf11308-d6e4-5039-b217-c748aa37e149}" classid="{C6D124CA-7EDA-4a60-AEA9-7FB8D318B68F}" datafieldname="pvci_expectednotificationthreshold" disabled="false" />
+                      </cell>
+                    </row>
+                    <row>
+                      <cell id="{243fb74f-3ca1-5631-9664-930d38a97760}" showlabel="true">
+                        <labels>
+                          <label description="Expected notify" languagecode="1033" />
+                        </labels>
+                        <control id="pvci_expectednotifyifovercapacity" uniqueid="{484988cc-4b01-538b-9ac6-492ba3efb60e}" classid="{B0C6723A-8503-4fd7-BB28-C8A06AC933C2}" datafieldname="pvci_expectednotifyifovercapacity" disabled="false" />
+                      </cell>
+                      <cell id="{248df266-7bbe-5149-b956-1c323df2dc2d}" showlabel="true">
+                        <labels>
+                          <label description="Expected stop at limit" languagecode="1033" />
+                        </labels>
+                        <control id="pvci_expectedstopifovercapacity" uniqueid="{52bec6b8-6b29-5b1d-8a32-91e0c63cc8e1}" classid="{B0C6723A-8503-4fd7-BB28-C8A06AC933C2}" datafieldname="pvci_expectedstopifovercapacity" disabled="false" />
+                      </cell>
+                    </row>
+                    <row>
+                      <cell id="{08776f4e-77ab-5ccc-ad39-3bb215cb7bb9}" showlabel="true">
+                        <labels>
+                          <label description="Expected explicit stop" languagecode="1033" />
+                        </labels>
+                        <control id="pvci_expectedstopresource" uniqueid="{706afd0e-e324-55b0-a2f5-2e82ece129fa}" classid="{B0C6723A-8503-4fd7-BB28-C8A06AC933C2}" datafieldname="pvci_expectedstopresource" disabled="false" />
+                      </cell>
+                    </row>
+                  </rows>
+                </section>
+                <section id="{7c0bbf76-eb40-586b-a92c-c3b62b68097d}" name="tr_justification" showlabel="true" showbar="false" columns="1" labelwidth="140" celllabelalignment="Left" celllabelposition="Left">
+                  <labels>
+                    <label description="Justification and processing" languagecode="1033" />
+                  </labels>
+                  <rows>
+                    <row>
+                      <cell id="{d40f4bef-d111-5acc-9bb7-cd1a1fb4ef6d}" rowspan="8" colspan="1" showlabel="true">
+                        <labels>
+                          <label description="Justification" languagecode="1033" />
+                        </labels>
+                        <control id="pvci_justification" uniqueid="{7bcd96fb-fb80-5664-9943-19a692800c9d}" classid="{E0DECE4B-6FC8-4a8f-A065-082708572369}" datafieldname="pvci_justification" disabled="false" />
+                      </cell>
+                    </row>
+                    <row>
+                      <cell id="{34ceeae0-d5b1-5b6b-9031-0acb05783e9c}" rowspan="8" colspan="1" showlabel="true">
+                        <labels>
+                          <label description="Processing error" languagecode="1033" />
+                        </labels>
+                        <control id="pvci_error" uniqueid="{901df3f2-a9c0-5437-8fb6-ec7f9c657501}" classid="{E0DECE4B-6FC8-4a8f-A065-082708572369}" datafieldname="pvci_error" disabled="false" />
+                      </cell>
+                    </row>
+                  </rows>
+                </section>
+              </sections>
+            </column>
+          </columns>
+        </tab>
+        <tab id="{b51cb96d-4e71-5aed-bc5c-dea55ac2d0dc}" name="tr_audit_tab" verticallayout="true" showlabel="true" expanded="true">
+          <labels>
+            <label description="Audit" languagecode="1033" />
+          </labels>
+          <columns>
+            <column width="100%">
+              <sections>
+                <section id="{3dd64a1b-3bca-5c4b-b820-f82be0a5b1bd}" name="tr_audit" showlabel="true" showbar="false" columns="1" labelwidth="140" celllabelalignment="Left" celllabelposition="Left">
+                  <labels>
+                    <label description="Before and after" languagecode="1033" />
+                  </labels>
+                  <rows>
+                    <row>
+                      <cell id="{93f3f107-d8a3-515d-a87e-7302de9c6384}" rowspan="18" colspan="1" showlabel="true">
+                        <labels>
+                          <label description="Before JSON" languagecode="1033" />
+                        </labels>
+                        <control id="pvci_beforejson" uniqueid="{d4d2b769-077d-5c03-a9af-582bd4c0a067}" classid="{E0DECE4B-6FC8-4a8f-A065-082708572369}" datafieldname="pvci_beforejson" disabled="false" />
+                      </cell>
+                    </row>
+                    <row>
+                      <cell id="{945ba0c5-ce07-51aa-8d7c-a7b369086538}" rowspan="18" colspan="1" showlabel="true">
+                        <labels>
+                          <label description="After JSON" languagecode="1033" />
+                        </labels>
+                        <control id="pvci_afterjson" uniqueid="{bb30d9c0-4212-5067-abc3-72569f58370f}" classid="{E0DECE4B-6FC8-4a8f-A065-082708572369}" datafieldname="pvci_afterjson" disabled="false" />
+                      </cell>
+                    </row>
+                  </rows>
+                </section>
+              </sections>
+            </column>
+          </columns>
+        </tab>
+      </tabs>
+      <controlDescriptions>
+        <controlDescription forControl="{d4d2b769-077d-5c03-a9af-582bd4c0a067}">
+          <customControl formFactor="0" name="pvci_PvciControls.JsonViewer">
+            <parameters>
+              <jsonValue>pvci_beforejson</jsonValue>
+              <startCollapsedDepth static="true" type="Whole.None">3</startCollapsedDepth>
+              <viewerHeight static="true" type="Whole.None">420</viewerHeight>
+            </parameters>
+          </customControl>
+          <customControl formFactor="1" name="pvci_PvciControls.JsonViewer">
+            <parameters>
+              <jsonValue>pvci_beforejson</jsonValue>
+              <startCollapsedDepth static="true" type="Whole.None">3</startCollapsedDepth>
+              <viewerHeight static="true" type="Whole.None">420</viewerHeight>
+            </parameters>
+          </customControl>
+          <customControl formFactor="2" name="pvci_PvciControls.JsonViewer">
+            <parameters>
+              <jsonValue>pvci_beforejson</jsonValue>
+              <startCollapsedDepth static="true" type="Whole.None">3</startCollapsedDepth>
+              <viewerHeight static="true" type="Whole.None">420</viewerHeight>
+            </parameters>
+          </customControl>
+        </controlDescription>
+        <controlDescription forControl="{bb30d9c0-4212-5067-abc3-72569f58370f}">
+          <customControl formFactor="0" name="pvci_PvciControls.JsonViewer">
+            <parameters>
+              <jsonValue>pvci_afterjson</jsonValue>
+              <startCollapsedDepth static="true" type="Whole.None">3</startCollapsedDepth>
+              <viewerHeight static="true" type="Whole.None">420</viewerHeight>
+            </parameters>
+          </customControl>
+          <customControl formFactor="1" name="pvci_PvciControls.JsonViewer">
+            <parameters>
+              <jsonValue>pvci_afterjson</jsonValue>
+              <startCollapsedDepth static="true" type="Whole.None">3</startCollapsedDepth>
+              <viewerHeight static="true" type="Whole.None">420</viewerHeight>
+            </parameters>
+          </customControl>
+          <customControl formFactor="2" name="pvci_PvciControls.JsonViewer">
+            <parameters>
+              <jsonValue>pvci_afterjson</jsonValue>
+              <startCollapsedDepth static="true" type="Whole.None">3</startCollapsedDepth>
+              <viewerHeight static="true" type="Whole.None">420</viewerHeight>
+            </parameters>
+          </customControl>
+        </controlDescription>
+      </controlDescriptions>
+    </form>
+    <IsCustomizable>1</IsCustomizable>
+    <CanBeDeleted>1</CanBeDeleted>
+    <LocalizedNames>
+      <LocalizedName description="Information" languagecode="1033" />
+    </LocalizedNames>
+    <Descriptions>
+      <Description description="A form for this entity." languagecode="1033" />
+    </Descriptions>
+  </systemform>
+</forms>

@@ -401,7 +401,7 @@
             </a>
             <a class="button" href="#install"><i data-lucide="list-checks" aria-hidden="true"></i>Installation guide</a>
           </div>
-          <p class="version-note"><strong>Version <span data-release-version="core">1.2.0.0</span></strong> · Managed Dataverse solution · MIT licensed</p>
+          <p class="version-note"><strong>Version <span data-release-version="core">1.3.0.0</span></strong> · Managed Dataverse solution · MIT licensed</p>
         </div>
       </div>
     </section>
@@ -427,7 +427,7 @@
           <article class="feature"><i class="feature-icon" data-lucide="route" aria-hidden="true"></i><h3>Agent reasoning</h3><p>Inspect DynamicPlan events to understand which topic or action the orchestrator selected.</p></article>
           <article class="feature"><i class="feature-icon" data-lucide="wrench" aria-hidden="true"></i><h3>Tool-call diagnostics</h3><p>Review connector and AI Builder invocations, duration, output, and exceptions where available.</p></article>
           <article class="feature"><i class="feature-icon" data-lucide="workflow" aria-hidden="true"></i><h3>Flow correlation</h3><p>Match Power Automate runs to session windows and surface failed or unusually slow actions.</p></article>
-          <article class="feature"><i class="feature-icon" data-lucide="gauge" aria-hidden="true"></i><h3>Copilot inventory and credits</h3><p>Review tenant agents, including zero-usage inventory, alongside capacity, resource trends, and privacy-controlled user consumption.</p></article>
+          <article class="feature"><i class="feature-icon" data-lucide="gauge" aria-hidden="true"></i><h3>Copilot inventory and credits</h3><p>Filter GitHub harness and spend risk, review human-readable controls, and submit audited agent-limit changes.</p></article>
         </div>
       </div>
     </section>
@@ -480,18 +480,18 @@
           <div class="steps" data-reveal>
             <article class="step"><h3>Download the managed ZIP</h3><p>Keep the archive intact. Power Apps imports the ZIP directly; do not extract it.</p></article>
             <article class="step"><h3>Import in Power Apps</h3><p>Open <strong>Solutions</strong>, choose <strong>Import solution</strong>, upload the ZIP, and complete the import wizard.</p></article>
-            <article class="step"><h3>Configure connections and tenant</h3><p>Bind <code>pvci_dataversesync</code> to Dataverse, <code>pvci_licensinghttp</code> to Web Contents, and <code>pvci_powerplatformadminv2</code> to Power Platform for Admins V2. Then set the required <code>pvci_CreditReportingTenantId</code> environment variable.</p></article>
-            <article class="step"><h3>Activate and run the sync flows</h3><p>Run transcript sync, credit collection, and tenant inventory once to verify each connection. Future batches run on their schedules.</p></article>
+            <article class="step"><h3>Configure connections and tenant</h3><p>Bind <code>pvci_dataversesync</code> to Dataverse, <code>pvci_licensinghttp</code> to the licensing API, <code>pvci_powerplatformapi</code> to <code>api.powerplatform.com</code>, and <code>pvci_powerplatformadminv2</code> to Power Platform for Admins V2. Then set <code>pvci_CreditReportingTenantId</code>.</p></article>
+            <article class="step"><h3>Activate and run the flows</h3><p>Verify transcript, credit, inventory, governance collection, and the threshold processor with a no-op request before scheduling.</p></article>
             <article class="step"><h3>Assign access</h3><p>Grant app and Dataverse access, then follow the <a href="https://github.com/pavecer/mcs-transcript-analyzer/blob/main/docs/permissions-and-inventory.md">permissions and inventory checklist</a> for collector and cross-environment roles.</p></article>
           </div>
           <aside class="package" data-reveal aria-label="Download package details">
             <h3>PV Conversation Insights</h3>
-            <div class="package-meta">Managed solution · version <span data-release-version="core">1.2.0.0</span></div>
+            <div class="package-meta">Managed solution · version <span data-release-version="core">1.3.0.0</span></div>
             <ul class="package-list">
               <li><i data-lucide="check" aria-hidden="true"></i><span>Dataverse schema, forms, and views</span></li>
               <li><i data-lucide="check" aria-hidden="true"></i><span>Model-driven investigation app</span></li>
               <li><i data-lucide="check" aria-hidden="true"></i><span>Custom API and sandboxed plugin</span></li>
-              <li><i data-lucide="check" aria-hidden="true"></i><span>Transcript, Copilot Credit, and tenant inventory collection flows</span></li>
+              <li><i data-lucide="check" aria-hidden="true"></i><span>Collection flows plus audited agent-limit request processing</span></li>
             </ul>
             <div class="trust-panel">
               <div class="trust-head"><i data-lucide="shield-alert" aria-hidden="true"></i><strong>Import only what you trust</strong></div>
@@ -512,7 +512,7 @@
         </div>
 
         <div class="command" data-reveal>
-          <code id="import-command">pac solution import --path pvConversationInsights-managed-1.2.0.0.zip --activate-plugins</code>
+          <code id="import-command">pac solution import --path pvConversationInsights-managed-1.3.0.0.zip --activate-plugins</code>
           <button class="icon-button" id="copy-command" type="button" title="Copy import command" aria-label="Copy import command"><i data-lucide="copy" aria-hidden="true"></i></button>
         </div>
 
@@ -531,7 +531,7 @@
           <aside class="package preview-package" aria-label="Preview code app download details">
             <span class="preview-badge">Preview · unsupported</span>
             <h3>Conversation Insights Explorer</h3>
-            <div class="package-meta">Managed code-app solution · version <span data-release-version="codeApp">1.2.0.0</span></div>
+            <div class="package-meta">Managed code-app solution · version <span data-release-version="codeApp">1.3.0.0</span></div>
             <div class="trust-panel">
               <div class="trust-head"><i data-lucide="triangle-alert" aria-hidden="true"></i><strong>Understand the preview risk</strong></div>
               <p>This package uses Power Apps code apps and preview ALM capabilities. Preview features can change, have limited support, or become unavailable.</p>
