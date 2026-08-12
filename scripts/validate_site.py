@@ -10,7 +10,7 @@ from html.parser import HTMLParser
 from pathlib import Path
 from urllib.parse import urlparse
 
-from update_release_manifest import MANIFEST_PATH, inspect_package, read_config
+from update_release_manifest import FULL_COMMIT_PATTERN, MANIFEST_PATH, inspect_package, read_config
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -87,6 +87,8 @@ def validate_packages(config: dict[str, dict[str, str]]) -> None:
     if not MANIFEST_PATH.is_file():
         fail(f"missing release manifest: {MANIFEST_PATH.relative_to(ROOT)}")
     manifest = json.loads(MANIFEST_PATH.read_text(encoding="utf-8"))
+    if not FULL_COMMIT_PATTERN.fullmatch(manifest.get("sourceCommit", "")):
+        fail("release manifest sourceCommit must be a full 40-character lowercase Git commit SHA")
     for key, package in actual.items():
         published = manifest.get("artifacts", {}).get(key)
         if published != package:
