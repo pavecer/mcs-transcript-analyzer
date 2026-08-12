@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="MCS Transcript Analyzer brings Copilot Studio conversation identity, latency, reasoning, tool calls, and flow runs into Dataverse.">
+  <meta name="description" content="MCS Transcript Analyzer brings Copilot Studio conversation evidence, Copilot Credit usage, capacity, inventory, and audited agent threshold governance into Dataverse.">
   <title>MCS Transcript Analyzer</title>
   <script>
     (() => {
@@ -217,6 +217,24 @@
     .feature h3 { margin: 50px 0 10px; font-size: 20px; }
     .feature p { margin: 0; color: var(--cp-text-muted); font-size: 15px; }
 
+    .credit-offer { border-block: 1px solid var(--cp-border); }
+    .credit-row { display: grid; grid-template-columns: minmax(190px, 0.7fr) minmax(0, 1.3fr) minmax(0, 1fr); border-bottom: 1px solid var(--cp-border); }
+    .credit-row:last-child { border-bottom: 0; }
+    .credit-row > div { padding: 22px 24px; border-right: 1px solid var(--cp-border); }
+    .credit-row > div:last-child { border-right: 0; }
+    .credit-row h3 { margin: 0; font-size: 18px; }
+    .credit-row p { margin: 0; color: var(--cp-text-muted); font-size: 14px; }
+    .credit-row .credit-source { color: var(--cp-accent); font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; }
+    .credit-lifecycle { display: grid; grid-template-columns: repeat(3, 1fr); margin-top: 42px; border-block: 1px solid var(--cp-border); }
+    .credit-state { padding: 22px 24px; border-right: 1px solid var(--cp-border); }
+    .credit-state:last-child { border-right: 0; }
+    .credit-state strong { display: block; margin-bottom: 6px; color: var(--cp-accent); font-size: 13px; text-transform: uppercase; letter-spacing: 0.06em; }
+    .credit-state span { display: block; color: var(--cp-text-muted); font-size: 14px; }
+    .credit-boundary { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(260px, 0.8fr); gap: 36px; align-items: start; margin-top: 36px; }
+    .credit-boundary h3 { margin: 0 0 8px; font-size: 20px; }
+    .credit-boundary p { margin: 0; color: var(--cp-text-muted); }
+    .credit-boundary ul { margin: 0; padding-left: 20px; color: var(--cp-text-muted); }
+
     .comparison { width: 100%; border-collapse: collapse; background: var(--cp-surface); border: 1px solid var(--cp-border); }
     .comparison th, .comparison td { padding: 17px 20px; text-align: left; border-bottom: 1px solid var(--cp-border); }
     .comparison th { color: var(--cp-text-muted); font-size: 13px; text-transform: uppercase; letter-spacing: 0.05em; }
@@ -337,6 +355,13 @@
       .signal:nth-child(-n+2) { border-bottom: 1px solid var(--cp-highlight); }
       .section-head { grid-template-columns: 1fr; gap: 18px; }
       .feature-grid { grid-template-columns: repeat(2, 1fr); }
+      .credit-row { grid-template-columns: 1fr; }
+      .credit-row > div { border-right: 0; border-bottom: 1px solid var(--cp-border); }
+      .credit-row > div:last-child { border-bottom: 0; }
+      .credit-lifecycle { grid-template-columns: 1fr; }
+      .credit-state { border-right: 0; border-bottom: 1px solid var(--cp-border); }
+      .credit-state:last-child { border-bottom: 0; }
+      .credit-boundary { grid-template-columns: 1fr; }
       .architecture { grid-template-columns: 1fr; }
       .arch-arrow { transform: rotate(90deg); min-height: 34px; }
       .install-layout { grid-template-columns: 1fr; }
@@ -378,6 +403,7 @@
       <a class="wordmark" href="#top">MCS Transcript Analyzer</a>
       <div class="nav-links">
         <a href="#capabilities">Capabilities</a>
+        <a href="#credits">Credits</a>
         <a href="#architecture">Architecture</a>
         <a href="#install">Install</a>
         <a class="nav-github" href="https://github.com/pavecer/mcs-transcript-analyzer" aria-label="View source on GitHub">
@@ -429,6 +455,54 @@
           <article class="feature"><i class="feature-icon" data-lucide="workflow" aria-hidden="true"></i><h3>Flow correlation</h3><p>Match Power Automate runs to session windows and surface failed or unusually slow actions.</p></article>
           <article class="feature"><i class="feature-icon" data-lucide="gauge" aria-hidden="true"></i><h3>Copilot inventory and credits</h3><p>Filter GitHub harness and spend risk, review human-readable controls, and submit audited agent-limit changes.</p></article>
         </div>
+      </div>
+    </section>
+
+    <section class="section alt" id="credits">
+      <div class="shell">
+        <div class="section-head" data-reveal>
+          <div><span class="section-kicker">Copilot Credit operations</span><h2>Usage truth and guarded controls</h2></div>
+          <p class="section-intro">Version 1.3 separates billing facts, tenant inventory, threshold state, and audited changes so operators can act without presenting correlation as a bill.</p>
+        </div>
+        <div class="credit-offer" data-reveal>
+          <article class="credit-row">
+            <div><span class="credit-source">Licensing API</span><h3>Usage and capacity</h3></div>
+            <div><p><strong>Actual billed and non-billed</strong> resource facts, tenant-wide user facts, environment capacity, source-period trends, and collector freshness.</p></div>
+            <div><p>Resource and user projections remain separate totals. They are not assigned to one conversation, evaluation, or user-agent pair.</p></div>
+          </article>
+          <article class="credit-row">
+            <div><span class="credit-source">Admin V2 + One Inventory</span><h3>Environment and agent inventory</h3></div>
+            <div><p>Human-readable environments and agents remain visible even with zero credit usage. Direct <code>isCLIAgent</code> evidence supports GitHub, not-GitHub, and Unknown filters.</p></div>
+            <div><p>Missing evidence stays Unknown. A false value means only Not GitHub Copilot harness; no alternative harness is guessed.</p></div>
+          </article>
+          <article class="credit-row">
+            <div><span class="credit-source">Power Platform API</span><h3>Threshold governance</h3></div>
+            <div><p>Review monthly limit, consumption, notification percentage, stop-at-limit, explicit stop, and <strong>Spend-risk bands</strong>: Critical, High, Watch, Healthy, or No limit.</p></div>
+            <div><p>Risk is a triage calculation over the latest threshold snapshot, not a billing severity returned by Microsoft.</p></div>
+          </article>
+          <article class="credit-row">
+            <div><span class="credit-source">Dataverse request + processor</span><h3>Audited agent changes</h3></div>
+            <div><p>Credit Administrators submit desired and expected state with justification. A privileged serial processor re-reads current state, changes one agent threshold, reads back, and stores before/after evidence.</p></div>
+            <div><p>The browser never receives licensing API authority. Active requests disable duplicate submissions, and stale state is rejected before a write.</p></div>
+          </article>
+        </div>
+        <div class="credit-lifecycle" data-reveal aria-label="Threshold request lifecycle">
+          <div class="credit-state"><strong>Requested</strong><span>Persisted as Pending with server time; waiting for the processor.</span></div>
+          <div class="credit-state"><strong>Processing</strong><span>Current platform state and every expected value are being validated.</span></div>
+          <div class="credit-state"><strong>Terminal outcome</strong><span>Applied, Review needed, Failed, or Verify applied. The last state means a PUT was attempted but read-back did not complete.</span></div>
+        </div>
+        <div class="credit-boundary" data-reveal>
+          <div>
+            <h3>What the solution does not claim</h3>
+            <p>No reviewed source exposes a billing-event ID shared with transcripts or evaluations. Per-user limits are not available from a documented Copilot Studio API, so PVCI reports user consumption but does not invent configurable user controls.</p>
+          </div>
+          <ul>
+            <li>No environment allocation, TenantPool, or PayGo mutation</li>
+            <li>No exact session, tool, evaluation, or user-agent credit allocation</li>
+            <li>No separate human approval stage; role assignment is the authorization gate</li>
+          </ul>
+        </div>
+        <p class="arch-detail" data-reveal>Read the full <a href="https://github.com/pavecer/mcs-transcript-analyzer/blob/main/docs/credit-reporting.md">Copilot Credit reporting guide</a> for API grain, risk rules, privacy, request states, security roles, and setup boundaries.</p>
       </div>
     </section>
 
@@ -565,7 +639,7 @@
   <footer>
     <div class="shell footer-inner">
       <span>© <span id="year"></span> MCS Transcript Analyzer · MIT licensed · Not affiliated with Microsoft</span>
-      <div class="footer-links"><a href="https://github.com/pavecer/mcs-transcript-analyzer/blob/main/docs/permissions-and-inventory.md">Permissions</a><a href="https://github.com/pavecer/mcs-transcript-analyzer/blob/main/docs/operations.md">Operations</a><a href="https://github.com/pavecer/mcs-transcript-analyzer/blob/main/SECURITY.md">Security</a></div>
+      <div class="footer-links"><a href="https://github.com/pavecer/mcs-transcript-analyzer/blob/main/docs/credit-reporting.md">Credits</a><a href="https://github.com/pavecer/mcs-transcript-analyzer/blob/main/docs/permissions-and-inventory.md">Permissions</a><a href="https://github.com/pavecer/mcs-transcript-analyzer/blob/main/docs/operations.md">Operations</a><a href="https://github.com/pavecer/mcs-transcript-analyzer/blob/main/SECURITY.md">Security</a></div>
     </div>
   </footer>
 

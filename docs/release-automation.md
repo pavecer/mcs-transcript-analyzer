@@ -29,6 +29,28 @@ manually. It uses the following sequence:
 
 Failures stop before the artifact commit. The previously validated downloads remain live.
 
+## Release documentation gate
+
+Product behavior and public documentation are coupled through
+`config/documentation-contract.json`. The contract inventories release-facing Markdown/HTML
+surfaces, records product inputs that define Copilot Credit behavior, derives component counts from
+the solution contracts, and requires capability evidence on the appropriate surfaces.
+
+Run both gates before release:
+
+```bash
+python3 scripts/validate_documentation.py
+python3 scripts/validate_site.py
+```
+
+If a listed product input changes, the documentation validator fails until every indexed surface
+has been reviewed. After the review, run `python3 scripts/validate_documentation.py --print-digest`
+and update `productSourceDigest` in the contract. Do not update the digest merely to make CI green.
+
+Agents should load the checked-in `.github/skills/release-documentation/SKILL.md` workflow for
+README, docs, release-package, or public Pages changes. The skill is guidance; the CI `site` job and
+Pages workflow run the deterministic gate and are the enforcement boundary.
+
 ## Important deployment boundary
 
 The workflow deploys the code app because `pac code push` supports deterministic solution
@@ -141,11 +163,13 @@ For every version change:
 3. Update both package versions, filenames, and the code-app core-table dependency contract in
   `config/release-packages.json`.
 4. Update the public page's version and install content.
-5. Export both managed ZIPs, regenerate `release-manifest.json`, and run
+5. Review all indexed documentation surfaces, update the documentation digest when product inputs
+  changed, and run `scripts/validate_documentation.py`.
+6. Export both managed ZIPs, regenerate `release-manifest.json`, and run
   `scripts/validate_site.py`.
-6. Import core first and code app second into a clean sandbox. For an existing installation,
+7. Import core first and code app second into a clean sandbox. For an existing installation,
   confirm both imports are recognized as upgrades and retained data remains available.
-7. Publish through a pull request. Confirm CI, the refresh workflow, Pages deployment, public
+8. Publish through a pull request. Confirm CI, the refresh workflow, Pages deployment, public
   manifest versions and hashes, and both public downloads.
 
 The release validator rejects filename/version drift, unsynchronized core source versions,

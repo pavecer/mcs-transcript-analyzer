@@ -20,6 +20,8 @@ jobs:
       - run: pip install -r scripts/transcript_insights/requirements.txt
       - name: Compile
         run: python -m compileall -q scripts/transcript_insights
+      - name: Enforce shared VS Code browser policy
+        run: python3 scripts/validate_browser_policy.py
 
   plugin:
     runs-on: ubuntu-latest
@@ -64,6 +66,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Validate release documentation coverage
+        run: python3 scripts/validate_documentation.py
       - name: Validate Pages site and install package
         run: python3 scripts/validate_site.py
 

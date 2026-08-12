@@ -1,9 +1,10 @@
 # Dataverse data model
 
 PV Conversation Insights stores derived transcript analytics, tenant inventory, and Copilot Credit
-reporting facts in sixteen custom Dataverse tables. It reads native Dataverse, Power Platform
+reporting facts in 16 custom Dataverse tables. It reads native Dataverse, Power Platform
 inventory, and licensing data but does
-not modify the source records or capacity settings. Logical names are used throughout this
+not modify transcript, usage, capacity-allocation, tenant-pool, or PAYG source records. Its only
+platform mutation is an explicitly requested, audited per-resource threshold change. Logical names are used throughout this
 reference because they are shared by the plugin, Python tools, code app, and Web API.
 
 ## Relationship model
@@ -33,7 +34,7 @@ map rows cache resolution results; each session also retains a direct `systemuse
 ## Table inventory
 
 | Purpose | Logical name | Grain | Application key |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | Transcript session | `pvci_transcriptsession` | One row per Copilot Studio transcript | `pvci_transcriptid` |
 | Transcript turn | `pvci_transcriptturn` | One retained activity per transcript | Session + `pvci_turnindex` |
 | Identity map | `pvci_transcriptidentitymap` | One row per observed Entra object ID | `pvci_aadobjectid` |
@@ -96,12 +97,18 @@ identity, desired and expected state, justification, processing status/timestamp
 JSON, and bounded errors. Credit Administrators can create/read requests; the flow owner writes
 processing outcomes. Analysts and Privacy Approvers have read-only audit access.
 
+The lifecycle values are `Pending`, `Processing`, `Succeeded`, `Stale`, `Failed`, and
+`AppliedUnverified`. The synchronous Create plug-in always forces `Pending` and server time and
+removes caller-supplied processed time, before JSON, after JSON, and error. Credit Administrators
+cannot update the row. `AppliedUnverified` is intentionally distinct from Failed because the
+per-resource threshold PUT may have succeeded even when read-back or audit persistence did not.
+
 ### `pvci_creditusage`
 
 Stores authoritative billed and non-billed PPAC facts at the source grain. Important groups are:
 
 | Group | Columns |
-|---|---|
+| --- | --- |
 | Scope | `pvci_tenantid`, `pvci_environmentid`, `pvci_resourceid`, `pvci_agentid`, `pvci_agentname` |
 | Period | `pvci_usagedate`, `pvci_fromdate`, `pvci_todate`, `pvci_importedon` |
 | Billing | `pvci_entitlementid`, `pvci_sourceunit`, `pvci_billedcredits`, `pvci_nonbilledcredits` |
@@ -150,7 +157,7 @@ user information, environment provenance, metrics, outcomes, and bounded JSON pa
 ### Identity and provenance
 
 | Column | Type | Meaning |
-|---|---|---|
+| --- | --- | --- |
 | `pvci_name` | Text | User, channel, and start-time label |
 | `pvci_transcriptid` | Text | Native `conversationtranscriptid` and idempotency key |
 | `pvci_botid` | Text | Stable agent ID from `metadata.BotId` |
@@ -173,7 +180,7 @@ where the transcript was read, while tenant and agent identity come from transcr
 ### User and conversation
 
 | Column | Type | Meaning |
-|---|---|---|
+| --- | --- | --- |
 | `pvci_userid` | Lookup to `systemuser` | User resolved from `from.aadObjectId` |
 | `pvci_useraadobjectid` | Text | Entra object ID observed in activities |
 | `pvci_userupn` | Text | Resolved `systemuser.domainname` |
@@ -190,7 +197,7 @@ where the transcript was read, while tenant and agent identity come from transcr
 ### Metrics and outcomes
 
 | Group | Columns | Meaning |
-|---|---|---|
+| --- | --- | --- |
 | Activity counts | `pvci_activitycount`, `pvci_messagecount`, `pvci_eventcount` | Parsed activity totals |
 | Turn counts | `pvci_userturncount`, `pvci_agentturncount`, `pvci_turncount` | Derived and `SessionInfo` counts |
 | Reply latency | `pvci_firstresponsems`, `pvci_avgresponsems`, `pvci_maxresponsems` | User message to first agent reply |
@@ -202,7 +209,7 @@ where the transcript was read, while tenant and agent identity come from transcr
 ### JSON and legacy Monitor columns
 
 | Column | Contents |
-|---|---|
+| --- | --- |
 | `pvci_activitiesjson` | Filtered Bot Framework activities |
 | `pvci_conversationjson` | Ordered user/agent conversation |
 | `pvci_planeventsjson` | `DynamicPlan*` reasoning events |
@@ -218,7 +225,7 @@ Memo values are capped at 900,000 characters, below the Dataverse 1,048,576-char
 ## `pvci_transcriptturn`
 
 | Column | Type | Meaning |
-|---|---|---|
+| --- | --- | --- |
 | `pvci_name` | Text | Sequence, speaker, and activity type |
 | `pvci_sessionid` | Lookup to session | Owning session |
 | `pvci_transcriptid` | Text | Parent correlation key |
@@ -241,7 +248,7 @@ deleting stale rows so a failed run cannot leave an empty session.
 ## `pvci_transcriptidentitymap`
 
 | Column | Type | Meaning |
-|---|---|---|
+| --- | --- | --- |
 | `pvci_name` | Text | Display name or Entra object ID |
 | `pvci_aadobjectid` | Text | Identity-map key |
 | `pvci_userprincipalname` | Text | Resolved UPN/domain name |
@@ -258,7 +265,7 @@ A row can be created as a pending enrichment placeholder. `pvci_fetchedon` indic
 action, response, and repetition payload collection completed.
 
 | Group | Columns |
-|---|---|
+| --- | --- |
 | Identity | `pvci_name`, `pvci_runname`, `pvci_flowapiid`, `pvci_workflowentityid`, `pvci_flowdisplayname` |
 | Correlation | `pvci_transcriptid` |
 | Lifecycle | `pvci_status`, `pvci_starttime`, `pvci_endtime`, `pvci_durationms`, `pvci_fetchedon` |
@@ -268,7 +275,7 @@ action, response, and repetition payload collection completed.
 ## `pvci_syncstate`
 
 | Column | Type | Meaning |
-|---|---|---|
+| --- | --- | --- |
 | `pvci_name` | Text | Scope key, currently `default` |
 | `pvci_lastsyncedcreatedon` | Date/time | Inclusive transcript watermark |
 | `pvci_lastrunon` | Date/time | Last invocation |
@@ -282,7 +289,7 @@ upsert is idempotent and `gt` could miss records created in the same timestamp t
 ## Native tables read
 
 | Native table | Use |
-|---|---|
+| --- | --- |
 | `conversationtranscript` | Metadata and Bot Framework activity stream |
 | `systemuser` | Resolve end-user identity |
 | `bot` | Resolve agent display name |

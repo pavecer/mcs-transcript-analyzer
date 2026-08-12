@@ -15,7 +15,7 @@ what it did.
 ## What you get
 
 | Surface | What it is |
-|---|---|
+| --- | --- |
 | **Dataverse solution** | 16 custom tables, views, forms, 3 application roles, a model-driven app, 2 Custom APIs, and 5 scheduled flows |
 | **Model-driven app** | GA, standard-licensed. Transcript operations plus Credits and Capacity grids and evidence forms |
 | **Code app** (preview) | React/Vite triage UI: replay, trends, flow failure map, and Copilot Credit reporting |
@@ -43,6 +43,21 @@ what it did.
 - **User support** — separate user-period facts display source GUIDs by default; an audited shared
    approval can resolve names in both apps and revocation removes them again
 
+### Copilot Credit capabilities
+
+| Capability | What the solution provides | Important boundary |
+| --- | --- | --- |
+| Usage and capacity | Actual billed/non-billed resource facts, tenant-wide user facts, environment capacity, source-period trends, and collector health | Resource and user projections are separate totals; neither is allocated to a conversation |
+| Tenant inventory | Environment and agent inventory independent of usage, including zero-usage agents and exact GitHub harness evidence | Missing `isCLIAgent` evidence remains Unknown; false means only Not GitHub Copilot harness |
+| Governance | Current monthly limit, consumption, notification, stop-at-limit, explicit-stop state, and Critical/High/Watch/Healthy/No limit risk grouping | Threshold snapshots are source facts; environment allocation and tenant-pool settings stay read-only |
+| Audited changes | Credit Administrators submit desired and expected state with justification; the processor validates, writes one agent threshold, reads back, and records before/after evidence | The browser never receives licensing API authority; active requests prevent duplicate submissions |
+
+Request status is visible on each agent as **Requested**, **Processing**, **Applied**, **Review
+needed**, **Failed**, or **Verify applied**. Per-user Copilot Studio limits are not available from a
+documented API, and the solution does not invent them. See
+[Copilot Credit reporting](docs/credit-reporting.md) for source grain, security, risk rules, and
+operational boundaries.
+
 ---
 
 ## Why not the Monitor export?
@@ -50,7 +65,7 @@ what it did.
 Copilot Studio surfaces transcripts in two places, and they are **not** the same data.
 
 | | Monitor / Analytics export | `conversationtranscripts` (used here) |
-|---|---|---|
+| --- | --- | --- |
 | Format | CSV, one row per session | JSON, full Bot Framework activity stream |
 | End-user identity | ✗ | ✅ `from.aadObjectId` |
 | Reasoning / orchestration events | ✗ | ✅ full `DynamicPlan*` trace |
@@ -69,8 +84,8 @@ Power Apps under **Solutions > Import solution**. The source deployment below is
 contributors and environments where you want to rebuild every component.
 
 Before enabling collection, review [permissions and tenant inventory](docs/permissions-and-inventory.md).
-Version `1.3.0.0` includes **PVCI Analyst**, **PVCI Privacy Approver**, and **PVCI Credit
-Administrator** roles, separate inventory/governance collectors, exact GitHub harness filtering,
+Version `1.3.0.0` includes **PVCI Analyst**, **PVCI Privacy Approver**, and **PVCI Credit Administrator**
+roles, separate inventory/governance collectors, exact GitHub harness filtering,
 spend-risk grouping, threshold snapshots, and an audited privileged processor. Tenant roles and
 target-local connections remain installation steps that a managed solution cannot grant.
 
@@ -81,7 +96,13 @@ Azure CLI, and a Dataverse environment where you hold System Customizer.
 git clone https://github.com/pavecer/mcs-transcript-analyzer.git
 cd mcs-transcript-analyzer
 
+# macOS / Linux
 python3 -m venv .venv && source .venv/bin/activate
+
+# Windows PowerShell
+py -3 -m venv .venv
+.\.venv\Scripts\Activate.ps1
+
 pip install -r scripts/transcript_insights/requirements.txt
 
 az login --tenant <your-tenant-id>          # silent tokens from here on
@@ -119,6 +140,11 @@ python3 scripts/transcript_insights/create_credit_sync_flow.py --config $CFG \
 python3 scripts/transcript_insights/create_inventory_sync_flow.py --config $CFG \
    --admin-connection-id shared-powerplatform-00000000
 
+# Create a separate api.powerplatform.com connection before the first command.
+python3 scripts/transcript_insights/create_credit_governance_flow.py --config $CFG \
+   --http-connection-id shared-webcontents-00000000
+python3 scripts/transcript_insights/create_credit_governance_processor_flow.py --config $CFG
+
 python3 scripts/transcript_insights/sync_transcripts.py --config $CFG --full   # initial load
 ```
 
@@ -138,6 +164,9 @@ npx power-apps add-data-source --api-id dataverse --resource-name pvci_credituse
 npx power-apps add-data-source --api-id dataverse --resource-name pvci_creditprivacysetting --org-url <org-url>
 npx power-apps add-data-source --api-id dataverse --resource-name pvci_environmentinventory --org-url <org-url>
 npx power-apps add-data-source --api-id dataverse --resource-name pvci_inventorysyncrun --org-url <org-url>
+npx power-apps add-data-source --api-id dataverse --resource-name pvci_agentthresholdsnapshot --org-url <org-url>
+npx power-apps add-data-source --api-id dataverse --resource-name pvci_governancesyncrun --org-url <org-url>
+npx power-apps add-data-source --api-id dataverse --resource-name pvci_thresholdchangerequest --org-url <org-url>
 npm run build && npx power-apps push
 ```
 
@@ -147,7 +176,7 @@ Full walkthrough: [docs/operations.md](docs/operations.md).
 
 ## How the sync works
 
-```
+```text
 Dataverse conversationtranscript
         │
         │  pvci_SyncConversationTranscripts   (Custom API + sandboxed plugin)
@@ -165,7 +194,7 @@ already-ingested one is skipped without re-parsing or rewriting. `Reprocess: tru
 deliberate escape hatch when parser logic changes.
 
 | Parameter | Default | Effect |
-|---|---|---|
+| --- | --- | --- |
 | *(none)* | — | Incremental, additive |
 | `FullSync` | `false` | Rescan from the beginning, still additive |
 | `Reprocess` | `false` | Rewrite already-ingested sessions |
@@ -195,12 +224,18 @@ These are real and worth understanding before you rely on the numbers.
    supportable surface; the code app is the richer one.
 6. **Inputs to connector actions are not logged** in the transcript itself — only outputs and
    exceptions. Full inputs come from the flow run detail fetch.
+7. **Credits are aggregate source facts.** No reviewed source exposes a billing-event ID shared
+   with one transcript, evaluation, tool call, or user-agent pair. Correlation is shown as context,
+   never as exact allocation.
+8. **Governance writes are deliberately narrow.** Version `1.3.0.0` changes only one agent/resource
+   threshold per audited request. Per-user limits, environment allocations, TenantPool, and PayGo
+   mutation are not implemented.
 
 ---
 
 ## Repository layout
 
-```
+```text
 config/      environment configuration (only *.sample.json is committed)
 docs/        API reference, architecture, operations, findings
 plugin/      C# Dataverse plugin behind the Custom API (net462)

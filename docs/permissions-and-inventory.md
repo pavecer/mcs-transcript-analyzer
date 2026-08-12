@@ -29,7 +29,7 @@ There are three independent permission boundaries:
 | Collect Copilot Credit usage | Owner of `pvci_licensinghttp` with the Power Platform administrative access accepted by the licensing service, plus a premium Power Automate entitlement | No; the connection is target-local |
 | Read and write PVCI data | Owner of `pvci_dataversesync` with access to the PVCI tables and Custom APIs in the collector environment | No; the connection is target-local |
 | Enumerate tenant environments and base agents | Owner of `pvci_powerplatformadminv2` with **Power Platform Administrator** tenant role | Flow and reference packaged; target connection/role external |
-| Read agent credit threshold controls | Owner of `pvci_powerplatformapi` with Power Platform licensing administration access | Read-only flow/reference packaged; target connection/role external |
+| Read agent credit threshold controls | Owner of `pvci_powerplatformapi` with Power Platform licensing administration access | Read-only collector/reference packaged; target connection/role external |
 | Submit agent threshold changes | **PVCI Credit Administrator** plus app sharing | Role/request table/processor packaged; privileged flow connection external |
 | Read detailed agent configuration in every environment | Inventory identity with appropriate Dataverse access in every source environment | Detailed enrichment not implemented in `1.3.0.0` |
 | Open the apps as an analyst | **PVCI Analyst** plus model-driven/code-app sharing | Role packaged; assignments and code-app sharing external |
@@ -84,14 +84,19 @@ In the environment where PVCI is installed:
    cloud, set both resource URLs to `https://licensing.powerplatform.microsoft.com/`.
 3. Create `pvci_powerplatformadminv2` with **Power Platform for Admins V2** and bind it to the
    dedicated Power Platform Administrator account.
-4. Create `pvci_dataversesync` with Microsoft Dataverse and bind all solution connection
+4. Create `pvci_powerplatformapi` with **HTTP with Microsoft Entra ID (preauthorized)**. Set both
+   resource URLs to `https://api.powerplatform.com/` and bind it to the dedicated licensing
+   administrator account. Do not reuse `pvci_licensinghttp`; the audiences differ.
+5. Create `pvci_dataversesync` with Microsoft Dataverse and bind all solution connection
    references to the intended dedicated account.
-5. Set the current value of `pvci_CreditReportingTenantId` to the tenant GUID. Do not put a
+6. Set the current value of `pvci_CreditReportingTenantId` to the tenant GUID. Do not put a
    tenant-specific default value in the managed solution.
-6. Confirm DLP and Advanced Connector Policies allow Microsoft Dataverse, HTTP with Microsoft
+7. Confirm DLP and Advanced Connector Policies allow Microsoft Dataverse, HTTP with Microsoft
    Entra ID, and Power Platform for Admins V2 in the collector environment.
-7. Save both collectors, run each manually, and activate recurrence only after both smoke tests
-   pass.
+8. Save all three collectors, run each manually, and activate recurrence only after all three
+   smoke tests pass.
+9. Keep `PVCI Apply Credit Governance Requests (scheduled)` stopped until an empty-queue run and
+   a no-op threshold request both succeed with identical before/after control values.
 
 ## Understand the current inventory boundary
 
@@ -143,14 +148,16 @@ the required role. Power Automate runs with the identities bound to its connecti
 
 ## Assign application users
 
-1. Share the model-driven app with users or groups and assign **PVCI Analyst** or **PVCI Privacy
-   Approver**.
+1. Share the model-driven app with users or groups and assign **PVCI Analyst**, **PVCI Privacy
+   Approver**, or **PVCI Credit Administrator** according to duty.
 2. Share the code app separately through **Apps** > **Manage access**. The sharing dialog lists its
    Dataverse data sources; users still need one of the same packaged roles.
 3. Give **PVCI Privacy Approver** only to users authorized to disclose names. The app confirmation
    is not the security boundary; Dataverse write privilege is.
 4. Verify the Privacy Approval record after every reveal/revoke. `Approved By`, `Approved On`, and
    `Revoked On` are stamped by the server-side plug-in, not trusted from the browser.
+5. Give **PVCI Credit Administrator** only to threshold-change operators. The role can create and
+   read requests but cannot update processor outcomes or call the licensing API from the browser.
 
 Tenant Power Platform Administrator and future per-environment detailed-enrichment access remain
 external because a managed Dataverse solution cannot grant tenant or other-environment roles.

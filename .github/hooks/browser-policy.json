@@ -1,0 +1,12 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "type": "command",
+        "command": "python3 .github/hooks/block_external_browser.py",
+        "cwd": ".",
+        "timeout": 5
+      }
+    ]
+  }
+}

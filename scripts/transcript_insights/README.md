@@ -8,7 +8,7 @@ and carries end-user identity. See `docs/customer-facing/ConversationTranscripts
 Run in this order against a fresh environment:
 
 ```bash
-# 1. Schema: solution, publisher, 4 tables, lookups
+# 1. Schema: solution, publisher, 16 custom tables, lookups
 python3 scripts/transcript_insights/provision_dataverse_solution_webapi.py \
   --config config/transcript_solution_config.dev.json \
   --definition solution/pvConversationInsights/solution-definition.json
@@ -33,7 +33,7 @@ user via `from.aadObjectId` → `systemuser`, and upserts into `pvci_transcripts
 `pvci_transcriptturn`, `pvci_transcriptidentitymap`. Watermark lives in `pvci_syncstate`.
 
 | Flag | Effect |
-|---|---|
+| --- | --- |
 | *(none)* | Incremental from stored watermark |
 | `--full` | Reprocess everything (idempotent) |
 | `--since 2026-07-01T00:00:00Z` | Explicit start |
@@ -45,10 +45,15 @@ their turns replaced.
 
 ### Scheduling
 
-`run_sync.sh` is a cron/launchd-ready wrapper:
+`run_sync.sh` is the bash/cron/launchd wrapper for macOS/Linux, and `run_sync.ps1` is the equivalent for Windows PowerShell:
 
 ```bash
 */15 * * * * /path/to/scripts/transcript_insights/run_sync.sh >> /var/log/pvci_sync.log 2>&1
+```
+
+```powershell
+$env:PVCI_CONFIG = 'config/transcript_solution_config.sandbox.json'
+.\scripts\transcript_insights\run_sync.ps1
 ```
 
 Override the target with `PVCI_CONFIG=config/transcript_solution_config.sandbox.json`.
@@ -85,8 +90,9 @@ If tokens expire: `az login --tenant <tenantId>`.
   threshold collector using a dedicated `api.powerplatform.com` HTTP with Entra ID connection.
 - `create_credit_governance_processor_flow.py` — creates the stopped privileged processor for
   validated threshold requests with stale-state detection and before/after audit.
-- `create_security_roles.py` — creates PVCI Analyst and PVCI Privacy Approver from the App Opener
-  baseline, adds least-privilege table access, and maps both roles to the model-driven app.
+- `create_security_roles.py` — creates PVCI Analyst, PVCI Privacy Approver, and PVCI Credit Administrator
+  from the App Opener baseline, adds least-privilege table access, and maps all three
+  roles to the model-driven app.
 - `ingest_monitor_transcripts.py` — Monitor CSV ingestion (**blocked**: gateway returns
   `403 UnauthenticatedUser` for non-first-party tokens).
 - `build_dataverse_upsert_payload.py` — shapes Monitor CSV rows for upsert.
@@ -149,7 +155,7 @@ python3 scripts/transcript_insights/sync_multi_environment.py \
 Useful options:
 
 | Flag | Effect |
-|---|---|
+| --- | --- |
 | `--full` | Reprocess all configured environments |
 | `--since <iso>` | Override watermark for all environments |
 | `--limit N` | Cap transcripts per environment |

@@ -9,7 +9,7 @@ cp config/transcript_solution_config.sample.json config/transcript_solution_conf
 ```
 
 | Key | Notes |
-|---|---|
+| --- | --- |
 | `tenantId` | Entra tenant GUID |
 | `environmentId` | Required Power Platform environment GUID from the maker portal URL; stored in `pvci_environmentid` |
 | `environmentName` | Optional friendly-name override; sync otherwise reads `organization.friendlyname` |
@@ -31,7 +31,12 @@ If tokens expire: `az login --tenant <tenantId>`.
 
 ```bash
 CFG=config/transcript_solution_config.dev.json
+
+# macOS / Linux
 source .venv/bin/activate
+
+# Windows PowerShell
+.\.venv\Scripts\Activate.ps1
 
 # 1. Schema — idempotent, safe to re-run after editing solution-definition.json
 python3 scripts/transcript_insights/provision_dataverse_solution_webapi.py \
@@ -65,7 +70,7 @@ any environment.
 ## Copilot Credit collector
 
 Read [Permissions and tenant inventory](permissions-and-inventory.md) before binding the collector
-connections. Version `1.3.0.0` packages **PVCI Analyst** and **PVCI Privacy Approver** roles plus
+connections. Version `1.3.0.0` packages **PVCI Analyst**, **PVCI Privacy Approver**, and **PVCI Credit Administrator** roles plus
 standalone inventory/governance collectors and the audited threshold processor; tenant roles and
 physical connections remain target-local.
 
@@ -152,7 +157,7 @@ For an environment-group policy, save and publish the group rules. A runtime HTT
 `Last refresh` predates the policy update is propagation lag; leave the flow stopped and retry only
 after the runtime cache refreshes.
 
-## Read-only credit governance collector
+## Credit governance collection and changes
 
 Create a second **HTTP with Microsoft Entra ID (preauthorized)** connection. Set both connection
 fields to `https://api.powerplatform.com/`. Do not reuse `pvci_licensinghttp`; it has a different
@@ -183,6 +188,20 @@ Run it with an empty queue, then submit a no-op request whose desired state equa
 threshold. Verify `Succeeded`, a processed timestamp, and identical audited before/after control
 fields before activation. It handles at most 20 pending requests per serial run and rejects stale
 or invalid requests without changing the platform.
+
+Activate only after the no-op test succeeds:
+
+```bash
+python3 scripts/transcript_insights/create_credit_governance_processor_flow.py \
+    --config $CFG --activate
+```
+
+In the code app, the affected agent row shows Requested, Processing, Applied, Review needed,
+Failed, or Verify applied. Requested and Processing rows refresh every five seconds and disable a
+duplicate Change action. `AppliedUnverified` / **Verify applied** means the processor attempted the
+PUT but could not complete read-back or audit persistence; inspect the current Power Platform
+threshold before retrying. This workflow does not implement a separate approval stage: the Credit
+Administrator role is the submission authorization boundary.
 
 ## Routine operation
 
@@ -297,7 +316,7 @@ GET {dataverseUrl}/api/data/v9.1/pvci_syncstates
 ```
 
 | `pvci_lastrunstatus` | Meaning |
-|---|---|
+| --- | --- |
 | `success` | All transcripts in the batch processed |
 | `partial` | Some failed; watermark frozen so they retry next run |
 | `failed` | Nothing processed — check `pvci_lasterror` |
@@ -321,17 +340,21 @@ Afterwards, in the target environment:
     cloud URL. Credentials and physical connection IDs are deployment bindings, not solution data.
 4. Bind `pvci_powerplatformadminv2` to a Power Platform Administrator connection and ensure DLP/ACP
     allow Power Platform for Admins V2.
-5. Assign **PVCI Analyst** to readers and **PVCI Privacy Approver** only to approved disclosure
-    operators. Share the code app separately with the same users/groups.
-6. Save and smoke-test all three flows, then activate them.
-7. Run the initial `--full` transcript load.
-8. Redeploy the code app (`npx power-apps init` + `push`) — it lives outside the core solution.
-9. Configure either a DLP-approved Flow API connection or the headless run-detail worker.
+5. Bind `pvci_powerplatformapi` to a target-local HTTP with Microsoft Entra ID connection whose
+    Base Resource URL and resource audience are `https://api.powerplatform.com/`.
+6. Assign **PVCI Analyst** to readers, **PVCI Privacy Approver** only to approved disclosure
+    operators, and **PVCI Credit Administrator** only to threshold-change operators. Share the code
+    app separately with the same users/groups.
+7. Save and smoke-test all five flows, including a no-op governance request, then activate the
+    intended schedules and processor.
+8. Run the initial `--full` transcript load.
+9. Redeploy the code app (`npx power-apps init` + `push`) — it lives outside the core solution.
+10. Configure either a DLP-approved Flow API connection or the headless run-detail worker.
 
 ## Troubleshooting
 
 | Symptom | Cause |
-|---|---|
+| --- | --- |
 | `conversationtranscripts` returns empty | Missing Read privilege on the table returns an empty set, not `403`. Also check transcripts are enabled on the agent, and allow for post-session lag |
 | Tool Calls empty on a production session | Expected — `DialogTracing` is design-mode only |
 | Flow Runs shows `no run matched` | The run aged out of Power Automate retention, or fell outside the ±20s window |
@@ -346,6 +369,9 @@ Afterwards, in the target environment:
 | Inventory flow returns HTTP `442` | Compare the error's `Last refresh` with the ACP modification time; an older timestamp means runtime policy propagation is pending |
 | Credit sync is stale | Check the latest `pvci_creditsyncrun`, physical connection health, flow state, and recurrence history |
 | Agent day/week chart has sparse dates | PPAC returned aggregate or weekly source periods; do not manufacture daily rows |
+| Change is disabled for an agent | A Pending or Processing request already exists; wait for a terminal lifecycle state |
+| Request shows Review needed | Current threshold state differs from the submitted expected state; review the latest snapshot and submit a fresh request |
+| Request shows Verify applied | The PUT was attempted but read-back/audit failed; verify the live threshold before any retry |
 
 ## Data protection
 

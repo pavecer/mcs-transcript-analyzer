@@ -24,6 +24,32 @@ harness runtimes; it does not use the separate GitHub Copilot product billing AP
 | Model-driven app | Agent, threshold, usage, user consumption, privacy approval, capacity, unresolved-resource, harness, and sync-run views/forms |
 | Code app | Environment and exact harness filters; agent/resource and user navigation; threshold utilization; credit trends; capacity; privacy; and collector health |
 
+## What operators can do
+
+| Area | In the model-driven app | In the preview code app |
+| --- | --- | --- |
+| Resource usage | Review billed/non-billed source facts, unresolved resources, and source lineage | Compare global and selected-agent source-period trends without double-counting user facts |
+| User usage | Review tenant-wide user source facts and shared disclosure status | Search users, approve/revoke shared name disclosure, and correlate observed users/agents without allocating charges |
+| Inventory | Review environments, agents, harness evidence, zero-usage agents, and sync health | Filter by environment and exact GitHub/not-GitHub/unknown harness evidence |
+| Thresholds | Review latest limit/enforcement snapshots and raw source evidence | Sort/filter by spend risk and inspect utilization, alert, enforcement, and human-readable agent/environment labels |
+| Changes | Review requests, expected/desired state, before/after JSON, errors, and processing times | Submit an audited request and follow its state directly on the affected agent row |
+
+### Spend-risk bands
+
+Risk is a triage label calculated from the latest threshold snapshot; it is not a billing severity
+returned by Microsoft:
+
+| Band | Rule |
+| --- | --- |
+| **Critical** | Explicit stop is active, or consumption is at least 100% of the limit |
+| **High** | Utilization reaches the configured notification percentage; 80% is used when no usable notification threshold is enabled |
+| **Watch** | Utilization is at least 60% but below High |
+| **Healthy** | A positive limit exists and utilization is below Watch |
+| **No limit** | The current limit is zero or absent |
+
+The bands use threshold consumption, not billed plus non-billed history. They help operators find
+controls needing attention; they do not replace PPAC billing reports.
+
 The licensing connection uses **HTTP with Microsoft Entra ID (preauthorized)**. For commercial
 cloud, both its Base Resource URL and Microsoft Entra ID Resource URI are
 `https://licensing.powerplatform.microsoft.com/`. The flow is solution-aware and binds through
@@ -74,6 +100,26 @@ TenantPool, or PayGo mutation routes.
 A synchronous pre-create plug-in validates the request contract, forces `Pending` and server time,
 and strips processor-owned outcome fields. Credit Administrators have no request Write privilege,
 so callers cannot forge a completed audit row or alter a request after creation.
+
+The code app presents processor values as an operator-facing lifecycle:
+
+| Stored status | Agent-row label | Meaning and next action |
+| --- | --- | --- |
+| `Pending` | **Requested** | The request is persisted and waiting for the processor |
+| `Processing` | **Processing** | The processor owns the row and is validating current state |
+| `Succeeded` | **Applied** | PUT and read-back succeeded; inspect before/after evidence when needed |
+| `Stale` | **Review needed** | Expected state or request validation no longer matches; review and submit a new request |
+| `Failed` | **Failed** | Processing failed before a threshold PUT; inspect the bounded error |
+| `AppliedUnverified` | **Verify applied** | A PUT was attempted, but read-back or audit persistence failed; verify platform state before retrying |
+
+Pending and Processing requests refresh every five seconds in the code app and disable the Change
+button for that agent. This prevents an accidental duplicate request while one is active. A new
+request is allowed after a terminal outcome because it captures a fresh expected state.
+
+This is not a human approval workflow. Assignment of **PVCI Credit Administrator** is the
+authorization gate; justification, server-side request normalization, stale-state validation, and
+before/after persistence provide the audit trail. Organizations that require maker/approver
+separation should add an external approval process before granting or exercising that role.
 
 ## Supported reporting grain
 
@@ -229,6 +275,8 @@ Session-level “credits” can only be a clearly labeled estimate or period cor
 - User-name disclosure is a global setting; row-level/per-viewer approval is not implemented.
 - Per-user Copilot Studio limits and environment allocation changes are not implemented. Agent
   threshold writes are restricted to the Credit Administrator request/processor path.
+- Per-user Copilot Studio limits are not available from a documented API. PVCI reports tenant-wide
+  per-user consumption but does not turn those facts into configurable user limits.
 
 See [Cross-environment Copilot credit consumption](cross-environment-credit-consumption-design.md)
 for evidence, architecture decisions, delivery phases, and source references.
