@@ -17,6 +17,8 @@ from dv_token import get_token_from_config  # noqa: E402
 SESSION = "pvci_transcriptsession"
 TURN = "pvci_transcriptturn"
 IDENTITY = "pvci_transcriptidentitymap"
+ENVIRONMENT = "pvci_environmentinventory"
+INVENTORY_SYNC = "pvci_inventorysyncrun"
 AGENT = "pvci_agentinventory"
 CREDIT = "pvci_creditusage"
 CAPACITY = "pvci_creditcapacitysnapshot"
@@ -111,6 +113,8 @@ def main() -> None:
         sc = otc(s, base, h, SESSION)
         tc = otc(s, base, h, TURN)
         ic = otc(s, base, h, IDENTITY)
+        ec = otc(s, base, h, ENVIRONMENT)
+        isc = otc(s, base, h, INVENTORY_SYNC)
         ac = otc(s, base, h, AGENT)
         cc = otc(s, base, h, CREDIT)
         capc = otc(s, base, h, CAPACITY)
@@ -202,11 +206,14 @@ def main() -> None:
         agent_cols = [
             ("pvci_displayname", 220),
             ("pvci_environmentname", 180),
+            ("pvci_environmenttype", 120),
             ("pvci_resourceid", 240),
             ("pvci_resourcetype", 130),
             ("pvci_harness", 110),
             ("pvci_classificationconfidence", 130),
             ("pvci_model", 120),
+            ("pvci_agentstatus", 100),
+            ("pvci_hasdetailedaccess", 100),
             ("pvci_published", 70),
         ]
         agent_attrs = [c[0] for c in agent_cols] + ["pvci_agentinventoryid"]
@@ -215,6 +222,52 @@ def main() -> None:
                 s, base, token, AGENT, "Agent Inventory - All Resources",
                 fetch(AGENT, agent_attrs, "pvci_displayname", desc=False),
                 grid(ac, "pvci_agentinventoryid", agent_cols),
+            )
+        )
+
+        environment_cols = [
+            ("pvci_displayname", 220),
+            ("pvci_environmentid", 260),
+            ("pvci_environmenttype", 120),
+            ("pvci_geo", 90),
+            ("pvci_state", 100),
+            ("pvci_hasdataverse", 100),
+            ("pvci_hasdetailedaccess", 110),
+            ("pvci_lastsyncedon", 140),
+        ]
+        results.append(
+            upsert_view(
+                s, base, token, ENVIRONMENT, "Environment Inventory - All",
+                fetch(
+                    ENVIRONMENT,
+                    [c[0] for c in environment_cols] + ["pvci_environmentinventoryid"],
+                    "pvci_displayname",
+                    desc=False,
+                ),
+                grid(ec, "pvci_environmentinventoryid", environment_cols),
+            )
+        )
+
+        inventory_sync_cols = [
+            ("pvci_name", 220),
+            ("pvci_status", 90),
+            ("pvci_startedon", 140),
+            ("pvci_completedon", 140),
+            ("pvci_environmentcount", 100),
+            ("pvci_agentcount", 90),
+            ("pvci_createdcount", 90),
+            ("pvci_updatedcount", 90),
+            ("pvci_rejectedcount", 90),
+        ]
+        results.append(
+            upsert_view(
+                s, base, token, INVENTORY_SYNC, "Inventory Sync Runs - Latest",
+                fetch(
+                    INVENTORY_SYNC,
+                    [c[0] for c in inventory_sync_cols] + ["pvci_inventorysyncrunid"],
+                    "pvci_startedon",
+                ),
+                grid(isc, "pvci_inventorysyncrunid", inventory_sync_cols),
             )
         )
         results.append(

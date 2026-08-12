@@ -11,7 +11,9 @@ export * as Pvci_creditprivacysettingsModel from './models/Pvci_creditprivacyset
 export * as Pvci_creditsyncrunsModel from './models/Pvci_creditsyncrunsModel';
 export * as Pvci_creditusagesModel from './models/Pvci_creditusagesModel';
 export * as Pvci_credituserusagesModel from './models/Pvci_credituserusagesModel';
+export * as Pvci_environmentinventoriesModel from './models/Pvci_environmentinventoriesModel';
 export * as Pvci_flowrundetailsModel from './models/Pvci_flowrundetailsModel';
+export * as Pvci_inventorysyncrunsModel from './models/Pvci_inventorysyncrunsModel';
 export * as Pvci_transcriptsessionsModel from './models/Pvci_transcriptsessionsModel';
 export * as Pvci_transcriptturnsModel from './models/Pvci_transcriptturnsModel';
 
@@ -22,6 +24,8 @@ export * from './services/Pvci_creditprivacysettingsService';
 export * from './services/Pvci_creditsyncrunsService';
 export * from './services/Pvci_creditusagesService';
 export * from './services/Pvci_credituserusagesService';
+export * from './services/Pvci_environmentinventoriesService';
 export * from './services/Pvci_flowrundetailsService';
+export * from './services/Pvci_inventorysyncrunsService';
 export * from './services/Pvci_transcriptsessionsService';
 export * from './services/Pvci_transcriptturnsService';

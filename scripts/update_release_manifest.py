@@ -78,6 +78,7 @@ def inspect_package(key: str, config: dict[str, Any]) -> dict[str, Any]:
         if corrupt:
             raise RuntimeError(f"Corrupt file in {package.name}: {corrupt}")
         root = ET.fromstring(bundle.read("solution.xml"))
+        customizations = ET.fromstring(bundle.read("customizations.xml"))
 
     unique_name = root.findtext(".//UniqueName")
     version = root.findtext(".//Version")
@@ -107,6 +108,41 @@ def inspect_package(key: str, config: dict[str, Any]) -> dict[str, Any]:
             raise RuntimeError("Core package does not contain the JSON Viewer PCF")
         if any(item.get("type") == "66" for item in missing_dependencies):
             raise RuntimeError("Core package still has an unresolved PCF dependency")
+        actual_tables = {
+            item.get("schemaName")
+            for item in root_components
+            if item.get("type") == "1" and item.get("schemaName")
+        }
+        actual_workflows = {
+            item.get("Name")
+            for item in customizations.findall(".//Workflows/Workflow")
+            if item.get("Name")
+        }
+        actual_roles = {
+            item.get("name")
+            for item in customizations.findall(".//Roles/Role")
+            if item.get("name")
+        }
+        expected_components = {
+            "tables": set(config["requiredTables"]),
+            "workflows": set(config["requiredWorkflows"]),
+            "roles": set(config["requiredRoles"]),
+        }
+        actual_components = {
+            "tables": actual_tables,
+            "workflows": actual_workflows,
+            "roles": actual_roles,
+        }
+        drift = {
+            component: {
+                "missing": sorted(expected_components[component] - actual),
+                "unexpected": sorted(actual - expected_components[component]),
+            }
+            for component, actual in actual_components.items()
+            if actual != expected_components[component]
+        }
+        if drift:
+            raise RuntimeError(f"Core package components changed: {drift}")
     if key == "codeApp":
         if not any(
             item.get("type") == "300"

@@ -16,7 +16,7 @@ what it did.
 
 | Surface | What it is |
 |---|---|
-| **Dataverse solution** | 11 custom tables, views, forms, a model-driven app, 2 Custom APIs, and 2 scheduled flows |
+| **Dataverse solution** | 13 custom tables, views, forms, 2 application roles, a model-driven app, 2 Custom APIs, and 3 scheduled flows |
 | **Model-driven app** | GA, standard-licensed. Transcript operations plus Credits and Capacity grids and evidence forms |
 | **Code app** (preview) | React/Vite triage UI: replay, trends, flow failure map, and Copilot Credit reporting |
 | **Custom APIs + plugin** | Incremental transcript sync and validated, idempotent credit import |
@@ -36,6 +36,7 @@ what it did.
 
 - **Actual billed and non-billed credits** — resource/agent source-period facts from PPAC
 - **Capacity** — environment allocation, consumption, available quantity, PAYG, and policy state
+- **Tenant inventory** — environments and Copilot agents from Power Platform Admin V2 and PPAC One Inventory, including agents with zero credit usage
 - **Granularity** — environment, agent/resource, source day or week, feature when supplied
 - **Lineage and quality** — source API/schema, freshness, unresolved resources, and unknown harnesses
 - **User support** — separate user-period facts display source GUIDs by default; an audited shared
@@ -66,10 +67,10 @@ For a normal installation, download the managed solution from the
 Power Apps under **Solutions > Import solution**. The source deployment below is intended for
 contributors and environments where you want to rebuild every component.
 
-Before enabling credit collection, review [permissions and tenant inventory](docs/permissions-and-inventory.md).
-The current package does not include a dedicated PVCI security role or a tenant-wide Admin V2/One
-Inventory collector; those permissions and target-local connections are separate installation
-steps.
+Before enabling collection, review [permissions and tenant inventory](docs/permissions-and-inventory.md).
+Version `1.2.0.0` includes **PVCI Analyst** and **PVCI Privacy Approver** roles plus a separate
+Admin V2/One Inventory collector. Tenant roles and target-local connections remain installation
+steps that a managed solution cannot grant.
 
 **Prerequisites:** Python 3.10+, Node 22+, .NET SDK 8+, [Power Platform CLI](https://aka.ms/PowerPlatformCLI),
 Azure CLI, and a Dataverse environment where you hold System Customizer.
@@ -105,11 +106,16 @@ python3 scripts/transcript_insights/create_credit_forms.py --config $CFG
 cd plugin && dotnet build -c Release && cd ..
 python3 scripts/transcript_insights/register_plugin.py  --config $CFG
 python3 scripts/transcript_insights/register_credit_plugin.py --config $CFG
+python3 scripts/transcript_insights/create_security_roles.py --config $CFG
 python3 scripts/transcript_insights/create_sync_flow.py --config $CFG --activate
 
 # Create a licensing connection first; see docs/credit-reporting.md and docs/operations.md.
 python3 scripts/transcript_insights/create_credit_sync_flow.py --config $CFG \
    --http-connection-id shared-webcontents-00000000
+
+# Create a Power Platform for Admins V2 connection first; smoke-test before --activate.
+python3 scripts/transcript_insights/create_inventory_sync_flow.py --config $CFG \
+   --admin-connection-id shared-powerplatform-00000000
 
 python3 scripts/transcript_insights/sync_transcripts.py --config $CFG --full   # initial load
 ```
@@ -128,6 +134,8 @@ npx power-apps add-data-source --api-id dataverse --resource-name pvci_creditcap
 npx power-apps add-data-source --api-id dataverse --resource-name pvci_creditsyncrun    --org-url <org-url>
 npx power-apps add-data-source --api-id dataverse --resource-name pvci_credituserusage  --org-url <org-url>
 npx power-apps add-data-source --api-id dataverse --resource-name pvci_creditprivacysetting --org-url <org-url>
+npx power-apps add-data-source --api-id dataverse --resource-name pvci_environmentinventory --org-url <org-url>
+npx power-apps add-data-source --api-id dataverse --resource-name pvci_inventorysyncrun --org-url <org-url>
 npm run build && npx power-apps push
 ```
 

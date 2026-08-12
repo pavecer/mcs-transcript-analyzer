@@ -8,7 +8,8 @@ The public site publishes two independent managed Power Platform solutions:
 | Code app | `pvConversationInsightsCodeApp` | Power Apps code-app preview, unsupported | Second |
 
 The code app stays separate so environments can use the supported model-driven app without
-enabling preview technology. Its managed solution depends on the three core Dataverse tables.
+enabling preview technology. Its managed solution depends on the 11 core Dataverse tables used by
+the transcript, flow, inventory, credit, capacity, privacy, and sync experiences.
 
 ## Automation design
 

@@ -16,6 +16,8 @@ namespace PvciTranscripts
     /// </summary>
     public class ImportCreditUsageBatch : IPlugin
     {
+        private const string EnvironmentEntity = "pvci_environmentinventory";
+        private const string InventorySyncRunEntity = "pvci_inventorysyncrun";
         private const string AgentEntity = "pvci_agentinventory";
         private const string UsageEntity = "pvci_creditusage";
         private const string UserUsageEntity = "pvci_credituserusage";
@@ -51,15 +53,19 @@ namespace PvciTranscripts
 
             var errors = new List<string>();
             var result = new ImportResult();
+            var environmentIds = new Dictionary<string, Guid>(StringComparer.OrdinalIgnoreCase);
             var agentIds = new Dictionary<string, Guid>(StringComparer.OrdinalIgnoreCase);
 
+            var environments = Json.Arr(Json.Get(root, "environments")) ?? new List<object>();
             var agents = Json.Arr(Json.Get(root, "agents")) ?? new List<object>();
             var usage = Json.Arr(Json.Get(root, "usage")) ?? new List<object>();
             var userUsage = Json.Arr(Json.Get(root, "userUsage")) ?? new List<object>();
             var capacity = Json.Arr(Json.Get(root, "capacity")) ?? new List<object>();
             NormalizePpac(root, tenantId, agents, usage, userUsage, capacity);
+            NormalizeAdminInventory(root, tenantId, environments, agents);
 
-            ImportAgents(service, agents, tenantId, dryRun, agentIds, result, errors);
+            ImportEnvironments(service, environments, tenantId, schemaVersion, dryRun, environmentIds, result, errors);
+            ImportAgents(service, agents, tenantId, dryRun, environmentIds, agentIds, result, errors);
             ImportUsage(service, usage, tenantId, schemaVersion, dryRun, agentIds, result, errors);
             ImportUserUsage(service, userUsage, tenantId, schemaVersion, dryRun, result, errors);
             ImportCapacity(service, capacity, tenantId, dryRun, result, errors);
@@ -67,6 +73,9 @@ namespace PvciTranscripts
             object syncRun = Json.Get(root, "syncRun");
             if (syncRun != null && !dryRun)
                 UpsertSyncRun(service, syncRun, schemaVersion, result, errors);
+            object inventorySyncRun = Json.Get(root, "inventorySyncRun");
+            if (inventorySyncRun != null && !dryRun)
+                UpsertInventorySyncRun(service, inventorySyncRun, schemaVersion, result, errors);
 
             string status = errors.Count == 0 ? "success" : (result.Created + result.Updated > 0 ? "partial" : "failed");
             tracing.Trace("credit import: created={0} updated={1} rejected={2} dryRun={3}",
@@ -112,12 +121,13 @@ namespace PvciTranscripts
 
             foreach (object row in resourceRows)
             {
-                string environmentId = Json.Str(row, "environmentId") ?? string.Empty;
-                string resourceId = Json.Str(row, "resourceId") ?? string.Empty;
+                string environmentId = NormalizeId(Json.Str(row, "environmentId"));
+                string agentEnvironmentId = NormalizeEnvironmentId(environmentId);
+                string resourceId = NormalizeId(Json.Str(row, "resourceId"));
                 object metadata = Json.Get(row, "metadata");
                 string displayName = Json.Str(metadata, "ResourceName") ?? resourceId;
                 if (string.IsNullOrWhiteSpace(displayName)) displayName = "Unknown resource";
-                string agentSourceKey = StableKey(tenantId, environmentId, resourceId);
+                string agentSourceKey = StableKey(tenantId, agentEnvironmentId, resourceId);
                 string kind = IsGuid(resourceId) ? "agent_or_flow" : "service_or_group";
 
                 if (knownAgents.Add(agentSourceKey))
@@ -126,7 +136,7 @@ namespace PvciTranscripts
                     {
                         { "sourceKey", agentSourceKey },
                         { "tenantId", tenantId },
-                        { "environmentId", environmentId },
+                        { "environmentId", agentEnvironmentId },
                         { "resourceId", resourceId },
                         { "botId", IsGuid(resourceId) ? resourceId : null },
                         { "name", displayName },
@@ -182,7 +192,7 @@ namespace PvciTranscripts
                 object payGo = Json.Get(entitlement, "payGo");
                 object consumed = Json.Get(values, "consumed");
                 object allocated = Json.Get(values, "allocated");
-                string environmentId = Json.Str(row, "environmentId") ?? string.Empty;
+                string environmentId = NormalizeId(Json.Str(row, "environmentId"));
                 string environmentName = Json.Str(row, "environmentName") ?? environmentId;
                 string asOfDate = Json.Str(consumed, "lastUpdatedOn") ?? importedOn;
                 object tenantPool = FindRule(Json.Arr(Json.Get(values, "enforcementRules")), "TenantPool");
@@ -262,6 +272,125 @@ namespace PvciTranscripts
             if (value != null) CollectByProperty(value, property, rows);
         }
 
+        private static void NormalizeAdminInventory(
+            Dictionary<string, object> root,
+            string tenantId,
+            List<object> environments,
+            List<object> agents)
+        {
+            string importedOn = DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture);
+            var environmentRows = new List<object>();
+            CollectByProperty(Json.Get(root, "adminEnvironments"), "value", environmentRows);
+            var resourceRows = new List<object>();
+            CollectByProperty(Json.Get(root, "powerPlatformResourcePages"), "data", resourceRows);
+
+            var knownEnvironments = new HashSet<string>(
+                environments.Select(item => Json.Str(item, "sourceKey")).Where(value => !string.IsNullOrWhiteSpace(value)),
+                StringComparer.OrdinalIgnoreCase);
+            var environmentNames = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            var environmentTypes = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            var environmentUrls = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            foreach (object row in environmentRows)
+            {
+                string environmentId = NormalizeEnvironmentId(Json.Str(row, "id") ?? Json.Str(row, "environmentId"));
+                if (string.IsNullOrWhiteSpace(environmentId)) continue;
+                string displayName = Json.Str(row, "displayName") ?? environmentId;
+                string environmentType = Json.Str(row, "type");
+                string environmentUrl = Json.Str(row, "url") ?? Json.Str(row, "dataverseOrganizationUrl");
+                environmentNames[environmentId] = displayName;
+                if (!string.IsNullOrWhiteSpace(environmentType)) environmentTypes[environmentId] = environmentType;
+                if (!string.IsNullOrWhiteSpace(environmentUrl)) environmentUrls[environmentId] = environmentUrl;
+                string sourceKey = StableKey(tenantId, environmentId);
+                if (!knownEnvironments.Add(sourceKey)) continue;
+                environments.Add(new Dictionary<string, object>
+                {
+                    { "sourceKey", sourceKey },
+                    { "tenantId", Json.Str(row, "tenantId") ?? tenantId },
+                    { "environmentId", environmentId },
+                    { "name", displayName },
+                    { "displayName", displayName },
+                    { "environmentUrl", environmentUrl },
+                    { "environmentType", environmentType },
+                    { "geo", Json.Str(row, "geo") },
+                    { "azureRegion", Json.Str(row, "azureRegion") },
+                    { "state", Json.Str(row, "state") },
+                    { "hasDataverse", !string.IsNullOrWhiteSpace(Json.Str(row, "dataverseId"))
+                        || !string.IsNullOrWhiteSpace(environmentUrl) },
+                    { "inventorySource", "Power Platform for Admins V2" },
+                    { "sourceSchemaVersion", "power-platform-admin-v2-environment-v1" },
+                    { "raw", row },
+                    { "lastSyncedOn", importedOn },
+                });
+            }
+
+            var agentIndex = new Dictionary<string, Dictionary<string, object>>(StringComparer.OrdinalIgnoreCase);
+            foreach (object item in agents)
+            {
+                var normalized = Json.Obj(item);
+                string key = Json.Str(item, "sourceKey");
+                if (normalized != null && !string.IsNullOrWhiteSpace(key)) agentIndex[key] = normalized;
+            }
+            foreach (object row in resourceRows)
+            {
+                string type = Json.Str(row, "type");
+                if (!string.Equals(type, "microsoft.copilotstudio/agents", StringComparison.OrdinalIgnoreCase)) continue;
+                object properties = Json.Get(row, "properties");
+                string environmentId = NormalizeEnvironmentId(Json.Str(properties, "environmentId")
+                    ?? Json.Str(row, "environmentId")
+                    ?? Json.Str(row, "environmentId1"));
+                string resourceId = NormalizeId(Json.Str(row, "name") ?? Json.Str(properties, "agentId"));
+                if (string.IsNullOrWhiteSpace(environmentId) || string.IsNullOrWhiteSpace(resourceId)) continue;
+                string sourceKey = StableKey(tenantId, environmentId, resourceId);
+                Dictionary<string, object> agent;
+                if (!agentIndex.TryGetValue(sourceKey, out agent))
+                {
+                    agent = new Dictionary<string, object>();
+                    agent["sourceKey"] = sourceKey;
+                    agents.Add(agent);
+                    agentIndex[sourceKey] = agent;
+                }
+                string displayName = Json.Str(properties, "displayName") ?? resourceId;
+                Put(agent, "tenantId", Json.Str(row, "tenantId") ?? tenantId);
+                Put(agent, "environmentId", environmentId);
+                Put(agent, "environmentSourceKey", StableKey(tenantId, environmentId));
+                Put(agent, "environmentName", Json.Str(row, "environmentName")
+                    ?? (environmentNames.ContainsKey(environmentId) ? environmentNames[environmentId] : null));
+                Put(agent, "environmentUrl", environmentUrls.ContainsKey(environmentId) ? environmentUrls[environmentId] : null);
+                Put(agent, "environmentType", Json.Str(row, "environmentType")
+                    ?? (environmentTypes.ContainsKey(environmentId) ? environmentTypes[environmentId] : null));
+                Put(agent, "location", Json.Str(row, "location") ?? Json.Str(row, "environmentRegion"));
+                Put(agent, "resourceId", resourceId);
+                Put(agent, "botId", resourceId);
+                Put(agent, "name", displayName);
+                Put(agent, "displayName", displayName);
+                Put(agent, "schemaName", Json.Str(properties, "schemaName"));
+                Put(agent, "resourceType", "agent");
+                Put(agent, "classificationSource", "power_platform_inventory");
+                Put(agent, "classificationConfidence", "inventory_exact_id");
+                Put(agent, "orchestrationType", Json.Str(properties, "orchestrationType")
+                    ?? Json.Str(properties, "orchestration"));
+                Put(agent, "model", Json.Str(properties, "model"));
+                Put(agent, "authoringOrigin", Json.Str(properties, "createdIn"));
+                Put(agent, "authenticationMode", Json.Str(properties, "authenticationMode")
+                    ?? Json.Str(properties, "authentication"));
+                Put(agent, "createdOnSource", Json.Get(properties, "createdAt"));
+                object publishedOn = Json.Get(properties, "lastPublishedAt");
+                Put(agent, "publishedOnSource", publishedOn);
+                if (publishedOn != null) Put(agent, "published", true);
+                object quarantined = Json.Get(properties, "isQuarantined");
+                if (quarantined is bool) Put(agent, "agentStatus", (bool)quarantined ? "Blocked" : "Available");
+                Put(agent, "hasDetailedAccess", false);
+                Put(agent, "inventorySource", "PPAC One Inventory");
+                Put(agent, "lastSyncedOn", importedOn);
+                Put(agent, "evidence", row);
+            }
+        }
+
+        private static void Put(Dictionary<string, object> target, string key, object value)
+        {
+            if (value != null && (!(value is string) || !string.IsNullOrWhiteSpace((string)value))) target[key] = value;
+        }
+
         private static object FindRule(List<object> rules, string ruleType)
         {
             return rules == null ? null : rules.FirstOrDefault(rule => Json.Str(rule, "ruleType") == ruleType);
@@ -273,6 +402,20 @@ namespace PvciTranscripts
             return Guid.TryParse(value, out parsed);
         }
 
+        private static string NormalizeId(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value)) return string.Empty;
+            Guid parsed;
+            return Guid.TryParse(value, out parsed)
+                ? parsed.ToString("D").ToLowerInvariant()
+                : value.Trim();
+        }
+
+            private static string NormalizeEnvironmentId(string value)
+            {
+                return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim().ToLowerInvariant();
+            }
+
         private static string DatePart(string value)
         {
             if (string.IsNullOrEmpty(value)) return "unknown date";
@@ -281,11 +424,62 @@ namespace PvciTranscripts
 
         private static string StableKey(params object[] parts)
         {
-            string normalized = string.Join("|", parts.Select(part => part == null ? string.Empty : part.ToString().Trim()));
+            string normalized = string.Join("|", parts.Select(part => NormalizeId(part == null ? null : part.ToString())));
             using (SHA256 sha = SHA256.Create())
             {
                 byte[] hash = sha.ComputeHash(Encoding.UTF8.GetBytes(normalized));
                 return string.Concat(hash.Select(value => value.ToString("x2", CultureInfo.InvariantCulture)));
+            }
+        }
+
+        private static void ImportEnvironments(
+            IOrganizationService service,
+            List<object> records,
+            string tenantId,
+            string schemaVersion,
+            bool dryRun,
+            Dictionary<string, Guid> environmentIds,
+            ImportResult result,
+            List<string> errors)
+        {
+            records = records ?? new List<object>();
+            ValidateRecordCount(records, "environments");
+            foreach (object item in records)
+            {
+                try
+                {
+                    string sourceKey = Required(item, "sourceKey");
+                    Entity existing = FindByString(service, EnvironmentEntity, "pvci_sourcekey", sourceKey,
+                        "pvci_environmentinventoryid");
+                    string itemTenantId = Json.Str(item, "tenantId") ?? tenantId;
+                    string itemEnvironmentId = NormalizeEnvironmentId(Json.Str(item, "environmentId"));
+                    if (existing == null)
+                        existing = FindEnvironmentByIdentity(service, itemTenantId, itemEnvironmentId);
+                    var record = new Entity(EnvironmentEntity);
+                    SetString(record, "pvci_name", Json.Str(item, "name") ?? Json.Str(item, "displayName") ?? sourceKey, 200);
+                    SetString(record, "pvci_sourcekey", sourceKey, 200);
+                    SetString(record, "pvci_tenantid", itemTenantId);
+                    SetString(record, "pvci_environmentid", itemEnvironmentId);
+                    SetString(record, "pvci_displayname", Json.Str(item, "displayName"));
+                    SetString(record, "pvci_environmenturl", Json.Str(item, "environmentUrl"));
+                    SetString(record, "pvci_environmenttype", Json.Str(item, "environmentType"));
+                    SetString(record, "pvci_geo", Json.Str(item, "geo"));
+                    SetString(record, "pvci_azureregion", Json.Str(item, "azureRegion"));
+                    SetString(record, "pvci_state", Json.Str(item, "state"));
+                    SetBoolean(record, "pvci_ismanaged", Json.Get(item, "isManaged"));
+                    SetBoolean(record, "pvci_hasdataverse", Json.Get(item, "hasDataverse"));
+                    SetBoolean(record, "pvci_hasdetailedaccess", Json.Get(item, "hasDetailedAccess"));
+                    SetString(record, "pvci_inventorysource", Json.Str(item, "inventorySource"));
+                    SetString(record, "pvci_sourceschemaversion", Json.Str(item, "sourceSchemaVersion") ?? schemaVersion);
+                    SetMemo(record, "pvci_rawjson", Json.Get(item, "raw"));
+                    SetDate(record, "pvci_lastsyncedon", Json.Get(item, "lastSyncedOn"), DateTime.UtcNow);
+                    Guid id = Upsert(service, existing, record, dryRun, result);
+                    if (id != Guid.Empty) environmentIds[sourceKey] = id;
+                }
+                catch (Exception ex)
+                {
+                    Reject(result, errors, "environment", item, ex);
+                }
             }
         }
 
@@ -294,6 +488,7 @@ namespace PvciTranscripts
             List<object> records,
             string tenantId,
             bool dryRun,
+            Dictionary<string, Guid> environmentIds,
             Dictionary<string, Guid> agentIds,
             ImportResult result,
             List<string> errors)
@@ -307,14 +502,21 @@ namespace PvciTranscripts
                     string sourceKey = Required(item, "sourceKey");
                     Entity existing = FindByString(service, AgentEntity, "pvci_sourcekey", sourceKey,
                         "pvci_agentinventoryid");
+                    string itemTenantId = Json.Str(item, "tenantId") ?? tenantId;
+                    string itemEnvironmentId = NormalizeEnvironmentId(Json.Str(item, "environmentId"));
+                    string itemResourceId = NormalizeId(Json.Str(item, "resourceId"));
+                    if (existing == null)
+                        existing = FindAgentByIdentity(service, itemTenantId, itemEnvironmentId, itemResourceId);
                     var record = new Entity(AgentEntity);
                     SetString(record, "pvci_name", Json.Str(item, "name") ?? Json.Str(item, "displayName") ?? sourceKey, 200);
                     SetString(record, "pvci_sourcekey", sourceKey, 200);
-                    SetString(record, "pvci_tenantid", Json.Str(item, "tenantId") ?? tenantId);
-                    SetString(record, "pvci_environmentid", Json.Str(item, "environmentId"));
+                    SetString(record, "pvci_tenantid", itemTenantId);
+                    SetString(record, "pvci_environmentid", itemEnvironmentId);
                     SetString(record, "pvci_environmentname", Json.Str(item, "environmentName"));
                     SetString(record, "pvci_environmenturl", Json.Str(item, "environmentUrl"));
-                    SetString(record, "pvci_resourceid", Json.Str(item, "resourceId"));
+                    SetString(record, "pvci_environmenttype", Json.Str(item, "environmentType"));
+                    SetString(record, "pvci_location", Json.Str(item, "location"));
+                    SetString(record, "pvci_resourceid", itemResourceId);
                     SetString(record, "pvci_botid", Json.Str(item, "botId"));
                     SetString(record, "pvci_displayname", Json.Str(item, "displayName"));
                     SetString(record, "pvci_schemaname", Json.Str(item, "schemaName"));
@@ -326,9 +528,25 @@ namespace PvciTranscripts
                     SetString(record, "pvci_model", Json.Str(item, "model"));
                     SetString(record, "pvci_authoringorigin", Json.Str(item, "authoringOrigin"));
                     SetBoolean(record, "pvci_published", Json.Get(item, "published"));
+                    SetDate(record, "pvci_createdonsource", Json.Get(item, "createdOnSource"), null);
+                    SetDate(record, "pvci_publishedonsource", Json.Get(item, "publishedOnSource"), null);
+                    SetString(record, "pvci_authenticationmode", Json.Str(item, "authenticationMode"));
+                    SetString(record, "pvci_agentstatus", Json.Str(item, "agentStatus"));
+                    SetBoolean(record, "pvci_hasdetailedaccess", Json.Get(item, "hasDetailedAccess"));
                     SetString(record, "pvci_inventorysource", Json.Str(item, "inventorySource"));
                     SetMemo(record, "pvci_evidencejson", Json.Get(item, "evidence"));
                     SetDate(record, "pvci_lastsyncedon", Json.Get(item, "lastSyncedOn"), DateTime.UtcNow);
+                    string environmentSourceKey = Json.Str(item, "environmentSourceKey");
+                    Guid environmentId = Guid.Empty;
+                    if (!string.IsNullOrWhiteSpace(environmentSourceKey)
+                        && !environmentIds.TryGetValue(environmentSourceKey, out environmentId))
+                    {
+                        Entity environment = FindByString(service, EnvironmentEntity, "pvci_sourcekey", environmentSourceKey,
+                            "pvci_environmentinventoryid");
+                        environmentId = environment != null ? environment.Id : Guid.Empty;
+                    }
+                    if (environmentId != Guid.Empty)
+                        record["pvci_environmentinventoryid"] = new EntityReference(EnvironmentEntity, environmentId);
                     Guid id = Upsert(service, existing, record, dryRun, result);
                     if (id != Guid.Empty) agentIds[sourceKey] = id;
                 }
@@ -613,6 +831,40 @@ namespace PvciTranscripts
             }
         }
 
+        private static void UpsertInventorySyncRun(
+            IOrganizationService service,
+            object item,
+            string schemaVersion,
+            ImportResult result,
+            List<string> errors)
+        {
+            try
+            {
+                string runKey = Required(item, "runKey");
+                Entity existing = FindByString(service, InventorySyncRunEntity, "pvci_runkey", runKey,
+                    "pvci_inventorysyncrunid");
+                var record = new Entity(InventorySyncRunEntity);
+                SetString(record, "pvci_name", Json.Str(item, "name") ?? runKey, 200);
+                SetString(record, "pvci_runkey", runKey, 200);
+                SetString(record, "pvci_source", Json.Str(item, "source") ?? "Power Platform Inventory");
+                SetDate(record, "pvci_startedon", Json.Get(item, "startedOn"), null);
+                SetDate(record, "pvci_completedon", Json.Get(item, "completedOn"), DateTime.UtcNow);
+                SetString(record, "pvci_status", errors.Count == 0 ? "success" : "partial");
+                SetInteger(record, "pvci_environmentcount", Json.Get(item, "environmentCount"));
+                SetInteger(record, "pvci_agentcount", Json.Get(item, "agentCount"));
+                SetInteger(record, "pvci_createdcount", Json.Get(item, "createdCount") ?? result.Created);
+                SetInteger(record, "pvci_updatedcount", Json.Get(item, "updatedCount") ?? result.Updated);
+                SetInteger(record, "pvci_rejectedcount", Json.Get(item, "rejectedCount") ?? result.Rejected);
+                SetString(record, "pvci_schemaversion", Json.Str(item, "schemaVersion") ?? schemaVersion);
+                SetMemo(record, "pvci_error", errors.Count == 0 ? null : string.Join("\n", errors.ToArray()));
+                Upsert(service, existing, record, false, new ImportResult());
+            }
+            catch (Exception ex)
+            {
+                Reject(result, errors, "inventory sync run", item, ex);
+            }
+        }
+
         private static Guid Upsert(
             IOrganizationService service,
             Entity existing,
@@ -645,6 +897,40 @@ namespace PvciTranscripts
             query.Criteria.AddCondition(field, ConditionOperator.Equal, value);
             EntityCollection result = service.RetrieveMultiple(query);
             return result.Entities.Count > 0 ? result.Entities[0] : null;
+        }
+
+        private static Entity FindAgentByIdentity(
+            IOrganizationService service,
+            string tenantId,
+            string environmentId,
+            string resourceId)
+        {
+            if (string.IsNullOrWhiteSpace(environmentId) || string.IsNullOrWhiteSpace(resourceId)) return null;
+            var query = new QueryExpression(AgentEntity)
+            {
+                ColumnSet = new ColumnSet("pvci_agentinventoryid"),
+                TopCount = 1,
+            };
+            query.Criteria.AddCondition("pvci_tenantid", ConditionOperator.Equal, tenantId);
+            query.Criteria.AddCondition("pvci_environmentid", ConditionOperator.Equal, environmentId);
+            query.Criteria.AddCondition("pvci_resourceid", ConditionOperator.Equal, resourceId);
+            return service.RetrieveMultiple(query).Entities.FirstOrDefault();
+        }
+
+        private static Entity FindEnvironmentByIdentity(
+            IOrganizationService service,
+            string tenantId,
+            string environmentId)
+        {
+            if (string.IsNullOrWhiteSpace(environmentId)) return null;
+            var query = new QueryExpression(EnvironmentEntity)
+            {
+                ColumnSet = new ColumnSet("pvci_environmentinventoryid"),
+                TopCount = 1,
+            };
+            query.Criteria.AddCondition("pvci_tenantid", ConditionOperator.Equal, tenantId);
+            query.Criteria.AddCondition("pvci_environmentid", ConditionOperator.Equal, environmentId);
+            return service.RetrieveMultiple(query).Entities.FirstOrDefault();
         }
 
         private static void ValidateTenant(IOrganizationService service, Guid organizationId, string payloadTenantId)

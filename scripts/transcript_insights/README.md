@@ -78,7 +78,11 @@ If tokens expire: `az login --tenant <tenantId>`.
 - `create_credit_sync_flow.py` — creates the solution-aware daily PPAC Copilot Credit resource,
   user-usage, and capacity collector with a seven-day overlap and bounded paging.
 - `create_credit_forms.py` — publishes operator forms for Agent Inventory, Credit Usage, Credit
-  Capacity Snapshots, and Credit Sync Runs.
+  Capacity, Environment Inventory, Inventory Sync Runs, user usage, and privacy approval.
+- `create_inventory_sync_flow.py` — creates the stopped Admin V2/One Inventory tenant inventory
+  collector; bind a target-local Power Platform Administrator connection before activation.
+- `create_security_roles.py` — creates PVCI Analyst and PVCI Privacy Approver from the App Opener
+  baseline, adds least-privilege table access, and maps both roles to the model-driven app.
 - `ingest_monitor_transcripts.py` — Monitor CSV ingestion (**blocked**: gateway returns
   `403 UnauthenticatedUser` for non-first-party tokens).
 - `build_dataverse_upsert_payload.py` — shapes Monitor CSV rows for upsert.

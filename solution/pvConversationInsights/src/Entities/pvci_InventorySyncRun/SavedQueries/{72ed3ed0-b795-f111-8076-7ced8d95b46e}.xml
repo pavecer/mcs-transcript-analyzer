@@ -1,0 +1,51 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<savedqueries xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <savedquery>
+    <IsCustomizable>1</IsCustomizable>
+    <CanBeDeleted>1</CanBeDeleted>
+    <isquickfindquery>0</isquickfindquery>
+    <isprivate>0</isprivate>
+    <isdefault>0</isdefault>
+    <savedqueryid>{72ed3ed0-b795-f111-8076-7ced8d95b46e}</savedqueryid>
+    <layoutxml>
+      <grid name="resultset" jump="pvci_name" select="1" icon="1" preview="1">
+        <row name="result" id="pvci_inventorysyncrunid">
+          <cell name="pvci_name" width="220" />
+          <cell name="pvci_status" width="90" />
+          <cell name="pvci_startedon" width="140" />
+          <cell name="pvci_completedon" width="140" />
+          <cell name="pvci_environmentcount" width="100" />
+          <cell name="pvci_agentcount" width="90" />
+          <cell name="pvci_createdcount" width="90" />
+          <cell name="pvci_updatedcount" width="90" />
+          <cell name="pvci_rejectedcount" width="90" />
+        </row>
+      </grid>
+    </layoutxml>
+    <querytype>0</querytype>
+    <fetchxml>
+      <fetch version="1.0" mapping="logical">
+        <entity name="pvci_inventorysyncrun">
+          <attribute name="pvci_name" />
+          <attribute name="pvci_status" />
+          <attribute name="pvci_startedon" />
+          <attribute name="pvci_completedon" />
+          <attribute name="pvci_environmentcount" />
+          <attribute name="pvci_agentcount" />
+          <attribute name="pvci_createdcount" />
+          <attribute name="pvci_updatedcount" />
+          <attribute name="pvci_rejectedcount" />
+          <attribute name="pvci_inventorysyncrunid" />
+          <order attribute="pvci_startedon" descending="true" />
+        </entity>
+      </fetch>
+    </fetchxml>
+    <IntroducedVersion>1.2.0.0</IntroducedVersion>
+    <LocalizedNames>
+      <LocalizedName description="Inventory Sync Runs - Latest" languagecode="1033" />
+    </LocalizedNames>
+    <Descriptions>
+      <Description description="Inventory Sync Runs - Latest" languagecode="1033" />
+    </Descriptions>
+  </savedquery>
+</savedqueries>

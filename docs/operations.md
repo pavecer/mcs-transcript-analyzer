@@ -65,8 +65,9 @@ any environment.
 ## Copilot Credit collector
 
 Read [Permissions and tenant inventory](permissions-and-inventory.md) before binding the collector
-connections. The managed `1.1.0.0` solution does not contain a dedicated PVCI security role and its
-licensing projections are not a complete tenant inventory.
+connections. Version `1.2.0.0` packages **PVCI Analyst** and **PVCI Privacy Approver** roles and a
+standalone Admin V2/One Inventory collector; tenant roles and physical connections remain
+target-local.
 
 Create an **HTTP with Microsoft Entra ID (preauthorized)** connection before creating the flow. In
 commercial cloud, set both connection fields to:
@@ -124,6 +125,32 @@ and audited. Revocation and unresolved re-imports clear all resolved names, UPNs
 IDs. Restrict update access on
 `pvci_creditprivacysetting` to authorized approvers and define retention/export policy before
 enabling names outside the test tenant.
+
+## Tenant environment and agent inventory
+
+Create a **Power Platform for Admins V2** connection owned by a Power Platform Administrator. DLP
+and ACP must allow the connector. Bind and create the standalone flow in Stopped state:
+
+```bash
+python3 scripts/transcript_insights/create_inventory_sync_flow.py \
+    --config $CFG \
+    --admin-connection-id shared-powerplatform-00000000
+```
+
+The daily flow pages Power Platform Admin V2 environments and `microsoft.copilotstudio/agents`
+from `PowerPlatformResources`, imports each page immediately through the bounded Custom API, and
+writes a separate `pvci_inventorysyncrun`. Run it manually before adding `--activate`.
+
+Inventory is independent of credit activity. Zero-usage agents remain in `pvci_agentinventory`,
+and `pvci_environmentinventory` drives environment navigation even when capacity and usage are
+empty. Exact tenant/environment/resource identity enriches existing billing rows; unknown or
+billing-only resources remain visible.
+
+If activation reports `ApiPolicyApiGroupViolation`, add
+`/providers/Microsoft.PowerApps/apis/shared_powerplatformadminv2` to the effective ACP allowlist.
+For an environment-group policy, save and publish the group rules. A runtime HTTP `442` whose
+`Last refresh` predates the policy update is propagation lag; leave the flow stopped and retry only
+after the runtime cache refreshes.
 
 ## Routine operation
 
@@ -260,10 +287,14 @@ Afterwards, in the target environment:
 2. Rebind `pvci_dataversesync` to a Dataverse connection that exists in the target environment.
 3. Rebind `pvci_licensinghttp` to a target-local licensing-service connection with the correct
     cloud URL. Credentials and physical connection IDs are deployment bindings, not solution data.
-4. Save and smoke-test both flows, then activate them.
-5. Run the initial `--full` transcript load.
-6. Redeploy the code app (`npx power-apps init` + `push`) — it lives outside the solution.
-7. Configure either a DLP-approved Flow API connection or the headless run-detail worker.
+4. Bind `pvci_powerplatformadminv2` to a Power Platform Administrator connection and ensure DLP/ACP
+    allow Power Platform for Admins V2.
+5. Assign **PVCI Analyst** to readers and **PVCI Privacy Approver** only to approved disclosure
+    operators. Share the code app separately with the same users/groups.
+6. Save and smoke-test all three flows, then activate them.
+7. Run the initial `--full` transcript load.
+8. Redeploy the code app (`npx power-apps init` + `push`) — it lives outside the core solution.
+9. Configure either a DLP-approved Flow API connection or the headless run-detail worker.
 
 ## Troubleshooting
 
@@ -279,7 +310,8 @@ Afterwards, in the target environment:
 | Flow does not start | Check the connection reference is bound and the flow is activated |
 | Credit collector fails at `Get_usage_page` | Verify `pvci_licensinghttp` is connected and both licensing connection URLs match the tenant cloud |
 | Capacity or users load but agents/resources are empty | Inspect `Get_usage_page`: `401/403` is connection-owner access; `200` with an empty `resources` array means no resource facts were returned for the seven-day window. Capacity is not tenant inventory |
-| Only some tenant environments are listed in Credits | Expected in `1.1.0.0`; the selector uses resource and capacity projections. Full enumeration requires the not-yet-implemented Admin V2/One Inventory collector |
+| Only some tenant environments are listed in Credits | Check the latest `pvci_inventorysyncrun`, the `pvci_powerplatformadminv2` connection owner, and Admin V2 DLP/ACP access |
+| Inventory flow returns HTTP `442` | Compare the error's `Last refresh` with the ACP modification time; an older timestamp means runtime policy propagation is pending |
 | Credit sync is stale | Check the latest `pvci_creditsyncrun`, physical connection health, flow state, and recurrence history |
 | Agent day/week chart has sparse dates | PPAC returned aggregate or weekly source periods; do not manufacture daily rows |
 

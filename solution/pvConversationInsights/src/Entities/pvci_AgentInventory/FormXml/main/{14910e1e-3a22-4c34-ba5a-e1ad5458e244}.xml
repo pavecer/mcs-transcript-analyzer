@@ -62,6 +62,20 @@
                       </cell>
                     </row>
                     <row>
+                      <cell id="{693a4043-8b9b-513d-8ac6-bbd333d16105}" showlabel="true">
+                        <labels>
+                          <label description="Agent status" languagecode="1033" />
+                        </labels>
+                        <control id="pvci_agentstatus" uniqueid="{3560414e-c8b1-5b43-a59c-f78d1f51324a}" classid="{4273EDBD-AC1D-40d3-9FB2-095C621B552D}" datafieldname="pvci_agentstatus" disabled="false" />
+                      </cell>
+                      <cell id="{a7942d4c-0f0c-5f41-b6e7-16f00610d2ab}" showlabel="true">
+                        <labels>
+                          <label description="Detailed access" languagecode="1033" />
+                        </labels>
+                        <control id="pvci_hasdetailedaccess" uniqueid="{d84847b5-7cf6-5b7e-a336-c47949a2ab68}" classid="{B0C6723A-8503-4fd7-BB28-C8A06AC933C2}" datafieldname="pvci_hasdetailedaccess" disabled="false" />
+                      </cell>
+                    </row>
+                    <row>
                       <cell id="{bfbce9c0-6948-5a2b-935d-c1e232e1413d}" showlabel="true">
                         <labels>
                           <label description="Schema name" languagecode="1033" />
@@ -152,11 +166,53 @@
                         </labels>
                         <control id="pvci_environmenturl" uniqueid="{3709e837-d8ea-5bc7-afe1-c685da9fa8dc}" classid="{4273EDBD-AC1D-40d3-9FB2-095C621B552D}" datafieldname="pvci_environmenturl" disabled="false" />
                       </cell>
+                      <cell id="{dce281d9-1aaa-517a-ba10-64f978c988c5}" showlabel="true">
+                        <labels>
+                          <label description="Environment type" languagecode="1033" />
+                        </labels>
+                        <control id="pvci_environmenttype" uniqueid="{8ca5f2d0-f0c7-508e-ad9c-b1b0ac6e7a8a}" classid="{4273EDBD-AC1D-40d3-9FB2-095C621B552D}" datafieldname="pvci_environmenttype" disabled="false" />
+                      </cell>
+                    </row>
+                    <row>
+                      <cell id="{53f37fa9-3550-5dac-86d6-28dc03b5ba0e}" showlabel="true">
+                        <labels>
+                          <label description="Location" languagecode="1033" />
+                        </labels>
+                        <control id="pvci_location" uniqueid="{2186f38b-e816-5297-a1ca-527616b01716}" classid="{4273EDBD-AC1D-40d3-9FB2-095C621B552D}" datafieldname="pvci_location" disabled="false" />
+                      </cell>
                       <cell id="{d56d61fb-6279-5082-bb34-5eafe91f6bb0}" showlabel="true">
                         <labels>
                           <label description="Tenant ID" languagecode="1033" />
                         </labels>
                         <control id="pvci_tenantid" uniqueid="{d78f79f1-d08e-57dc-9e19-b5c21c46afc9}" classid="{4273EDBD-AC1D-40d3-9FB2-095C621B552D}" datafieldname="pvci_tenantid" disabled="false" />
+                      </cell>
+                    </row>
+                    <row>
+                      <cell id="{8710a27e-5afd-5552-9c56-c7010ead429d}" showlabel="true">
+                        <labels>
+                          <label description="Agent created" languagecode="1033" />
+                        </labels>
+                        <control id="pvci_createdonsource" uniqueid="{af606b31-56e1-501f-815f-0d460b0cf854}" classid="{5B773807-9FB2-42db-97C3-7A91EFF8ADFF}" datafieldname="pvci_createdonsource" disabled="false" />
+                      </cell>
+                      <cell id="{f53296ae-3959-5542-b92f-a9ebcfca8140}" showlabel="true">
+                        <labels>
+                          <label description="Agent published" languagecode="1033" />
+                        </labels>
+                        <control id="pvci_publishedonsource" uniqueid="{12798812-6588-501e-9243-62f0115f38b2}" classid="{5B773807-9FB2-42db-97C3-7A91EFF8ADFF}" datafieldname="pvci_publishedonsource" disabled="false" />
+                      </cell>
+                    </row>
+                    <row>
+                      <cell id="{1cf48b50-3840-5e8a-aa9a-d98154e57f58}" showlabel="true">
+                        <labels>
+                          <label description="Authentication mode" languagecode="1033" />
+                        </labels>
+                        <control id="pvci_authenticationmode" uniqueid="{18760c66-6c14-581d-8b4f-8b6e24fac881}" classid="{4273EDBD-AC1D-40d3-9FB2-095C621B552D}" datafieldname="pvci_authenticationmode" disabled="false" />
+                      </cell>
+                      <cell id="{ba45a5d2-3cf4-5623-a3ca-1d3257ebc1f6}" showlabel="true">
+                        <labels>
+                          <label description="Environment inventory" languagecode="1033" />
+                        </labels>
+                        <control id="pvci_environmentinventoryid" uniqueid="{44500b03-b4f0-54ad-b4a4-a7928043ceef}" classid="{270BD3DB-D9AF-4782-9025-509E298DEC0A}" datafieldname="pvci_environmentinventoryid" disabled="false" />
                       </cell>
                     </row>
                     <row>

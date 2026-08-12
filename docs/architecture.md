@@ -11,9 +11,11 @@
 | PCF `JsonViewer` | Model-driven forms | Collapsible, searchable JSON rendering |
 | Code app | Browser (preview) | Replay timeline, trends, tool and flow drill-down |
 | `PVCI Collect Copilot Credit Usage` | Power Automate | Daily read-only PPAC resource usage and capacity collection with seven-day overlap |
+| `PVCI Collect Tenant Agent Inventory` | Power Automate | Daily environment and agent inventory independent of credit activity |
 | `pvci_ImportCreditUsageBatch` | Dataverse sandbox plugin | Tenant validation, raw-response normalization, stable-key upsert, and sync audit |
 | `CreditUserDisclosure` | Dataverse sandbox plugin | Shared approval audit, user-name resolution, and revocation cleanup |
 | Credit reporting surfaces | Model-driven app + code app | Agent/resource contribution, source periods, capacity, freshness, and data quality |
+| `PVCI Analyst` / `PVCI Privacy Approver` | Dataverse security | Read-only app access and separately authorized audited name disclosure |
 
 ## Data model
 
@@ -41,9 +43,11 @@ pvci_transcriptidentitymap      one row per distinct end user
 pvci_syncstate                  watermark, last run status, last error
 pvci_flowrundetail              one row per correlated run; pending until payload enrichment
 
-pvci_agentinventory             one row per observed tenant/environment/resource
+pvci_environmentinventory       one row per tenant environment, independent of activity
+  └─ pvci_agentinventory        one row per tenant/environment/resource
   └─ pvci_creditusage           one row per PPAC resource/source-period fact
 
+pvci_inventorysyncrun           one row per Admin V2/One Inventory invocation
 pvci_creditcapacitysnapshot     one row per environment/entitlement/as-of date
 pvci_creditsyncrun              one row per collector/import invocation
 pvci_credituserusage            one row per user/source-period fact; GUID label by default
