@@ -29,6 +29,22 @@ manually. It uses the following sequence:
 
 Failures stop before the artifact commit. The previously validated downloads remain live.
 
+## Issue candidate releases
+
+Backward-compatible fixes can be tested by affected tenants before the next public release. Run
+the **publish issue candidate** workflow manually with a candidate version such as `1.3.1.0`, the
+target test-tenant URL, and the issue number. `.github/workflows/candidate-release.yml` runs the
+focused governance tests, builds the managed candidate through
+`scripts/build_candidate_package.py`, imports and publishes it in the supplied test tenant, then
+creates the prerelease `v1.3.1.0-rc.1` and comments the direct ZIP URL on the issue.
+
+The candidate builder starts from the immutable public managed package and overlays only the
+reviewed source workflow definitions. This is intentional: Dataverse does not allow exporting a
+managed solution from a managed target environment. The test-tenant import is the deployment
+verification; the GitHub prerelease asset is the package distributed to affected testers. Never
+overwrite the stable `1.3.0.0` ZIP. After validation, promote the same fix through the normal
+versioned release process.
+
 ## Release documentation gate
 
 Product behavior and public documentation are coupled through

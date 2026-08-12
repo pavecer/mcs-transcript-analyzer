@@ -23,6 +23,7 @@
     ".github/skills/release-documentation/SKILL.md",
     ".github/skills/release-tracking/SKILL.md",
     ".github/workflows/build.yml",
+    ".github/workflows/candidate-release.yml",
     ".github/workflows/pages.yml",
     ".github/workflows/refresh-packages.yml",
     "CONTRIBUTING.md",
@@ -118,7 +119,9 @@
       "config/documentation-contract.json",
       "scripts/validate_documentation.py",
       ".github/skills/release-documentation/SKILL.md",
-      "productSourceDigest"
+      "productSourceDigest",
+      "candidate-release.yml",
+      "v1.3.1.0-rc.1"
     ],
     "CONTRIBUTING.md": [
       "scripts/validate_documentation.py",
@@ -143,6 +146,12 @@
     ],
     ".github/workflows/build.yml": [
       "python3 scripts/validate_documentation.py"
+    ],
+    ".github/workflows/candidate-release.yml": [
+      "build_candidate_package.py",
+      "test_environment_url",
+      "gh issue comment",
+      "--prerelease"
     ],
     ".github/workflows/pages.yml": [
       "python3 scripts/validate_documentation.py"

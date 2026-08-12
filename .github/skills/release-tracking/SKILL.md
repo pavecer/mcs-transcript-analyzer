@@ -31,6 +31,15 @@ contract, implementation, managed package, and release manifest.
 8. Test the public page at desktop and mobile widths in the shared VS Code browser page when the
    page changes.
 
+## Issue candidate releases
+
+For an affected-tenant bug fix, use `.github/workflows/candidate-release.yml` with a new
+backward-compatible version such as `1.3.1.0`. The workflow validates the source, builds a managed
+candidate from the stable package plus reviewed workflow changes, imports it into the supplied test
+tenant, and publishes a GitHub prerelease with an issue comment containing the direct ZIP URL.
+Dataverse managed solutions cannot be exported from a managed target, so do not add a manual target
+export step or overwrite the stable package.
+
 ## Roadmap discipline
 
 Every active item needs a status, goal, exit criteria, and tracking document. Mark work as
