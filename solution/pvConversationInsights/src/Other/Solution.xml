@@ -109,6 +109,7 @@
       <RootComponent type="66" schemaName="pvci_PvciControls.JsonViewer" behavior="0" />
       <RootComponent type="80" schemaName="pvci_conversationinsights" behavior="0" />
       <RootComponent type="91" id="{76199349-228d-f111-8077-7ced8d95b46e}" schemaName="plugin, Version=1.0.0.0, Culture=neutral, PublicKeyToken=a944d352ade9edd8" behavior="0" />
+      <RootComponent type="92" id="{076d7df8-1d96-f111-8076-7ced8d95b46e}" behavior="0" />
       <RootComponent type="92" id="{d29166a8-fc94-f111-8076-7ced8d95b46e}" behavior="0" />
     </RootComponents>
     <MissingDependencies>

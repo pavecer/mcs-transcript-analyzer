@@ -71,6 +71,10 @@ rejects invalid or stale requests without writing, applies one threshold PUT, re
 records Succeeded or Failed with before/after evidence. It never calls environment allocation,
 TenantPool, or PayGo mutation routes.
 
+A synchronous pre-create plug-in validates the request contract, forces `Pending` and server time,
+and strips processor-owned outcome fields. Credit Administrators have no request Write privilege,
+so callers cannot forge a completed audit row or alter a request after creation.
+
 ## Supported reporting grain
 
 The licensing APIs return aggregate reporting facts, not one billing event per conversation or
