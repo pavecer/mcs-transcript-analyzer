@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import re
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -20,6 +21,7 @@ MANIFEST_PATH = DOWNLOADS / "release-manifest.json"
 SOLUTION_DEFINITION_PATH = ROOT / "solution" / "pvConversationInsights" / "solution-definition.json"
 SOLUTION_XML_PATH = ROOT / "solution" / "pvConversationInsights" / "src" / "Other" / "Solution.xml"
 GENERATED_SERVICES_PATH = ROOT / "codeapp" / "src" / "generated" / "services"
+FULL_COMMIT_PATTERN = re.compile(r"^[0-9a-f]{40}$")
 
 
 def service_filename(table_name: str) -> str:
@@ -190,6 +192,8 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--source-commit", required=True, help="Commit represented by the packages")
     args = parser.parse_args()
+    if not FULL_COMMIT_PATTERN.fullmatch(args.source_commit):
+        raise SystemExit("--source-commit must be a full 40-character lowercase Git commit SHA")
 
     config = read_config()
     manifest = {
