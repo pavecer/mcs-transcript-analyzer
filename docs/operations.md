@@ -31,7 +31,12 @@ If tokens expire: `az login --tenant <tenantId>`.
 
 ```bash
 CFG=config/transcript_solution_config.dev.json
+
+# macOS / Linux
 source .venv/bin/activate
+
+# Windows PowerShell
+.\.venv\Scripts\Activate.ps1
 
 # 1. Schema — idempotent, safe to re-run after editing solution-definition.json
 python3 scripts/transcript_insights/provision_dataverse_solution_webapi.py \

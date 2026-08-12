@@ -60,6 +60,8 @@ def discover_surfaces() -> set[str]:
         *(ROOT / "scripts").glob("**/README.md"),
         *(ROOT / ".github" / "skills").glob("*/SKILL.md"),
         *(ROOT / ".github" / "workflows").glob("*.yml"),
+        *(ROOT / ".github" / "instructions").glob("**/*.md"),
+        *(ROOT / ".github" / "ISSUE_TEMPLATE").glob("**/*.yml"),
     }
     return {path.relative_to(ROOT).as_posix() for path in candidates if path.is_file()}
 

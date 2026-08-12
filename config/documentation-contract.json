@@ -14,6 +14,9 @@
     "scripts/transcript_insights/create_credit_governance_processor_flow.py"
   ],
   "indexedSurfaces": [
+    ".github/ISSUE_TEMPLATE/bug_report.yml",
+    ".github/ISSUE_TEMPLATE/feature_request.yml",
+    ".github/instructions/browser-use.instructions.md",
     ".github/pull_request_template.md",
     ".github/skills/release-documentation/SKILL.md",
     ".github/workflows/build.yml",

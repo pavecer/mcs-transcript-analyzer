@@ -45,10 +45,15 @@ their turns replaced.
 
 ### Scheduling
 
-`run_sync.sh` is a cron/launchd-ready wrapper:
+`run_sync.sh` is the bash/cron/launchd wrapper for macOS/Linux, and `run_sync.ps1` is the equivalent for Windows PowerShell:
 
 ```bash
 */15 * * * * /path/to/scripts/transcript_insights/run_sync.sh >> /var/log/pvci_sync.log 2>&1
+```
+
+```powershell
+$env:PVCI_CONFIG = 'config/transcript_solution_config.sandbox.json'
+.\scripts\transcript_insights\run_sync.ps1
 ```
 
 Override the target with `PVCI_CONFIG=config/transcript_solution_config.sandbox.json`.

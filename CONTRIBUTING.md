@@ -19,7 +19,13 @@ a few of the rules below exist to stop a well-meaning change from corrupting som
 ## Development setup
 
 ```bash
+# macOS / Linux
 python3 -m venv .venv && source .venv/bin/activate
+
+# Windows PowerShell
+py -3 -m venv .venv
+.\.venv\Scripts\Activate.ps1
+
 pip install -r scripts/transcript_insights/requirements.txt
 
 az login --tenant <tenant-id>

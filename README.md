@@ -96,7 +96,13 @@ Azure CLI, and a Dataverse environment where you hold System Customizer.
 git clone https://github.com/pavecer/mcs-transcript-analyzer.git
 cd mcs-transcript-analyzer
 
+# macOS / Linux
 python3 -m venv .venv && source .venv/bin/activate
+
+# Windows PowerShell
+py -3 -m venv .venv
+.\.venv\Scripts\Activate.ps1
+
 pip install -r scripts/transcript_insights/requirements.txt
 
 az login --tenant <your-tenant-id>          # silent tokens from here on
