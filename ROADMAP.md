@@ -8,9 +8,9 @@ Last reviewed: 2026-08-12
 
 ## Now
 
-### Validate the 1.3.0.0 tenant rollout
+### Validate the 1.3.1.0 tenant rollout
 
-- **Status:** Release verification
+- **Status:** Candidate validated; broader rollout verification pending
 - **Goal:** Import the core managed solution, optionally import the preview code app, and smoke-test the five scheduled flows in a clean sandbox and a second test tenant.
 - **Exit criteria:** Connection references, target tenant environment variable, roles, DLP/ACP policy, flow runs, both apps, and upgrade behavior are recorded in the release checklist.
 - **Tracking:** [Operations guide](docs/operations.md) and [permissions checklist](docs/permissions-and-inventory.md)

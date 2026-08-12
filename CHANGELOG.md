@@ -3,6 +3,20 @@
 Release history for MCS Transcript Analyzer. Each published package version is immutable; package
 checksums and source provenance are recorded in `site/downloads/release-manifest.json`.
 
+## 1.3.1.0 - 2026-08-12
+
+Backward-compatible governance bug fix.
+
+- Fixed the Copilot Credit threshold collector and processor to call the observed tenant-scoped licensing route.
+- Preserved the stable `1.3.0.0` packages and published the corrected managed packages as `1.3.1.0`.
+- Validated the core upgrade in PVE Preview Sand US before promoting the release.
+
+Artifacts:
+
+- Core: `pvConversationInsights-managed-1.3.1.0.zip`
+- Preview: `pvConversationInsightsCodeApp-managed-1.3.1.0.zip` (unchanged code, synchronized release version)
+- Release manifest: [`site/downloads/release-manifest.json`](site/downloads/release-manifest.json)
+
 ## 1.3.0.0 - 2026-08-12
 
 Copilot Credit operations release.
