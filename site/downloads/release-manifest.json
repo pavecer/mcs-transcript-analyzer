@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "sourceCommit": "313d684f61e786d45203b172956442c6bc0cad20",
-  "generatedAtUtc": "2026-08-12T08:07:49+00:00",
+  "sourceCommit": "3dff3c28714ecd6c88e5ec809352497d7ee481e5",
+  "generatedAtUtc": "2026-08-12T09:22:14+00:00",
   "artifacts": {
     "core": {
       "filename": "pvConversationInsights-managed-1.3.0.0.zip",
