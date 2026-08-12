@@ -440,7 +440,7 @@ namespace PvciTranscripts
                     { "stopResource", Json.Get(row, "stopResource") },
                     { "createdOnSource", Json.Get(row, "createdOn") },
                     { "capturedOn", capturedOn },
-                    { "sourceApi", "/licensing/entitlements/MCSMessages/resourceThresholds" },
+                    { "sourceApi", "/v1.0/tenants/{tenantId}/entitlements/MCSMessages/resourceThresholds" },
                     { "raw", row },
                 });
             }

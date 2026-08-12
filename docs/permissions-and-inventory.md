@@ -85,8 +85,9 @@ In the environment where PVCI is installed:
 3. Create `pvci_powerplatformadminv2` with **Power Platform for Admins V2** and bind it to the
    dedicated Power Platform Administrator account.
 4. Create `pvci_powerplatformapi` with **HTTP with Microsoft Entra ID (preauthorized)**. Set both
-   resource URLs to `https://api.powerplatform.com/` and bind it to the dedicated licensing
-   administrator account. Do not reuse `pvci_licensinghttp`; the audiences differ.
+   resource URLs to `https://licensing.powerplatform.microsoft.com/` and bind it to the dedicated
+   licensing administrator account. The governance route is tenant-scoped and uses the same
+   licensing audience as the usage collector; keep the physical connection target explicit.
 5. Create `pvci_dataversesync` with Microsoft Dataverse and bind all solution connection
    references to the intended dedicated account.
 6. Set the current value of `pvci_CreditReportingTenantId` to the tenant GUID. Do not put a

@@ -15,6 +15,7 @@ from create_credit_governance_flow import (  # noqa: E402
     DATAVERSE_REF_LOGICAL,
     HTTP_CONNECTOR,
     HTTP_REF_LOGICAL,
+    TENANT_PARAMETER,
     ensure_reference,
     resolve_connection_id,
 )
@@ -25,7 +26,6 @@ from dv_token import get_token_from_config  # noqa: E402
 SOLUTION = "pvConversationInsights"
 FLOW_NAME = "PVCI Apply Credit Governance Requests (scheduled)"
 REQUEST_TABLE = "pvci_thresholdchangerequests"
-THRESHOLD_URL = "/licensing/entitlements/MCSMessages/resourceThresholds?api-version=2024-10-01"
 MAX_REQUESTS = 20
 
 
@@ -75,6 +75,8 @@ def update_request(status: str, run_after: dict[str, list[str]], **fields: Any) 
 def build_definition() -> dict[str, Any]:
     request = "items('Process_pending_requests')"
     current = "outputs('Compose_current_threshold')"
+    tenant_expression = f"parameters('{TENANT_PARAMETER}')"
+    threshold_url = f"@concat('/v1.0/tenants/', {tenant_expression}, '/entitlements/MCSMessages/resourceThresholds')"
     request_url = (
         "@concat('/licensing/environments/',"
         f"{request}?['pvci_environmentid'],"
@@ -107,7 +109,7 @@ def build_definition() -> dict[str, Any]:
         "type": "Scope",
         "runAfter": {"Mark_processing": ["Succeeded"]},
         "actions": {
-            "Get_current_thresholds": http_action("GET", THRESHOLD_URL, {}),
+            "Get_current_thresholds": http_action("GET", threshold_url, {}),
             "Filter_current_threshold": {
                 "type": "Query",
                 "runAfter": {"Get_current_thresholds": ["Succeeded"]},
@@ -136,7 +138,7 @@ def build_definition() -> dict[str, Any]:
                             "resourceConsumption": f"@float(coalesce({current}?['resourceConsumption'], 0))",
                         },
                     ),
-                    "Get_thresholds_after": http_action("GET", THRESHOLD_URL, {"Apply_threshold": ["Succeeded"]}),
+                    "Get_thresholds_after": http_action("GET", threshold_url, {"Apply_threshold": ["Succeeded"]}),
                     "Filter_threshold_after": {
                         "type": "Query",
                         "runAfter": {"Get_thresholds_after": ["Succeeded"]},
@@ -172,6 +174,11 @@ def build_definition() -> dict[str, Any]:
         "parameters": {
             "$connections": {"defaultValue": {}, "type": "Object"},
             "$authentication": {"defaultValue": {}, "type": "SecureObject"},
+            TENANT_PARAMETER: {
+                "defaultValue": "",
+                "type": "String",
+                "metadata": {"schemaName": "pvci_CreditReportingTenantId"},
+            },
         },
         "triggers": {
             "Every_minute": {

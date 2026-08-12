@@ -369,11 +369,11 @@ Neither supplies a shared billing-event ID for an exact transcript/action join. 
 
 ### Agent threshold governance
 
-Threshold governance uses a separate HTTP with Microsoft Entra ID connection and audience:
-`https://api.powerplatform.com/`. It must not reuse the licensing reporting connection.
+Threshold governance uses a dedicated HTTP with Microsoft Entra ID connection and the observed
+licensing audience: `https://licensing.powerplatform.microsoft.com/`.
 
 ```http
-GET /licensing/entitlements/MCSMessages/resourceThresholds?api-version=2024-10-01
+GET /v1.0/tenants/{tenantId}/entitlements/MCSMessages/resourceThresholds
 ```
 
 The response is tenant-wide and keyed by `environmentId` plus `resourceId`. PVCI preserves limit,

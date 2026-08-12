@@ -31,6 +31,13 @@
         "$authentication": {
           "defaultValue": {},
           "type": "SecureObject"
+        },
+        "pvci_CreditReportingTenantId (pvci_CreditReportingTenantId)": {
+          "defaultValue": "",
+          "type": "String",
+          "metadata": {
+            "schemaName": "pvci_CreditReportingTenantId"
+          }
         }
       },
       "triggers": {
@@ -115,7 +122,7 @@
                     },
                     "parameters": {
                       "request/method": "GET",
-                      "request/url": "/licensing/entitlements/MCSMessages/resourceThresholds?api-version=2024-10-01"
+                      "request/url": "@concat('/v1.0/tenants/', parameters('pvci_CreditReportingTenantId (pvci_CreditReportingTenantId)'), '/entitlements/MCSMessages/resourceThresholds')"
                     }
                   }
                 },
@@ -187,7 +194,7 @@
                         },
                         "parameters": {
                           "request/method": "GET",
-                          "request/url": "/licensing/entitlements/MCSMessages/resourceThresholds?api-version=2024-10-01"
+                          "request/url": "@concat('/v1.0/tenants/', parameters('pvci_CreditReportingTenantId (pvci_CreditReportingTenantId)'), '/entitlements/MCSMessages/resourceThresholds')"
                         }
                       }
                     },

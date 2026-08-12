@@ -24,11 +24,12 @@ DATAVERSE_REF_LOGICAL = "pvci_dataversesync"
 TENANT_VARIABLE_SCHEMA = "pvci_CreditReportingTenantId"
 TENANT_PARAMETER = f"{TENANT_VARIABLE_SCHEMA} ({TENANT_VARIABLE_SCHEMA})"
 SCHEMA_VERSION = "power-platform-resource-threshold-v1"
-THRESHOLD_URL = "/licensing/entitlements/MCSMessages/resourceThresholds?api-version=2024-10-01"
+THRESHOLD_PATH = "/v1.0/tenants/{tenantId}/entitlements/MCSMessages/resourceThresholds"
 
 
 def build_definition() -> dict[str, Any]:
     tenant_expression = f"parameters('{TENANT_PARAMETER}')"
+    threshold_url = f"@concat('/v1.0/tenants/', {tenant_expression}, '/entitlements/MCSMessages/resourceThresholds')"
     return {
         "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
         "contentVersion": "1.0.0.0",
@@ -62,7 +63,7 @@ def build_definition() -> dict[str, Any]:
                         "connectionName": "shared_webcontents",
                         "operationId": "InvokeHttp",
                     },
-                    "parameters": {"request/method": "GET", "request/url": THRESHOLD_URL},
+                    "parameters": {"request/method": "GET", "request/url": threshold_url},
                 },
             },
             "Compose_governance_payload": {

@@ -79,7 +79,7 @@
             },
             "parameters": {
               "request/method": "GET",
-              "request/url": "/licensing/entitlements/MCSMessages/resourceThresholds?api-version=2024-10-01"
+              "request/url": "@concat('/v1.0/tenants/', parameters('pvci_CreditReportingTenantId (pvci_CreditReportingTenantId)'), '/entitlements/MCSMessages/resourceThresholds')"
             }
           }
         },

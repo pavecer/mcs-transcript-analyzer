@@ -613,7 +613,7 @@
           <div class="steps" data-reveal>
             <article class="step"><h3>Download the managed ZIP</h3><p>Keep the archive intact. Power Apps imports the ZIP directly; do not extract it.</p></article>
             <article class="step"><h3>Import in Power Apps</h3><p>Open <strong>Solutions</strong>, choose <strong>Import solution</strong>, upload the ZIP, and complete the import wizard.</p></article>
-            <article class="step"><h3>Configure connections and tenant</h3><p>Bind <code>pvci_dataversesync</code> to Dataverse, <code>pvci_licensinghttp</code> to the licensing API, <code>pvci_powerplatformapi</code> to <code>api.powerplatform.com</code>, and <code>pvci_powerplatformadminv2</code> to Power Platform for Admins V2. Then set <code>pvci_CreditReportingTenantId</code>.</p></article>
+            <article class="step"><h3>Configure connections and tenant</h3><p>Bind <code>pvci_dataversesync</code> to Dataverse, <code>pvci_licensinghttp</code> and <code>pvci_powerplatformapi</code> to the licensing API, and <code>pvci_powerplatformadminv2</code> to Power Platform for Admins V2. Then set <code>pvci_CreditReportingTenantId</code>.</p></article>
             <article class="step"><h3>Activate and run the flows</h3><p>Verify transcript, credit, inventory, governance collection, and the threshold processor with a no-op request before scheduling.</p></article>
             <article class="step"><h3>Assign access</h3><p>Grant app and Dataverse access, then follow the <a href="https://github.com/pavecer/mcs-transcript-analyzer/blob/main/docs/permissions-and-inventory.md">permissions and inventory checklist</a> for collector and cross-environment roles.</p></article>
           </div>

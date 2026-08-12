@@ -87,7 +87,8 @@ If tokens expire: `az login --tenant <tenantId>`.
 - `create_inventory_sync_flow.py` — creates the stopped Admin V2/One Inventory tenant inventory
   collector; bind a target-local Power Platform Administrator connection before activation.
 - `create_credit_governance_flow.py` — creates the stopped read-only Power Platform resource-
-  threshold collector using a dedicated `api.powerplatform.com` HTTP with Entra ID connection.
+  threshold collector using a dedicated `licensing.powerplatform.microsoft.com` HTTP with Entra ID
+  connection and a tenant-scoped `v1.0` route.
 - `create_credit_governance_processor_flow.py` — creates the stopped privileged processor for
   validated threshold requests with stale-state detection and before/after audit.
 - `create_security_roles.py` — creates PVCI Analyst, PVCI Privacy Approver, and PVCI Credit Administrator

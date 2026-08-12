@@ -142,7 +142,7 @@ python3 scripts/transcript_insights/create_credit_sync_flow.py --config $CFG \
 python3 scripts/transcript_insights/create_inventory_sync_flow.py --config $CFG \
    --admin-connection-id shared-powerplatform-00000000
 
-# Create a separate api.powerplatform.com connection before the first command.
+# Create a dedicated licensing.powerplatform.microsoft.com connection before the first command.
 python3 scripts/transcript_insights/create_credit_governance_flow.py --config $CFG \
    --http-connection-id shared-webcontents-00000000
 python3 scripts/transcript_insights/create_credit_governance_processor_flow.py --config $CFG

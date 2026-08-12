@@ -159,9 +159,9 @@ after the runtime cache refreshes.
 
 ## Credit governance collection and changes
 
-Create a second **HTTP with Microsoft Entra ID (preauthorized)** connection. Set both connection
-fields to `https://api.powerplatform.com/`. Do not reuse `pvci_licensinghttp`; it has a different
-token audience. Bind and create the flow stopped:
+Create a dedicated **HTTP with Microsoft Entra ID (preauthorized)** connection for the governance
+read. Set both connection fields to `https://licensing.powerplatform.microsoft.com/`. Bind and
+create the flow stopped:
 
 ```bash
 python3 scripts/transcript_insights/create_credit_governance_flow.py \
@@ -341,7 +341,7 @@ Afterwards, in the target environment:
 4. Bind `pvci_powerplatformadminv2` to a Power Platform Administrator connection and ensure DLP/ACP
     allow Power Platform for Admins V2.
 5. Bind `pvci_powerplatformapi` to a target-local HTTP with Microsoft Entra ID connection whose
-    Base Resource URL and resource audience are `https://api.powerplatform.com/`.
+    Base Resource URL and resource audience are `https://licensing.powerplatform.microsoft.com/`.
 6. Assign **PVCI Analyst** to readers, **PVCI Privacy Approver** only to approved disclosure
     operators, and **PVCI Credit Administrator** only to threshold-change operators. Share the code
     app separately with the same users/groups.
@@ -363,7 +363,7 @@ Afterwards, in the target environment:
 | `401` from a script | `az login --tenant <tenantId>` |
 | Plugin returns `Status: failed` | Read `Errors` in the response and `pvci_lasterror` |
 | Flow does not start | Check the connection reference is bound and the flow is activated |
-| Governance flow fails at `Get_resource_thresholds` with `404` | Inspect the action's request URL and response body. The target-local `pvci_powerplatformapi` connection must be **HTTP with Microsoft Entra ID (preauthorized)** with both Base Resource URL and Microsoft Entra ID Resource URI set to `https://api.powerplatform.com/`; do not reuse `pvci_licensinghttp`. A 404 with the expected URL usually means the connection targets the wrong audience/cloud or the endpoint is unavailable to that tenant. Leave the flow stopped and capture the sanitized URL, status, and response body before changing the managed flow. |
+| Governance flow fails at `Get_resource_thresholds` with `404` | Inspect the action's request URL and response body. The URL must resolve to `/v1.0/tenants/{tenantId}/entitlements/MCSMessages/resourceThresholds`, and the target-local `pvci_powerplatformapi` connection must be **HTTP with Microsoft Entra ID (preauthorized)** with both Base Resource URL and Microsoft Entra ID Resource URI set to `https://licensing.powerplatform.microsoft.com/`. A 404 with the old `/licensing/entitlements/...` URL means the flow definition is stale; update/recreate the stopped flow from the corrected generator. |
 | Credit collector fails at `Get_usage_page` | Verify `pvci_licensinghttp` is connected and both licensing connection URLs match the tenant cloud |
 | Capacity or users load but agents/resources are empty | Inspect `Get_usage_page`: `401/403` is connection-owner access; `200` with an empty `resources` array means no resource facts were returned for the seven-day window. Capacity is not tenant inventory |
 | Only some tenant environments are listed in Credits | Check the latest `pvci_inventorysyncrun`, the `pvci_powerplatformadminv2` connection owner, and Admin V2 DLP/ACP access |

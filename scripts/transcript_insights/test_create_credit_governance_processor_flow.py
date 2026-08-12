@@ -4,7 +4,7 @@ import unittest
 from scripts.transcript_insights.create_credit_governance_processor_flow import (
     MAX_REQUESTS,
     REQUEST_TABLE,
-    THRESHOLD_URL,
+    TENANT_PARAMETER,
     build_clientdata,
     build_definition,
 )
@@ -32,7 +32,10 @@ class CreditGovernanceProcessorFlowTests(unittest.TestCase):
         serialized_condition = json.dumps(condition["expression"])
 
         self.assertEqual("GET", scoped["Get_current_thresholds"]["inputs"]["parameters"]["request/method"])
-        self.assertEqual(THRESHOLD_URL, scoped["Get_current_thresholds"]["inputs"]["parameters"]["request/url"])
+        self.assertEqual(
+            f"@concat('/v1.0/tenants/', parameters('{TENANT_PARAMETER}'), '/entitlements/MCSMessages/resourceThresholds')",
+            scoped["Get_current_thresholds"]["inputs"]["parameters"]["request/url"],
+        )
         self.assertEqual("PUT", applied["inputs"]["parameters"]["request/method"])
         self.assertIn("pvci_expectedlimit", serialized_condition)
         self.assertIn("pvci_expectednotificationthreshold", serialized_condition)

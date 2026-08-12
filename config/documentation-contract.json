@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "productSourceDigest": "061b026af872a186fefaf4630e9fc9cdef4baf650a959da255c7c8392c922912",
+  "productSourceDigest": "ed16d7420a3155f77647a406ec30a54fe8dccd0f372ebd29886fc939a751583c",
   "productInputs": [
     "config/release-packages.json",
     "solution/pvConversationInsights/solution-definition.json",
@@ -69,8 +69,8 @@
       "pvci_thresholdchangerequest"
     ],
     "docs/api-reference.md": [
-      "https://api.powerplatform.com/",
-      "resourceThresholds?api-version=2024-10-01",
+      "https://licensing.powerplatform.microsoft.com/",
+      "/v1.0/tenants/{tenantId}/entitlements/MCSMessages/resourceThresholds",
       "PUT /licensing/environments/{environmentId}",
       "AppliedUnverified"
     ],

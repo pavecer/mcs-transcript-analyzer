@@ -25,7 +25,8 @@ class CreditGovernanceContractTests(unittest.TestCase):
 
         self.assertIn('Json.Arr(Json.Get(root, "resourceThresholds"))', source)
         self.assertIn('DatePart(capturedOn)', source)
-        self.assertIn('"/licensing/entitlements/MCSMessages/resourceThresholds"', source)
+        self.assertIn("/v1.0/tenants/", source)
+        self.assertIn("/entitlements/MCSMessages/resourceThresholds", source)
         self.assertNotIn("UpsertResourceThreshold", source)
 
 

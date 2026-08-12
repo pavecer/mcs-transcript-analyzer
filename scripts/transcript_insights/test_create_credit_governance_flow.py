@@ -7,7 +7,7 @@ from scripts.transcript_insights.create_credit_governance_flow import (
     HTTP_REF_LOGICAL,
     SCHEMA_VERSION,
     TENANT_PARAMETER,
-    THRESHOLD_URL,
+    THRESHOLD_PATH,
     build_clientdata,
     build_definition,
     resolve_connection_id,
@@ -21,7 +21,12 @@ class CreditGovernanceFlowTests(unittest.TestCase):
         serialized = json.dumps(definition)
 
         self.assertEqual("GET", action["inputs"]["parameters"]["request/method"])
-        self.assertEqual(THRESHOLD_URL, action["inputs"]["parameters"]["request/url"])
+        self.assertEqual(
+            f"@concat('/v1.0/tenants/', parameters('{TENANT_PARAMETER}'), '/entitlements/MCSMessages/resourceThresholds')",
+            action["inputs"]["parameters"]["request/url"],
+        )
+        self.assertIn("/v1.0/tenants/", action["inputs"]["parameters"]["request/url"])
+        self.assertIn("/entitlements/MCSMessages/resourceThresholds", action["inputs"]["parameters"]["request/url"])
         self.assertNotIn('"PUT"', serialized)
         self.assertNotIn('"PATCH"', serialized)
         self.assertNotIn("/threshold?", serialized)

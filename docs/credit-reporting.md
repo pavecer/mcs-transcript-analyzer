@@ -58,10 +58,10 @@ cloud, both its Base Resource URL and Microsoft Entra ID Resource URI are
 current value, credentials, or physical connection ID; each target supplies those deployment
 bindings during import.
 
-The governance collector uses a separate **HTTP with Microsoft Entra ID (preauthorized)**
+The governance collector uses a dedicated **HTTP with Microsoft Entra ID (preauthorized)**
 connection whose Base Resource URL and Microsoft Entra ID Resource URI are both
-`https://api.powerplatform.com/`. It binds through `pvci_powerplatformapi`. One HTTP connection
-cannot represent both licensing audiences, and neither physical connection ID is exported.
+`https://licensing.powerplatform.microsoft.com/`. It binds through `pvci_powerplatformapi` and
+calls the tenant-scoped `v1.0` threshold route. The physical connection ID is not exported.
 
 ## Harness classification and credit limits
 
@@ -78,8 +78,8 @@ It does not infer harness from orchestration mode, model, tools, creation date, 
 The governance collector reads:
 
 ```text
-GET https://api.powerplatform.com/licensing/entitlements/MCSMessages/resourceThresholds
-  ?api-version=2024-10-01
+GET https://licensing.powerplatform.microsoft.com/v1.0/tenants/{tenantId}
+  /entitlements/MCSMessages/resourceThresholds
 ```
 
 The endpoint returns tenant-wide threshold rows keyed by environment and resource. PVCI stores one
