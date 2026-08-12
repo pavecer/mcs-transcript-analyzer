@@ -147,7 +147,7 @@
                       "Succeeded"
                     ]
                   },
-                  "expression": "@and(equals(items('Process_pending_requests')?['pvci_entitlementid'], 'MCSMessages'),not(empty(items('Process_pending_requests')?['pvci_justification'])),greaterOrEquals(float(items('Process_pending_requests')?['pvci_requestedlimit']), 0),greaterOrEquals(int(items('Process_pending_requests')?['pvci_requestednotificationthreshold']), 0),lessOrEquals(int(items('Process_pending_requests')?['pvci_requestednotificationthreshold']), 100),not(empty(outputs('Compose_current_threshold'))),equals(float(coalesce(outputs('Compose_current_threshold')?['limit'], 0)), float(coalesce(items('Process_pending_requests')?['pvci_expectedlimit'], 0))),equals(int(coalesce(outputs('Compose_current_threshold')?['notificationThreshold'], 0)), int(coalesce(items('Process_pending_requests')?['pvci_expectednotificationthreshold'], 0))),equals(bool(coalesce(outputs('Compose_current_threshold')?['notifyIfOverCapacity'], false)), bool(coalesce(items('Process_pending_requests')?['pvci_expectednotifyifovercapacity'], false))),equals(bool(coalesce(outputs('Compose_current_threshold')?['stopIfOverCapacity'], false)), bool(coalesce(items('Process_pending_requests')?['pvci_expectedstopifovercapacity'], false))),equals(bool(coalesce(outputs('Compose_current_threshold')?['stopResource'], false)), bool(coalesce(items('Process_pending_requests')?['pvci_expectedstopresource'], false))))",
+                  "expression": "@and(equals(items('Process_pending_requests')?['pvci_entitlementid'], 'MCSMessages'),greaterOrEquals(length(trim(string(coalesce(items('Process_pending_requests')?['pvci_justification'], '')))), 10),greaterOrEquals(float(items('Process_pending_requests')?['pvci_requestedlimit']), 0),equals(float(items('Process_pending_requests')?['pvci_requestedlimit']), float(formatNumber(float(items('Process_pending_requests')?['pvci_requestedlimit']), '0', 'en-US'))),greaterOrEquals(int(items('Process_pending_requests')?['pvci_requestednotificationthreshold']), 0),lessOrEquals(int(items('Process_pending_requests')?['pvci_requestednotificationthreshold']), 100),not(empty(outputs('Compose_current_threshold'))),equals(float(coalesce(outputs('Compose_current_threshold')?['limit'], 0)), float(coalesce(items('Process_pending_requests')?['pvci_expectedlimit'], 0))),equals(int(coalesce(outputs('Compose_current_threshold')?['notificationThreshold'], 0)), int(coalesce(items('Process_pending_requests')?['pvci_expectednotificationthreshold'], 0))),equals(bool(coalesce(outputs('Compose_current_threshold')?['notifyIfOverCapacity'], false)), bool(coalesce(items('Process_pending_requests')?['pvci_expectednotifyifovercapacity'], false))),equals(bool(coalesce(outputs('Compose_current_threshold')?['stopIfOverCapacity'], false)), bool(coalesce(items('Process_pending_requests')?['pvci_expectedstopifovercapacity'], false))),equals(bool(coalesce(outputs('Compose_current_threshold')?['stopResource'], false)), bool(coalesce(items('Process_pending_requests')?['pvci_expectedstopresource'], false))))",
                   "actions": {
                     "Apply_threshold": {
                       "type": "OpenApiConnection",
@@ -271,9 +271,9 @@
                 "parameters": {
                   "entityName": "pvci_thresholdchangerequests",
                   "recordId": "@items('Process_pending_requests')?['pvci_thresholdchangerequestid']",
-                  "item/pvci_status": "Failed",
+                  "item/pvci_status": "@if(equals(actions('Apply_threshold')?['status'], 'Skipped'), 'Failed', 'AppliedUnverified')",
                   "item/pvci_processedon": "@utcNow()",
-                  "item/pvci_error": "@string(result('Apply_request'))"
+                  "item/pvci_error": "@concat(if(equals(actions('Apply_threshold')?['status'], 'Skipped'), 'Request processing failed before the threshold PUT. ', 'Threshold PUT was attempted but read-back or audit persistence failed. Verify current platform state before resubmitting. '), string(result('Apply_request')))"
                 }
               }
             }

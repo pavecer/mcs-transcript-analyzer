@@ -90,8 +90,9 @@ def build_definition() -> dict[str, Any]:
     expected_state = (
         "@and("
         f"equals({request}?['pvci_entitlementid'], 'MCSMessages'),"
-        f"not(empty({request}?['pvci_justification'])),"
+        f"greaterOrEquals(length(trim(string(coalesce({request}?['pvci_justification'], '')))), 10),"
         f"greaterOrEquals(float({request}?['pvci_requestedlimit']), 0),"
+        f"equals(float({request}?['pvci_requestedlimit']), float(formatNumber(float({request}?['pvci_requestedlimit']), '0', 'en-US'))),"
         f"greaterOrEquals(int({request}?['pvci_requestednotificationthreshold']), 0),"
         f"lessOrEquals(int({request}?['pvci_requestednotificationthreshold']), 100),"
         f"not(empty({current})),"
@@ -206,10 +207,15 @@ def build_definition() -> dict[str, Any]:
                     "Mark_processing": update_request("Processing", {}),
                     "Apply_request": apply_scope,
                     "Mark_processor_failed": update_request(
-                        "Failed",
+                        "@if(equals(actions('Apply_threshold')?['status'], 'Skipped'), 'Failed', 'AppliedUnverified')",
                         {"Apply_request": ["Failed", "TimedOut"]},
                         pvci_processedon="@utcNow()",
-                        pvci_error="@string(result('Apply_request'))",
+                        pvci_error=(
+                            "@concat(if(equals(actions('Apply_threshold')?['status'], 'Skipped'), "
+                            "'Request processing failed before the threshold PUT. ', "
+                            "'Threshold PUT was attempted but read-back or audit persistence failed. "
+                            "Verify current platform state before resubmitting. '), string(result('Apply_request')))"
+                        ),
                     ),
                 },
             },

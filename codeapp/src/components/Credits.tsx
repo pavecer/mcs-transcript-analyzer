@@ -526,8 +526,8 @@ export function Credits({ sidebarTarget }: { sidebarTarget: HTMLElement | null }
 
   const submitThresholdRequest = async () => {
     if (!editingThreshold || requestBusy) return;
-    if (requestedLimit < 0 || requestedNotification < 0 || requestedNotification > 100 || requestJustification.trim().length < 10) {
-      setError("Provide a non-negative limit, notification percentage from 0 to 100, and a justification of at least 10 characters.");
+    if (!Number.isInteger(requestedLimit) || requestedLimit < 0 || !Number.isInteger(requestedNotification) || requestedNotification < 0 || requestedNotification > 100 || requestJustification.trim().length < 10) {
+      setError("Provide a non-negative whole-number limit, a whole-number notification percentage from 0 to 100, and a justification of at least 10 characters.");
       return;
     }
     const key = resourceIdentityKey(editingThreshold.pvci_environmentid, editingThreshold.pvci_resourceid ?? "unknown");
@@ -865,7 +865,7 @@ export function Credits({ sidebarTarget }: { sidebarTarget: HTMLElement | null }
           <span>{detailedEnvironmentCount} detailed access</span>
         </div>
 
-        <SectionHeading text="Agent credit limits · read-only" help="Latest Power Platform resource-threshold state. This release reports controls but does not change them." className="report-subheading" />
+        <SectionHeading text="Agent credit limits" help="Latest Power Platform resource-threshold state. Authorized Credit Administrators can submit audited change requests for processor validation." className="report-subheading" />
         <div className="sync-strip">
           <span>{latestGovernanceSync?.pvci_name ?? "No governance sync run"}</span>
           <span className={`conf ${latestGovernanceSync?.pvci_status === "success" ? "high" : "multiple"}`}>{latestGovernanceSync?.pvci_status ?? "not configured"}</span>
@@ -885,8 +885,8 @@ export function Credits({ sidebarTarget }: { sidebarTarget: HTMLElement | null }
               <button type="button" className="privacy-action revoke" onClick={() => setEditingThreshold(null)}>Cancel</button>
             </div>
             <div className="governance-editor-grid">
-              <label>Monthly limit<input type="number" min="0" value={requestedLimit} onChange={(event) => setRequestedLimit(Number(event.target.value))} /></label>
-              <label>Notify at %<input type="number" min="0" max="100" value={requestedNotification} onChange={(event) => setRequestedNotification(Number(event.target.value))} /></label>
+              <label>Monthly limit<input type="number" min="0" step="1" value={requestedLimit} onChange={(event) => setRequestedLimit(Number(event.target.value))} /></label>
+              <label>Notify at %<input type="number" min="0" max="100" step="1" value={requestedNotification} onChange={(event) => setRequestedNotification(Number(event.target.value))} /></label>
               <label className="governance-check"><input type="checkbox" checked={requestedNotify} onChange={(event) => setRequestedNotify(event.target.checked)} /> Notify near limit</label>
               <label className="governance-check"><input type="checkbox" checked={requestedStopAtLimit} onChange={(event) => setRequestedStopAtLimit(event.target.checked)} /> Stop at limit</label>
               <label className="governance-check"><input type="checkbox" checked={requestedStopResource} onChange={(event) => setRequestedStopResource(event.target.checked)} /> Stop immediately</label>

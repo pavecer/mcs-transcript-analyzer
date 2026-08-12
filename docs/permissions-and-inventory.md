@@ -12,8 +12,9 @@ to the model-driven app and apply to the same Dataverse data sources used by the
    `pvci_creditprivacysetting` and `pvci_credituserusage`, and read on `systemuser`. These privileges
    let the synchronous disclosure plug-in record the initiating user/time and resolve or revoke all
    stored names.
-- **PVCI Credit Administrator** has Analyst read access plus create/read access on audited threshold
-   requests. It cannot update outcomes or call licensing APIs directly.
+- **PVCI Credit Administrator** has Analyst read access plus create/read and the narrow append
+   privileges required to bind audited requests to Agent Inventory. It cannot update outcomes or
+   call licensing APIs directly.
 
 The preview code app must still be shared with users or groups through **Manage access**. App
 sharing grants the app shell; one of the packaged Dataverse roles grants its additional data

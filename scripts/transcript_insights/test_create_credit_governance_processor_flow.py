@@ -38,6 +38,8 @@ class CreditGovernanceProcessorFlowTests(unittest.TestCase):
         self.assertIn("pvci_expectednotificationthreshold", serialized_condition)
         self.assertIn("pvci_expectedstopresource", serialized_condition)
         self.assertIn("pvci_justification", serialized_condition)
+        self.assertIn("greaterOrEquals(length(trim", serialized_condition)
+        self.assertIn("formatNumber(float(", serialized_condition)
         self.assertIn("resourceConsumption", applied["inputs"]["parameters"]["request/body"])
 
     def test_processor_records_success_stale_and_failure(self) -> None:
@@ -53,7 +55,8 @@ class CreditGovernanceProcessorFlowTests(unittest.TestCase):
         self.assertIn("item/pvci_beforejson", success["inputs"]["parameters"])
         self.assertIn("item/pvci_afterjson", success["inputs"]["parameters"])
         self.assertEqual("Stale", stale["inputs"]["parameters"]["item/pvci_status"])
-        self.assertEqual("Failed", failed["inputs"]["parameters"]["item/pvci_status"])
+        self.assertIn("AppliedUnverified", failed["inputs"]["parameters"]["item/pvci_status"])
+        self.assertIn("read-back or audit persistence failed", failed["inputs"]["parameters"]["item/pvci_error"])
         self.assertEqual({"Apply_request": ["Failed", "TimedOut"]}, failed["runAfter"])
 
     def test_processor_does_not_change_environment_allocations(self) -> None:

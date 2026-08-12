@@ -55,7 +55,8 @@ class SecurityRoleContractTests(unittest.TestCase):
 
     def test_credit_administrator_can_submit_but_not_process_requests(self) -> None:
         privileges = self.roles["PVCI Credit Administrator"]["tablePrivileges"]
-        self.assertEqual(["Create", "Read"], privileges["pvci_thresholdchangerequest"])
+        self.assertEqual(["Create", "Read", "Append"], privileges["pvci_thresholdchangerequest"])
+        self.assertEqual(["Read", "AppendTo"], privileges["pvci_agentinventory"])
         self.assertNotIn("Write", privileges["pvci_thresholdchangerequest"])
 
 
