@@ -28,5 +28,6 @@ Row counts before → after: <!-- sessions / turns -->
 - [ ] No environment config, HAR captures, transcript content or user identifiers committed
 - [ ] No broad `except Exception` that could hide a failure
 - [ ] Docs updated if behaviour or limitations changed
+- [ ] `CHANGELOG.md` and `ROADMAP.md` reviewed and updated when release scope changed
 - [ ] Documentation contract reviewed and both documentation/site validators pass
 - [ ] Browser/UI validation reused the shared VS Code browser; browser policy gate passes

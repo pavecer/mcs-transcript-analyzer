@@ -10,6 +10,8 @@ what it did.
 
 **[View the solution presentation and download the managed installer](https://pavecer.github.io/mcs-transcript-analyzer/)**
 
+Track shipped versions in [CHANGELOG.md](CHANGELOG.md) and planned work in [ROADMAP.md](ROADMAP.md).
+
 ---
 
 ## What you get

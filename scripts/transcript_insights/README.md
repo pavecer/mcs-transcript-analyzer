@@ -1,7 +1,7 @@
 # Transcript Insights Scripts
 
 **Primary path — Dataverse `conversationtranscripts` (v9.1).** This is the endpoint that works
-and carries end-user identity. See `docs/customer-facing/ConversationTranscripts-API-Reference.md`.
+and carries end-user identity. See `docs/api-reference.md`.
 
 ## Solution pipeline (v9.1)
 

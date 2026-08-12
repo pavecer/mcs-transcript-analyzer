@@ -68,7 +68,7 @@
     }
 
     * { box-sizing: border-box; }
-    html { scroll-behavior: smooth; }
+    html { scroll-behavior: smooth; overflow-x: hidden; }
     body {
       margin: 0;
       background: var(--cp-bg);
@@ -76,6 +76,7 @@
       font-family: "Segoe UI", Aptos, Calibri, -apple-system, BlinkMacSystemFont, sans-serif;
       font-size: 16px;
       line-height: 1.6;
+      overflow-x: hidden;
     }
     a { color: var(--cp-link); }
     img { display: block; max-width: 100%; }
@@ -330,6 +331,15 @@
     .limitation { border-top: 2px solid var(--cp-border-strong); padding-top: 18px; }
     .limitation h3 { margin: 0 0 9px; font-size: 18px; }
     .limitation p { margin: 0; color: var(--cp-text-muted); font-size: 15px; }
+    .tracking-grid { display: grid; grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr); gap: 54px; align-items: start; }
+    .tracking-list { display: grid; gap: 0; border-top: 1px solid var(--cp-border); }
+    .tracking-item { padding: 22px 0; border-bottom: 1px solid var(--cp-border); }
+    .tracking-item h3 { margin: 0 0 6px; font-size: 20px; }
+    .tracking-item p { margin: 0; color: var(--cp-text-muted); font-size: 15px; }
+    .tracking-meta { display: flex; flex-wrap: wrap; gap: 8px 16px; margin-top: 10px; color: var(--cp-accent); font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; }
+    .tracking-meta a { color: inherit; }
+    .tracking-boundary { margin-top: 24px; padding: 20px 22px; border-left: 4px solid var(--cp-border-strong); background: var(--cp-surface-soft); color: var(--cp-text-muted); }
+    .tracking-boundary strong { display: block; margin-bottom: 6px; color: var(--cp-text); }
     .notice { margin-top: 38px; padding: 20px 22px; border-left: 4px solid var(--cp-warning); background: var(--cp-surface-soft); }
     .notice strong { display: block; margin-bottom: 4px; }
 
@@ -368,6 +378,7 @@
       .package { position: static; }
       .preview-release { grid-template-columns: 1fr; }
       .limitations { grid-template-columns: 1fr; }
+      .tracking-grid { grid-template-columns: 1fr; }
     }
     @media (max-width: 600px) {
       .shell { width: min(100% - 28px, 1160px); }
@@ -405,6 +416,8 @@
         <a href="#capabilities">Capabilities</a>
         <a href="#credits">Credits</a>
         <a href="#architecture">Architecture</a>
+        <a href="#release-history">Releases</a>
+        <a href="#roadmap">Roadmap</a>
         <a href="#install">Install</a>
         <a class="nav-github" href="https://github.com/pavecer/mcs-transcript-analyzer" aria-label="View source on GitHub">
           <i data-lucide="github" aria-hidden="true"></i><span>GitHub</span>
@@ -544,6 +557,52 @@
       </div>
     </section>
 
+    <section class="section alt" id="release-history">
+      <div class="shell">
+        <div class="section-head" data-reveal>
+          <div><span class="section-kicker">Release history</span><h2>What shipped</h2></div>
+          <p class="section-intro">Every managed package version is immutable. The repository changelog records the user-visible changes, while the release manifest records the exact ZIP checksums and source provenance.</p>
+        </div>
+        <div class="tracking-grid" data-reveal>
+          <div>
+            <div class="tracking-item">
+              <h3>1.3.0.0</h3>
+              <p>Copilot Credit operations: usage and capacity facts, tenant inventory, risk bands, least-privilege roles, and audited agent-threshold requests.</p>
+              <div class="tracking-meta"><span>Released 2026-08-12</span><a href="https://github.com/pavecer/mcs-transcript-analyzer/blob/main/CHANGELOG.md">Full changelog</a></div>
+            </div>
+            <div class="tracking-item">
+              <h3>Earlier packages</h3>
+              <p>Versions 1.0.0.0, 1.1.0.0, and 1.2.0.0 remain available for upgrade testing and historical comparison.</p>
+              <div class="tracking-meta"><a href="https://github.com/pavecer/mcs-transcript-analyzer/tags">Version tags</a><a href="downloads/release-manifest.json">Release manifest</a></div>
+            </div>
+          </div>
+          <div class="tracking-boundary"><strong>Release discipline</strong> A new version requires synchronized core and code-app package versions, fresh managed exports, updated documentation, validated checksums, and a clean-sandbox import test. The supported model-driven solution and the optional preview code app remain separate packages.</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="roadmap">
+      <div class="shell">
+        <div class="section-head" data-reveal>
+          <div><span class="section-kicker">Roadmap</span><h2>What comes next</h2></div>
+          <p class="section-intro">The roadmap distinguishes verified release work from planned improvements and capabilities that remain outside the current product boundary.</p>
+        </div>
+        <div class="tracking-grid" data-reveal>
+          <div class="tracking-list">
+            <article class="tracking-item"><h3>Validate the 1.3.0.0 tenant rollout</h3><p>Import the managed packages into clean and second test tenants, bind target-local connections, smoke-test all five flows, and verify both apps.</p><div class="tracking-meta"><span>Now · Release verification</span></div></article>
+            <article class="tracking-item"><h3>In-platform flow-run detail enrichment</h3><p>Move action and loop-iteration detail enrichment into an approved DLP/custom-connector path when the Power Automate API audience is available.</p><div class="tracking-meta"><span>Next · Policy validation</span></div></article>
+            <article class="tracking-item"><h3>Detailed cross-environment agent enrichment</h3><p>Add explicit per-environment Dataverse metadata where the collector identity has access, while preserving unknown as unknown.</p><div class="tracking-meta"><span>Next · Planned</span></div></article>
+          </div>
+          <div>
+            <div class="tracking-item"><h3>Make the code app supported</h3><p>Stabilize the preview code app's accessibility, ALM, licensing, data-source contract, and upgrade path before changing its unsupported status.</p><div class="tracking-meta"><span>Later · Preview</span></div></div>
+            <div class="tracking-item"><h3>Governance API discovery</h3><p>Evaluate additional control surfaces only where documented APIs support narrow authorization, stale-state protection, before/after audit, and rollback guidance.</p><div class="tracking-meta"><span>Later · Discovery</span></div></div>
+            <div class="tracking-boundary"><strong>Explicitly out of scope for now</strong> Per-user Copilot Studio limits, exact credit allocation to conversations or users, and environment allocation, TenantPool, or PayGo mutation are not presented as planned features.</div>
+          </div>
+        </div>
+        <p class="arch-detail" data-reveal>See the <a href="https://github.com/pavecer/mcs-transcript-analyzer/blob/main/ROADMAP.md">full roadmap</a> for exit criteria and the <a href="https://github.com/pavecer/mcs-transcript-analyzer/blob/main/CHANGELOG.md">changelog</a> for shipped release details.</p>
+      </div>
+    </section>
+
     <section class="section alt" id="install">
       <div class="shell">
         <div class="section-head" data-reveal>
@@ -639,7 +698,7 @@
   <footer>
     <div class="shell footer-inner">
       <span>© <span id="year"></span> MCS Transcript Analyzer · MIT licensed · Not affiliated with Microsoft</span>
-      <div class="footer-links"><a href="https://github.com/pavecer/mcs-transcript-analyzer/blob/main/docs/credit-reporting.md">Credits</a><a href="https://github.com/pavecer/mcs-transcript-analyzer/blob/main/docs/permissions-and-inventory.md">Permissions</a><a href="https://github.com/pavecer/mcs-transcript-analyzer/blob/main/docs/operations.md">Operations</a><a href="https://github.com/pavecer/mcs-transcript-analyzer/blob/main/SECURITY.md">Security</a></div>
+      <div class="footer-links"><a href="#release-history">Releases</a><a href="#roadmap">Roadmap</a><a href="https://github.com/pavecer/mcs-transcript-analyzer/blob/main/docs/credit-reporting.md">Credits</a><a href="https://github.com/pavecer/mcs-transcript-analyzer/blob/main/docs/permissions-and-inventory.md">Permissions</a><a href="https://github.com/pavecer/mcs-transcript-analyzer/blob/main/docs/operations.md">Operations</a><a href="https://github.com/pavecer/mcs-transcript-analyzer/blob/main/SECURITY.md">Security</a></div>
     </div>
   </footer>
 

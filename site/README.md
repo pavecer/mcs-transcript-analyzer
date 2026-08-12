@@ -4,6 +4,8 @@ The public presentation is deployed from this directory by `.github/workflows/pa
 The two managed solution ZIPs are release artifacts, not generic source archives: they must be
 exported from their deployed Dataverse solutions and pass `scripts/validate_site.py`.
 Product capabilities, setup, and public copy must also pass `scripts/validate_documentation.py`.
+The root [CHANGELOG.md](../CHANGELOG.md) records shipped versions and [ROADMAP.md](../ROADMAP.md)
+records prioritized work and explicit product boundaries; update both with the public page.
 
 ## Required for every user-visible feature
 

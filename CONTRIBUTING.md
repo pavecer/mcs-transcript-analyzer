@@ -101,6 +101,11 @@ listed product input changed, review every indexed surface before replacing `pro
 with `python3 scripts/validate_documentation.py --print-digest`. CI rejects stale documentation,
 unindexed credit/release surfaces, missing component coverage, and incomplete code-app setup.
 
+Release tracking is part of the same change. Add shipped behavior to [`CHANGELOG.md`](CHANGELOG.md),
+update status and exit criteria in [`ROADMAP.md`](ROADMAP.md), and keep the public release-history
+and roadmap sections synchronized in `site/index.html`. Use the repo-scoped
+.github/skills/release-tracking/SKILL.md workflow or the `Release Maintainer` agent for this
+work. Do not move a roadmap item to completed without package, build, API, or tenant evidence.
 The ZIP must be imported into a clean sandbox before release. Confirm that all custom components,
 including the JSON Viewer PCF, are embedded in the solution rather than left as dependencies on
 the source environment.

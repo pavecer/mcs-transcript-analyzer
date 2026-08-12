@@ -9,6 +9,10 @@ argument-hint: "Describe the capability or release documentation change"
 Use this workflow whenever product behavior or release packaging changes, and whenever README,
 `docs/`, or the public GitHub Pages site is reviewed for completeness.
 
+For version history and prioritized future work, also follow `.github/skills/release-tracking/SKILL.md`.
+`CHANGELOG.md` records only shipped behavior; `ROADMAP.md` records planned work and explicit
+boundaries.
+
 ## Procedure
 
 1. Run `python3 scripts/validate_documentation.py --list-surfaces` to enumerate every current

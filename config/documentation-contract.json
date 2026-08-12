@@ -14,11 +14,14 @@
     "scripts/transcript_insights/create_credit_governance_processor_flow.py"
   ],
   "indexedSurfaces": [
+    "CHANGELOG.md",
+    "ROADMAP.md",
     ".github/ISSUE_TEMPLATE/bug_report.yml",
     ".github/ISSUE_TEMPLATE/feature_request.yml",
     ".github/instructions/browser-use.instructions.md",
     ".github/pull_request_template.md",
     ".github/skills/release-documentation/SKILL.md",
+    ".github/skills/release-tracking/SKILL.md",
     ".github/workflows/build.yml",
     ".github/workflows/pages.yml",
     ".github/workflows/refresh-packages.yml",
@@ -39,6 +42,17 @@
     "site/index.html"
   ],
   "surfaceCoverage": {
+    "CHANGELOG.md": [
+      "1.3.0.0",
+      "pvConversationInsights-managed-1.3.0.0.zip",
+      "release-manifest.json"
+    ],
+    "ROADMAP.md": [
+      "Validate the 1.3.0.0 tenant rollout",
+      "Detailed cross-environment agent enrichment",
+      "Explicitly out of scope for the current product boundary",
+      "CHANGELOG.md"
+    ],
     "README.md": [
       "{customTableCount} custom tables",
       "{roleCount} application roles",
@@ -121,6 +135,12 @@
       "scripts/validate_documentation.py --print-digest",
       "python3 scripts/validate_site.py"
     ],
+    ".github/skills/release-tracking/SKILL.md": [
+      "CHANGELOG.md",
+      "ROADMAP.md",
+      "site/index.html",
+      "python3 scripts/validate_documentation.py"
+    ],
     ".github/workflows/build.yml": [
       "python3 scripts/validate_documentation.py"
     ],
@@ -140,7 +160,12 @@
       "Requested",
       "Verify applied",
       "Per-user limits are not available",
-      "docs/credit-reporting.md"
+      "docs/credit-reporting.md",
+      "id=\"release-history\"",
+      "id=\"roadmap\"",
+      "1.3.0.0",
+      "Detailed cross-environment agent enrichment",
+      "CHANGELOG.md"
     ]
   }
 }
