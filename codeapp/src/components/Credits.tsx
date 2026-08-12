@@ -26,6 +26,7 @@ import type { Pvci_inventorysyncruns } from "../generated/models/Pvci_inventorys
 import type { Pvci_thresholdchangerequests } from "../generated/models/Pvci_thresholdchangerequestsModel";
 import type { SessionRow } from "../lib/model";
 import { loadAllPages } from "../lib/paging";
+import { isActiveThresholdRequest, thresholdRequestStatusLabel } from "../lib/thresholdRequestState";
 import { parseWholeNumberInput } from "../lib/wholeNumberInput";
 
 const USAGE_FIELDS = [
@@ -189,6 +190,22 @@ export function Credits({ sidebarTarget }: { sidebarTarget: HTMLElement | null }
     return () => { cancelled = true; };
   }, []);
 
+  useEffect(() => {
+    if (!changeRequests.some((row) => isActiveThresholdRequest(row.pvci_status))) return;
+    let cancelled = false;
+    const timer = window.setInterval(() => {
+      void Pvci_thresholdchangerequestsService.getAll({ select: CHANGE_REQUEST_FIELDS, orderBy: ["pvci_requestedon desc"], top: 100 })
+        .then((result) => {
+          if (!cancelled) setChangeRequests((result.data ?? []) as unknown as Pvci_thresholdchangerequests[]);
+        })
+        .catch(() => undefined);
+    }, 5000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(timer);
+    };
+  }, [changeRequests]);
+
   const environmentOptions = useMemo(() => {
     const options = new Map<string, string>();
     environments.forEach((row) => {
@@ -263,6 +280,15 @@ export function Credits({ sidebarTarget }: { sidebarTarget: HTMLElement | null }
     });
     return values;
   }, [agents, usage]);
+  const latestRequestByKey = useMemo(() => {
+    const values = new Map<string, Pvci_thresholdchangerequests>();
+    changeRequests.forEach((row) => {
+      if (!row.pvci_resourceid) return;
+      const key = resourceIdentityKey(row.pvci_environmentid, row.pvci_resourceid);
+      if (!values.has(key)) values.set(key, row);
+    });
+    return values;
+  }, [changeRequests]);
   const resourceSummaries = useMemo(() => {
     const summaries = new Map<string, ResourceSummary>();
     environmentAgents.forEach((row) => {
@@ -567,10 +593,11 @@ export function Credits({ sidebarTarget }: { sidebarTarget: HTMLElement | null }
           ? { "pvci_AgentId@odata.bind": `/pvci_agentinventories(${editingThreshold._pvci_agentid_value})` }
           : {}),
       };
-      const result = await Pvci_thresholdchangerequestsService.create(
+      await Pvci_thresholdchangerequestsService.create(
         payload as unknown as Parameters<typeof Pvci_thresholdchangerequestsService.create>[0]
       );
-      if (result.data) setChangeRequests((current) => [result.data as Pvci_thresholdchangerequests, ...current]);
+      const refreshed = await Pvci_thresholdchangerequestsService.getAll({ select: CHANGE_REQUEST_FIELDS, orderBy: ["pvci_requestedon desc"], top: 100 });
+      setChangeRequests((refreshed.data ?? []) as unknown as Pvci_thresholdchangerequests[]);
       setEditingThreshold(null);
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : String(reason));
@@ -900,10 +927,12 @@ export function Credits({ sidebarTarget }: { sidebarTarget: HTMLElement | null }
         )}
         <div className="credit-table-wrap">
           <table className="runtable credit-table">
-            <thead><tr><th>Agent or resource</th><th>Environment</th><th>Risk</th><th>Used</th><th>Limit</th><th>Utilization</th><th>Alert</th><th>Enforcement</th><th></th></tr></thead>
+            <thead><tr><th>Agent or resource</th><th>Environment</th><th>Risk</th><th>Used</th><th>Limit</th><th>Utilization</th><th>Alert</th><th>Enforcement</th><th>Request</th><th></th></tr></thead>
             <tbody>
               {scopedThresholds.map((row) => {
                 const key = resourceIdentityKey(row.pvci_environmentid, row.pvci_resourceid ?? "unknown");
+                const latestRequest = latestRequestByKey.get(key);
+                const requestActive = isActiveThresholdRequest(latestRequest?.pvci_status);
                 return (
                   <tr key={row.pvci_agentthresholdsnapshotid}>
                     <td title={row.pvci_resourceid}>{allResourceLabelsByKey.get(key) ?? "Unlinked agent control"}</td>
@@ -914,7 +943,15 @@ export function Credits({ sidebarTarget }: { sidebarTarget: HTMLElement | null }
                     <td>{fmtPercent(thresholdUtilization(row))}</td>
                     <td>{row.pvci_notifyifovercapacity ? `${row.pvci_notificationthreshold ?? 0}%` : "Off"}</td>
                     <td><span className={`conf ${row.pvci_stopresource || row.pvci_stopifovercapacity ? "multiple" : "high"}`}>{thresholdEnforcement(row)}</span></td>
-                    <td><button type="button" className="privacy-action" onClick={() => openThresholdRequest(row)}>Change</button></td>
+                    <td>
+                      {latestRequest ? (
+                        <div className="request-state" title={latestRequest.pvci_error ?? latestRequest.pvci_justification}>
+                          <span className={`conf ${requestStatusClass(latestRequest.pvci_status)}`}>{thresholdRequestStatusLabel(latestRequest.pvci_status)}</span>
+                          <small>Limit {fmtCredits(latestRequest.pvci_requestedlimit ?? 0)} · {fmtDateTime(latestRequest.pvci_requestedon)}</small>
+                        </div>
+                      ) : <span className="muted">None</span>}
+                    </td>
+                    <td><button type="button" className="privacy-action" disabled={requestActive} onClick={() => openThresholdRequest(row)}>{requestActive ? thresholdRequestStatusLabel(latestRequest?.pvci_status) : "Change"}</button></td>
                   </tr>
                 );
               })}
@@ -930,7 +967,7 @@ export function Credits({ sidebarTarget }: { sidebarTarget: HTMLElement | null }
               {changeRequests.slice(0, 20).map((row) => (
                 <tr key={row.pvci_thresholdchangerequestid}>
                   <td>{row.pvci_name}</td>
-                  <td><span className={`conf ${requestStatusClass(row.pvci_status)}`}>{row.pvci_status ?? "Unknown"}</span></td>
+                  <td><span className={`conf ${requestStatusClass(row.pvci_status)}`}>{thresholdRequestStatusLabel(row.pvci_status)}</span></td>
                   <td className="mono">{fmtCredits(row.pvci_requestedlimit ?? 0)}</td>
                   <td>{row.pvci_requestednotifyifovercapacity ? `${row.pvci_requestednotificationthreshold ?? 0}%` : "Off"}</td>
                   <td>{row.pvci_requestedstopresource ? "Immediate" : row.pvci_requestedstopifovercapacity ? "At limit" : "No"}</td>
@@ -1104,7 +1141,7 @@ function riskLabel(value: SpendRisk) {
 function requestStatusClass(value?: string) {
   if (value === "Succeeded") return "high";
   if (value === "Failed" || value === "Stale") return "risk-critical";
-  if (value === "Processing") return "multiple";
+  if (value === "Processing" || value === "AppliedUnverified") return "multiple";
   return "none";
 }
 
