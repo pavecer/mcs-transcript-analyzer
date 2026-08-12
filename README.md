@@ -16,7 +16,7 @@ what it did.
 
 | Surface | What it is |
 |---|---|
-| **Dataverse solution** | 15 custom tables, views, forms, 2 application roles, a model-driven app, 2 Custom APIs, and 4 scheduled flows |
+| **Dataverse solution** | 16 custom tables, views, forms, 3 application roles, a model-driven app, 2 Custom APIs, and 5 scheduled flows |
 | **Model-driven app** | GA, standard-licensed. Transcript operations plus Credits and Capacity grids and evidence forms |
 | **Code app** (preview) | React/Vite triage UI: replay, trends, flow failure map, and Copilot Credit reporting |
 | **Custom APIs + plugin** | Incremental transcript sync and validated, idempotent credit import |
@@ -37,7 +37,7 @@ what it did.
 - **Actual billed and non-billed credits** — resource/agent source-period facts from PPAC
 - **Capacity** — environment allocation, consumption, available quantity, PAYG, and policy state
 - **Tenant inventory** — environments and Copilot agents from Power Platform Admin V2 and PPAC One Inventory, including agents with zero credit usage
-- **Governance snapshots** — direct GitHub harness evidence plus read-only agent limits, utilization, alerts, stop policy, and collector health
+- **Credit governance** — direct GitHub harness evidence, spend-risk bands, threshold utilization, and audited limit-change requests
 - **Granularity** — environment, agent/resource, source day or week, feature when supplied
 - **Lineage and quality** — source API/schema, freshness, unresolved resources, and unknown harnesses
 - **User support** — separate user-period facts display source GUIDs by default; an audited shared
@@ -69,10 +69,10 @@ Power Apps under **Solutions > Import solution**. The source deployment below is
 contributors and environments where you want to rebuild every component.
 
 Before enabling collection, review [permissions and tenant inventory](docs/permissions-and-inventory.md).
-Version `1.3.0.0` includes **PVCI Analyst** and **PVCI Privacy Approver** roles, separate inventory
-and governance collectors, exact GitHub harness filtering, and read-only agent credit-limit
-snapshots. Tenant roles and target-local connections remain installation steps that a managed
-solution cannot grant.
+Version `1.3.0.0` includes **PVCI Analyst**, **PVCI Privacy Approver**, and **PVCI Credit
+Administrator** roles, separate inventory/governance collectors, exact GitHub harness filtering,
+spend-risk grouping, threshold snapshots, and an audited privileged processor. Tenant roles and
+target-local connections remain installation steps that a managed solution cannot grant.
 
 **Prerequisites:** Python 3.10+, Node 22+, .NET SDK 8+, [Power Platform CLI](https://aka.ms/PowerPlatformCLI),
 Azure CLI, and a Dataverse environment where you hold System Customizer.

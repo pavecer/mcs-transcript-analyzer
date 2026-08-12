@@ -1,7 +1,7 @@
 # Dataverse data model
 
 PV Conversation Insights stores derived transcript analytics, tenant inventory, and Copilot Credit
-reporting facts in fifteen custom Dataverse tables. It reads native Dataverse, Power Platform
+reporting facts in sixteen custom Dataverse tables. It reads native Dataverse, Power Platform
 inventory, and licensing data but does
 not modify the source records or capacity settings. Logical names are used throughout this
 reference because they are shared by the plugin, Python tools, code app, and Web API.
@@ -20,6 +20,7 @@ erDiagram
     PVCI_ENVIRONMENTINVENTORY ||--o{ PVCI_AGENTINVENTORY : "pvci_environmentinventoryid"
     PVCI_AGENTINVENTORY ||--o{ PVCI_CREDITUSAGE : "pvci_agentid"
     PVCI_AGENTINVENTORY ||--o{ PVCI_AGENTTHRESHOLDSNAPSHOT : "pvci_agentid"
+    PVCI_AGENTINVENTORY ||--o{ PVCI_THRESHOLDCHANGEREQUEST : "pvci_agentid"
     PVCI_CREDITCAPACITYSNAPSHOT }o--|| ENVIRONMENT : "source identity"
     PVCI_CREDITSYNCRUN ||--o{ PVCI_CREDITUSAGE : "import audit"
     PVCI_CREDITPRIVACYSETTING ||--o{ PVCI_CREDITUSERUSAGE : "controls name disclosure"
@@ -43,6 +44,7 @@ map rows cache resolution results; each session also retains a direct `systemuse
 | Agent inventory | `pvci_agentinventory` | One row per tenant, environment, and observed resource | `pvci_sourcekey` alternate key |
 | Agent threshold snapshot | `pvci_agentthresholdsnapshot` | One row per tenant, environment, resource, entitlement, and source day | `pvci_sourcekey` alternate key |
 | Governance sync run | `pvci_governancesyncrun` | One row per threshold collector invocation | `pvci_runkey` alternate key |
+| Threshold change request | `pvci_thresholdchangerequest` | One audited requested platform change | `pvci_requestkey` alternate key |
 | Credit usage | `pvci_creditusage` | One row per PPAC resource/source-period fact | `pvci_sourcekey` alternate key |
 | Capacity snapshot | `pvci_creditcapacitysnapshot` | One row per tenant, environment, entitlement, and as-of date | `pvci_sourcekey` alternate key |
 | Credit sync run | `pvci_creditsyncrun` | One row per collector/import invocation | `pvci_runkey` alternate key |
@@ -86,6 +88,13 @@ optional exact Agent Inventory lookup. The source key includes the source day so
 
 Stores governance collector source count, create/update/reject outcomes, status, timestamps,
 schema version, and bounded errors independently of credit and inventory health.
+
+### `pvci_thresholdchangerequest`
+
+User-owned audited queue for privileged threshold changes. It stores canonical environment/resource
+identity, desired and expected state, justification, processing status/timestamps, before/after
+JSON, and bounded errors. Credit Administrators can create/read requests; the flow owner writes
+processing outcomes. Analysts and Privacy Approvers have read-only audit access.
 
 ### `pvci_creditusage`
 

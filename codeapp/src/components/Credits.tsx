@@ -11,6 +11,7 @@ import { Pvci_creditprivacysettingsService } from "../generated/services/Pvci_cr
 import { Pvci_environmentinventoriesService } from "../generated/services/Pvci_environmentinventoriesService";
 import { Pvci_governancesyncrunsService } from "../generated/services/Pvci_governancesyncrunsService";
 import { Pvci_inventorysyncrunsService } from "../generated/services/Pvci_inventorysyncrunsService";
+import { Pvci_thresholdchangerequestsService } from "../generated/services/Pvci_thresholdchangerequestsService";
 import { Pvci_transcriptsessionsService } from "../generated/services/Pvci_transcriptsessionsService";
 import type { Pvci_agentinventories } from "../generated/models/Pvci_agentinventoriesModel";
 import type { Pvci_agentthresholdsnapshots } from "../generated/models/Pvci_agentthresholdsnapshotsModel";
@@ -22,6 +23,7 @@ import type { Pvci_creditprivacysettings } from "../generated/models/Pvci_credit
 import type { Pvci_environmentinventories } from "../generated/models/Pvci_environmentinventoriesModel";
 import type { Pvci_governancesyncruns } from "../generated/models/Pvci_governancesyncrunsModel";
 import type { Pvci_inventorysyncruns } from "../generated/models/Pvci_inventorysyncrunsModel";
+import type { Pvci_thresholdchangerequests } from "../generated/models/Pvci_thresholdchangerequestsModel";
 import type { SessionRow } from "../lib/model";
 import { loadAllPages } from "../lib/paging";
 
@@ -52,6 +54,14 @@ const THRESHOLD_FIELDS = [
 const GOVERNANCE_SYNC_FIELDS = [
   "pvci_governancesyncrunid", "pvci_name", "pvci_status", "pvci_startedon", "pvci_completedon",
   "pvci_thresholdcount", "pvci_createdcount", "pvci_updatedcount", "pvci_rejectedcount",
+];
+
+const CHANGE_REQUEST_FIELDS = [
+  "pvci_thresholdchangerequestid", "pvci_name", "pvci_environmentid", "pvci_resourceid",
+  "pvci_status", "pvci_requestedlimit", "pvci_requestednotificationthreshold",
+  "pvci_requestednotifyifovercapacity", "pvci_requestedstopifovercapacity",
+  "pvci_requestedstopresource", "pvci_justification", "pvci_requestedon", "pvci_processedon",
+  "pvci_error", "_pvci_agentid_value",
 ];
 
 const ENVIRONMENT_FIELDS = [
@@ -92,6 +102,8 @@ const CORRELATION_SESSION_FIELDS = [
 type CreditMode = "total" | "billed" | "nonbilled";
 type PeriodGrain = "day" | "week";
 type HarnessFilter = "*" | "github_copilot" | "not_github_copilot" | "unknown";
+type SpendRisk = "critical" | "high" | "watch" | "healthy" | "unconfigured";
+type RiskFilter = "*" | SpendRisk;
 type ResourceSummary = {
   label: string;
   resourceId: string;
@@ -109,6 +121,7 @@ export function Credits({ sidebarTarget }: { sidebarTarget: HTMLElement | null }
   const [agents, setAgents] = useState<Pvci_agentinventories[]>([]);
   const [thresholds, setThresholds] = useState<Pvci_agentthresholdsnapshots[]>([]);
   const [governanceSyncRuns, setGovernanceSyncRuns] = useState<Pvci_governancesyncruns[]>([]);
+  const [changeRequests, setChangeRequests] = useState<Pvci_thresholdchangerequests[]>([]);
   const [environments, setEnvironments] = useState<Pvci_environmentinventories[]>([]);
   const [inventorySyncRuns, setInventorySyncRuns] = useState<Pvci_inventorysyncruns[]>([]);
   const [syncRuns, setSyncRuns] = useState<Pvci_creditsyncruns[]>([]);
@@ -116,8 +129,17 @@ export function Credits({ sidebarTarget }: { sidebarTarget: HTMLElement | null }
   const [privacy, setPrivacy] = useState<Pvci_creditprivacysettings | null>(null);
   const [correlationSessions, setCorrelationSessions] = useState<SessionRow[]>([]);
   const [privacyBusy, setPrivacyBusy] = useState(false);
+  const [editingThreshold, setEditingThreshold] = useState<Pvci_agentthresholdsnapshots | null>(null);
+  const [requestedLimit, setRequestedLimit] = useState(0);
+  const [requestedNotification, setRequestedNotification] = useState(80);
+  const [requestedNotify, setRequestedNotify] = useState(true);
+  const [requestedStopAtLimit, setRequestedStopAtLimit] = useState(false);
+  const [requestedStopResource, setRequestedStopResource] = useState(false);
+  const [requestJustification, setRequestJustification] = useState("");
+  const [requestBusy, setRequestBusy] = useState(false);
   const [environment, setEnvironment] = useState("*");
   const [harness, setHarness] = useState<HarnessFilter>("*");
+  const [risk, setRisk] = useState<RiskFilter>("*");
   const [resource, setResource] = useState("*");
   const [selectedUser, setSelectedUser] = useState("*");
   const [navigatorSearch, setNavigatorSearch] = useState("");
@@ -130,12 +152,13 @@ export function Credits({ sidebarTarget }: { sidebarTarget: HTMLElement | null }
     let cancelled = false;
     void (async () => {
       try {
-        const [usageResult, capacityResult, agentResult, thresholdResult, governanceSyncResult, environmentResult, inventorySyncResult, syncResult, userResult, privacyResult, sessionResult] = await Promise.all([
+        const [usageResult, capacityResult, agentResult, thresholdResult, governanceSyncResult, changeRequestResult, environmentResult, inventorySyncResult, syncResult, userResult, privacyResult, sessionResult] = await Promise.all([
           loadAllPages((skipToken, maxPageSize) => Pvci_creditusagesService.getAll({ select: USAGE_FIELDS, orderBy: ["pvci_usagedate desc"], maxPageSize, skipToken })),
           loadAllPages((skipToken, maxPageSize) => Pvci_creditcapacitysnapshotsService.getAll({ select: CAPACITY_FIELDS, orderBy: ["pvci_asofdate desc"], maxPageSize, skipToken })),
           loadAllPages((skipToken, maxPageSize) => Pvci_agentinventoriesService.getAll({ select: AGENT_FIELDS, orderBy: ["pvci_displayname asc"], maxPageSize, skipToken })),
           loadAllPages((skipToken, maxPageSize) => Pvci_agentthresholdsnapshotsService.getAll({ select: THRESHOLD_FIELDS, orderBy: ["pvci_capturedon desc"], maxPageSize, skipToken })),
           Pvci_governancesyncrunsService.getAll({ select: GOVERNANCE_SYNC_FIELDS, orderBy: ["pvci_startedon desc"], top: 50 }),
+          Pvci_thresholdchangerequestsService.getAll({ select: CHANGE_REQUEST_FIELDS, orderBy: ["pvci_requestedon desc"], top: 100 }),
           loadAllPages((skipToken, maxPageSize) => Pvci_environmentinventoriesService.getAll({ select: ENVIRONMENT_FIELDS, orderBy: ["pvci_displayname asc"], maxPageSize, skipToken })),
           Pvci_inventorysyncrunsService.getAll({ select: INVENTORY_SYNC_FIELDS, orderBy: ["pvci_startedon desc"], top: 50 }),
           Pvci_creditsyncrunsService.getAll({ select: SYNC_FIELDS, orderBy: ["pvci_startedon desc"], top: 50 }),
@@ -149,6 +172,7 @@ export function Credits({ sidebarTarget }: { sidebarTarget: HTMLElement | null }
         setAgents(agentResult);
         setThresholds(thresholdResult);
         setGovernanceSyncRuns((governanceSyncResult.data ?? []) as unknown as Pvci_governancesyncruns[]);
+        setChangeRequests((changeRequestResult.data ?? []) as unknown as Pvci_thresholdchangerequests[]);
         setEnvironments(environmentResult);
         setInventorySyncRuns((inventorySyncResult.data ?? []) as unknown as Pvci_inventorysyncruns[]);
         setSyncRuns((syncResult.data ?? []) as unknown as Pvci_creditsyncruns[]);
@@ -222,6 +246,22 @@ export function Credits({ sidebarTarget }: { sidebarTarget: HTMLElement | null }
     });
     return values;
   }, [thresholds]);
+  const environmentNameById = useMemo(
+    () => new Map(environmentOptions.map(([id, label]) => [id.toLowerCase(), label])),
+    [environmentOptions]
+  );
+  const allResourceLabelsByKey = useMemo(() => {
+    const values = new Map<string, string>();
+    agents.forEach((row) => {
+      const resourceId = row.pvci_resourceid ?? row.pvci_agentinventoryid;
+      values.set(resourceIdentityKey(row.pvci_environmentid, resourceId), row.pvci_displayname ?? "Unlinked agent control");
+    });
+    usage.forEach((row) => {
+      const key = resourceKey(row);
+      if (!values.has(key)) values.set(key, row.pvci_agentname ?? "Unlinked agent control");
+    });
+    return values;
+  }, [agents, usage]);
   const resourceSummaries = useMemo(() => {
     const summaries = new Map<string, ResourceSummary>();
     environmentAgents.forEach((row) => {
@@ -262,15 +302,12 @@ export function Credits({ sidebarTarget }: { sidebarTarget: HTMLElement | null }
   const scopedThresholds = useMemo(
     () => [...latestThresholdByKey.values()].filter((row) => {
       if (environment !== "*" && !sameId(row.pvci_environmentid, environment)) return false;
-      if (harness === "*") return true;
       const key = resourceIdentityKey(row.pvci_environmentid, row.pvci_resourceid ?? "unknown");
-      return (agentHarnessByKey.get(key) ?? "unknown") === harness;
-    }),
-    [agentHarnessByKey, environment, harness, latestThresholdByKey]
-  );
-  const resourceLabelsByKey = useMemo(
-    () => new Map(resourceSummaries.map(([key, summary]) => [key, summary.label])),
-    [resourceSummaries]
+      if (harness !== "*" && (agentHarnessByKey.get(key) ?? "unknown") !== harness) return false;
+      return risk === "*" || thresholdRisk(row) === risk;
+    }).sort((left, right) => riskRank(thresholdRisk(left)) - riskRank(thresholdRisk(right))
+      || thresholdUtilization(right) - thresholdUtilization(left)),
+    [agentHarnessByKey, environment, harness, latestThresholdByKey, risk]
   );
   const scopedUsage = useMemo(
     () => environmentUsage.filter((row) => resource === "*" || resourceKey(row) === resource),
@@ -477,6 +514,68 @@ export function Credits({ sidebarTarget }: { sidebarTarget: HTMLElement | null }
     }
   };
 
+  const openThresholdRequest = (row: Pvci_agentthresholdsnapshots) => {
+    setEditingThreshold(row);
+    setRequestedLimit(row.pvci_limit ?? 0);
+    setRequestedNotification(row.pvci_notificationthreshold ?? 80);
+    setRequestedNotify(row.pvci_notifyifovercapacity ?? true);
+    setRequestedStopAtLimit(row.pvci_stopifovercapacity ?? false);
+    setRequestedStopResource(row.pvci_stopresource ?? false);
+    setRequestJustification("");
+  };
+
+  const submitThresholdRequest = async () => {
+    if (!editingThreshold || requestBusy) return;
+    if (requestedLimit < 0 || requestedNotification < 0 || requestedNotification > 100 || requestJustification.trim().length < 10) {
+      setError("Provide a non-negative limit, notification percentage from 0 to 100, and a justification of at least 10 characters.");
+      return;
+    }
+    const key = resourceIdentityKey(editingThreshold.pvci_environmentid, editingThreshold.pvci_resourceid ?? "unknown");
+    const label = allResourceLabelsByKey.get(key) ?? "Unlinked agent control";
+    const environmentLabel = environmentNameById.get(editingThreshold.pvci_environmentid?.toLowerCase() ?? "") ?? "Unlisted environment";
+    const approved = window.confirm(
+      `Submit an audited threshold change for ${label} in ${environmentLabel}? The privileged processor will reject the request if the current platform state changed.`
+    );
+    if (!approved) return;
+    setRequestBusy(true);
+    setError(null);
+    try {
+      const now = new Date().toISOString();
+      const payload = {
+        pvci_name: `${label} · ${environmentLabel}`,
+        pvci_requestkey: `threshold-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+        pvci_environmentid: editingThreshold.pvci_environmentid,
+        pvci_resourceid: editingThreshold.pvci_resourceid,
+        pvci_entitlementid: editingThreshold.pvci_entitlementid ?? "MCSMessages",
+        pvci_status: "Pending",
+        pvci_requestedlimit: requestedLimit,
+        pvci_requestednotificationthreshold: requestedNotification,
+        pvci_requestednotifyifovercapacity: requestedNotify,
+        pvci_requestedstopifovercapacity: requestedStopAtLimit,
+        pvci_requestedstopresource: requestedStopResource,
+        pvci_expectedlimit: editingThreshold.pvci_limit ?? 0,
+        pvci_expectednotificationthreshold: editingThreshold.pvci_notificationthreshold ?? 0,
+        pvci_expectednotifyifovercapacity: editingThreshold.pvci_notifyifovercapacity ?? false,
+        pvci_expectedstopifovercapacity: editingThreshold.pvci_stopifovercapacity ?? false,
+        pvci_expectedstopresource: editingThreshold.pvci_stopresource ?? false,
+        pvci_justification: requestJustification.trim(),
+        pvci_requestedon: now,
+        ...(editingThreshold._pvci_agentid_value
+          ? { "pvci_AgentId@odata.bind": `/pvci_agentinventories(${editingThreshold._pvci_agentid_value})` }
+          : {}),
+      };
+      const result = await Pvci_thresholdchangerequestsService.create(
+        payload as unknown as Parameters<typeof Pvci_thresholdchangerequestsService.create>[0]
+      );
+      if (result.data) setChangeRequests((current) => [result.data as Pvci_thresholdchangerequests, ...current]);
+      setEditingThreshold(null);
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : String(reason));
+    } finally {
+      setRequestBusy(false);
+    }
+  };
+
   if (loading) return <div className="muted pad">Loading credit reporting…</div>;
   if (error) return <div className="error">{error}</div>;
 
@@ -497,6 +596,14 @@ export function Credits({ sidebarTarget }: { sidebarTarget: HTMLElement | null }
         <option value="github_copilot">GitHub Copilot harness</option>
         <option value="not_github_copilot">Not GitHub Copilot harness</option>
         <option value="unknown">Unknown harness</option>
+      </select>
+      <select className="search" value={risk} onChange={(event) => { setRisk(event.target.value as RiskFilter); setResource("*"); }}>
+        <option value="*">All spend risk</option>
+        <option value="critical">Critical · at limit or stopped</option>
+        <option value="high">High · alert threshold reached</option>
+        <option value="watch">Watch · at least 60% used</option>
+        <option value="healthy">Healthy</option>
+        <option value="unconfigured">No usable limit</option>
       </select>
 
       <div className="credit-nav-heading">
@@ -765,25 +872,69 @@ export function Credits({ sidebarTarget }: { sidebarTarget: HTMLElement | null }
           <span>{scopedThresholds.length} controls in scope</span>
           <span>{linkedThresholdCount} linked</span>
           <span>{scopedThresholds.length - linkedThresholdCount} unlinked</span>
+          <span>{scopedThresholds.filter((row) => thresholdRisk(row) === "critical").length} critical</span>
+          <span>{scopedThresholds.filter((row) => thresholdRisk(row) === "high").length} high</span>
         </div>
+        {editingThreshold && (
+          <div className="governance-editor">
+            <div className="governance-editor-head">
+              <div>
+                <strong>Request threshold change</strong>
+                <span>{allResourceLabelsByKey.get(resourceIdentityKey(editingThreshold.pvci_environmentid, editingThreshold.pvci_resourceid ?? "unknown")) ?? "Unlinked agent control"}</span>
+              </div>
+              <button type="button" className="privacy-action revoke" onClick={() => setEditingThreshold(null)}>Cancel</button>
+            </div>
+            <div className="governance-editor-grid">
+              <label>Monthly limit<input type="number" min="0" value={requestedLimit} onChange={(event) => setRequestedLimit(Number(event.target.value))} /></label>
+              <label>Notify at %<input type="number" min="0" max="100" value={requestedNotification} onChange={(event) => setRequestedNotification(Number(event.target.value))} /></label>
+              <label className="governance-check"><input type="checkbox" checked={requestedNotify} onChange={(event) => setRequestedNotify(event.target.checked)} /> Notify near limit</label>
+              <label className="governance-check"><input type="checkbox" checked={requestedStopAtLimit} onChange={(event) => setRequestedStopAtLimit(event.target.checked)} /> Stop at limit</label>
+              <label className="governance-check"><input type="checkbox" checked={requestedStopResource} onChange={(event) => setRequestedStopResource(event.target.checked)} /> Stop immediately</label>
+              <label className="governance-justification">Justification<textarea value={requestJustification} onChange={(event) => setRequestJustification(event.target.value)} rows={3} /></label>
+            </div>
+            <button type="button" className="privacy-action" disabled={requestBusy} onClick={() => void submitThresholdRequest()}>{requestBusy ? "Submitting…" : "Submit audited request"}</button>
+          </div>
+        )}
         <div className="credit-table-wrap">
           <table className="runtable credit-table">
-            <thead><tr><th>Agent or resource</th><th>Environment ID</th><th>Used</th><th>Limit</th><th>Utilization</th><th>Alert</th><th>Enforcement</th></tr></thead>
+            <thead><tr><th>Agent or resource</th><th>Environment</th><th>Risk</th><th>Used</th><th>Limit</th><th>Utilization</th><th>Alert</th><th>Enforcement</th><th></th></tr></thead>
             <tbody>
               {scopedThresholds.map((row) => {
                 const key = resourceIdentityKey(row.pvci_environmentid, row.pvci_resourceid ?? "unknown");
                 return (
                   <tr key={row.pvci_agentthresholdsnapshotid}>
-                    <td>{resourceLabelsByKey.get(key) ?? row.pvci_resourceid ?? "Unknown resource"}</td>
-                    <td className="mono">{row.pvci_environmentid ?? "Unknown"}</td>
+                    <td title={row.pvci_resourceid}>{allResourceLabelsByKey.get(key) ?? "Unlinked agent control"}</td>
+                    <td title={row.pvci_environmentid}>{environmentNameById.get(row.pvci_environmentid?.toLowerCase() ?? "") ?? "Unlisted environment"}</td>
+                    <td><span className={`conf risk-${thresholdRisk(row)}`}>{riskLabel(thresholdRisk(row))}</span></td>
                     <td className="mono">{fmtCredits(row.pvci_resourceconsumption ?? 0)}</td>
                     <td className="mono">{fmtCredits(row.pvci_limit ?? 0)}</td>
                     <td>{fmtPercent(thresholdUtilization(row))}</td>
                     <td>{row.pvci_notifyifovercapacity ? `${row.pvci_notificationthreshold ?? 0}%` : "Off"}</td>
                     <td><span className={`conf ${row.pvci_stopresource || row.pvci_stopifovercapacity ? "multiple" : "high"}`}>{thresholdEnforcement(row)}</span></td>
+                    <td><button type="button" className="privacy-action" onClick={() => openThresholdRequest(row)}>Change</button></td>
                   </tr>
                 );
               })}
+            </tbody>
+          </table>
+        </div>
+
+        <SectionHeading text="Recent threshold requests" help="Audited requests submitted by authorized Credit Administrators. The processor records stale, failed, and succeeded outcomes." className="report-subheading" />
+        <div className="credit-table-wrap">
+          <table className="runtable credit-table">
+            <thead><tr><th>Agent</th><th>Status</th><th>Requested</th><th>Notify</th><th>Stop</th><th>Requested on</th><th>Processed</th></tr></thead>
+            <tbody>
+              {changeRequests.slice(0, 20).map((row) => (
+                <tr key={row.pvci_thresholdchangerequestid}>
+                  <td>{row.pvci_name}</td>
+                  <td><span className={`conf ${requestStatusClass(row.pvci_status)}`}>{row.pvci_status ?? "Unknown"}</span></td>
+                  <td className="mono">{fmtCredits(row.pvci_requestedlimit ?? 0)}</td>
+                  <td>{row.pvci_requestednotifyifovercapacity ? `${row.pvci_requestednotificationthreshold ?? 0}%` : "Off"}</td>
+                  <td>{row.pvci_requestedstopresource ? "Immediate" : row.pvci_requestedstopifovercapacity ? "At limit" : "No"}</td>
+                  <td>{fmtDateTime(row.pvci_requestedon)}</td>
+                  <td>{fmtDateTime(row.pvci_processedon)}</td>
+                </tr>
+              ))}
             </tbody>
           </table>
         </div>
@@ -926,6 +1077,32 @@ function thresholdEnforcement(row: Pvci_agentthresholdsnapshots) {
   if (row.pvci_stopresource) return "Stopped";
   if (row.pvci_stopifovercapacity) return "Stop at limit";
   return "Monitor only";
+}
+
+function thresholdRisk(row: Pvci_agentthresholdsnapshots): SpendRisk {
+  if (row.pvci_stopresource || thresholdUtilization(row) >= 1) return "critical";
+  if ((row.pvci_limit ?? 0) <= 0) return "unconfigured";
+  const alertAt = row.pvci_notifyifovercapacity && (row.pvci_notificationthreshold ?? 0) > 0
+    ? (row.pvci_notificationthreshold ?? 0) / 100
+    : 0.8;
+  if (thresholdUtilization(row) >= alertAt) return "high";
+  if (thresholdUtilization(row) >= 0.6) return "watch";
+  return "healthy";
+}
+
+function riskRank(value: SpendRisk) {
+  return { critical: 0, high: 1, watch: 2, healthy: 3, unconfigured: 4 }[value];
+}
+
+function riskLabel(value: SpendRisk) {
+  return { critical: "Critical", high: "High", watch: "Watch", healthy: "Healthy", unconfigured: "No limit" }[value];
+}
+
+function requestStatusClass(value?: string) {
+  if (value === "Succeeded") return "high";
+  if (value === "Failed" || value === "Stale") return "risk-critical";
+  if (value === "Processing") return "multiple";
+  return "none";
 }
 
 function sessionMatchesResource(session: SessionRow, resourceId: string, resourceLabel: string | null) {

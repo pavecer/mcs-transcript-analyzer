@@ -10,10 +10,12 @@ harness runtimes; it does not use the separate GitHub Copilot product billing AP
 | --- | --- |
 | `PVCI Collect Copilot Credit Usage (scheduled)` | Runs daily, re-reads seven days, follows up to 20 pages of 100 resource rows, imports user rows in bounded 250-row chunks, and captures environment capacity |
 | `PVCI Collect Credit Governance (scheduled)` | Reads the public Power Platform resource-threshold endpoint daily and imports read-only agent control snapshots with separate health |
+| `PVCI Apply Credit Governance Requests (scheduled)` | Serially validates pending requests, applies one resource-threshold PUT, reads back, and records before/after audit |
 | `pvci_ImportCreditUsageBatch` | Validates tenant scope, normalizes raw PPAC responses, computes stable keys, and idempotently imports bounded batches |
 | `pvci_agentinventory` | One row per observed tenant, environment, and resource ID; `properties.isCLIAgent` classifies GitHub, not-GitHub, or unknown without inference |
 | `pvci_agentthresholdsnapshot` | Daily tenant/environment/resource threshold snapshots: limit, consumption, notification, stop-at-limit, and explicit-stop state |
 | `pvci_governancesyncrun` | Governance collector freshness, threshold counts, import outcomes, and bounded errors |
+| `pvci_thresholdchangerequest` | User-owned request queue with desired/expected state, justification, outcome, and before/after evidence |
 | `pvci_creditusage` | One row per source resource/period fact with billed and non-billed credits and optional driver dimensions |
 | `pvci_creditcapacitysnapshot` | One row per environment, entitlement, and source as-of date |
 | `pvci_creditsyncrun` | Collector freshness, combined user/resource/capacity import counts, status, schema version, and bounded errors |
@@ -56,8 +58,18 @@ GET https://api.powerplatform.com/licensing/entitlements/MCSMessages/resourceThr
 
 The endpoint returns tenant-wide threshold rows keyed by environment and resource. PVCI stores one
 idempotent snapshot per source day and links exact tenant/environment/resource matches to Agent
-Inventory. Unlinked threshold resources remain visible. Version `1.3.0.0` is read-only: it does not
-call the per-resource threshold PUT endpoint or environment allocation mutation APIs.
+Inventory. Unlinked threshold resources remain visible. The collector is read-only. Authorized
+users with **PVCI Credit Administrator** can submit a request; a separate privileged processor
+calls only the per-resource threshold PUT after read-before-write validation. Environment
+allocation mutation APIs remain out of scope.
+
+### Audited threshold changes
+
+The browser creates a `Pending` Dataverse request containing desired state, expected current state,
+and mandatory justification. The processor serially marks it Processing, reads current thresholds,
+rejects invalid or stale requests without writing, applies one threshold PUT, reads back, and
+records Succeeded or Failed with before/after evidence. It never calls environment allocation,
+TenantPool, or PayGo mutation routes.
 
 ## Supported reporting grain
 
@@ -211,9 +223,8 @@ Session-level “credits” can only be a clearly labeled estimate or period cor
 - A completed PPAC CSV capture is still required to validate report-only columns and correction
   behavior.
 - User-name disclosure is a global setting; row-level/per-viewer approval is not implemented.
-- Agent threshold changes and environment allocation changes are not implemented in `1.3.0.0`;
-  future writes require a separate privileged role, request/approval record, read-before-write,
-  stale-state detection, and before/after audit.
+- Per-user Copilot Studio limits and environment allocation changes are not implemented. Agent
+  threshold writes are restricted to the Credit Administrator request/processor path.
 
 See [Cross-environment Copilot credit consumption](cross-environment-credit-consumption-design.md)
 for evidence, architecture decisions, delivery phases, and source references.

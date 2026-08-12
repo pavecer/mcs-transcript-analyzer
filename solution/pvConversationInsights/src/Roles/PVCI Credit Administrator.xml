@@ -1,8 +1,8 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Role id="{19f4168c-b795-f111-8076-7ced8d95b46e}" name="PVCI Analyst" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+<Role id="{365de980-1896-f111-8076-7ced8d95b46e}" name="PVCI Credit Administrator" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
   <IsCustomizable>1</IsCustomizable>
   <IsAutoAssigned>0</IsAutoAssigned>
-  <Description>Read-only access to Conversation Insights transcript, inventory, credit, capacity, and sync reporting data.</Description>
+  <Description>PVCI Analyst access plus permission to submit audited Copilot Credit threshold change requests.</Description>
   <RolePrivileges>
     <RolePrivilege name="prvActivateSynchronousWorkflow" level="Basic" />
     <RolePrivilege name="prvAppendNewProcess" level="Global" />
@@ -18,6 +18,7 @@
     <RolePrivilege name="prvAssignWorkflow" level="Basic" />
     <RolePrivilege name="prvAssignWorkflowSession" level="Basic" />
     <RolePrivilege name="prvCreateNewProcess" level="Global" />
+    <RolePrivilege name="prvCreatepvci_ThresholdChangeRequest" level="Global" />
     <RolePrivilege name="prvCreateSharePointData" level="Global" />
     <RolePrivilege name="prvCreateTranslationProcess" level="Global" />
     <RolePrivilege name="prvCreateUserApplicationMetadata" level="Basic" />

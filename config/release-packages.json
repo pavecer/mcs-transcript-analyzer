@@ -14,6 +14,7 @@
       "pvci_environmentinventory",
       "pvci_flowrundetail",
       "pvci_governancesyncrun",
+      "pvci_thresholdchangerequest",
       "pvci_inventorysyncrun",
       "pvci_syncstate",
       "pvci_transcriptidentitymap",
@@ -24,12 +25,14 @@
     "requiredWorkflows": [
       "PVCI Collect Copilot Credit Usage (scheduled)",
       "PVCI Collect Credit Governance (scheduled)",
+      "PVCI Apply Credit Governance Requests (scheduled)",
       "PVCI Collect Tenant Agent Inventory (scheduled)",
       "PVCI Sync Conversation Transcripts (scheduled)"
     ],
     "requiredRoles": [
       "PVCI Analyst",
-      "PVCI Privacy Approver"
+      "PVCI Privacy Approver",
+      "PVCI Credit Administrator"
     ]
   },
   "codeApp": {
@@ -49,6 +52,7 @@
       "pvci_environmentinventory",
       "pvci_flowrundetail",
       "pvci_governancesyncrun",
+      "pvci_thresholdchangerequest",
       "pvci_inventorysyncrun",
       "pvci_transcriptsession",
       "pvci_transcriptturn"

@@ -82,6 +82,13 @@ export const dataSourcesInfo = {
     "dataSourceType": "Dataverse",
     "apis": {}
   },
+  "pvci_thresholdchangerequests": {
+    "tableId": "",
+    "version": "",
+    "primaryKey": "pvci_thresholdchangerequestid",
+    "dataSourceType": "Dataverse",
+    "apis": {}
+  },
   "pvci_transcriptsessions": {
     "tableId": "",
     "version": "",

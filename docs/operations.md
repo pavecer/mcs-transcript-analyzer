@@ -66,8 +66,8 @@ any environment.
 
 Read [Permissions and tenant inventory](permissions-and-inventory.md) before binding the collector
 connections. Version `1.3.0.0` packages **PVCI Analyst** and **PVCI Privacy Approver** roles plus
-standalone inventory and read-only governance collectors; tenant roles and physical connections
-remain target-local.
+standalone inventory/governance collectors and the audited threshold processor; tenant roles and
+physical connections remain target-local.
 
 Create an **HTTP with Microsoft Entra ID (preauthorized)** connection before creating the flow. In
 commercial cloud, set both connection fields to:
@@ -171,6 +171,18 @@ Platform API `GET` and one Dataverse Custom API import. It contains no licensing
 Threshold rows are matched to Agent Inventory by normalized tenant/environment/resource identity.
 Unlinked controls are retained and shown in both apps. A limit of zero or an absent match must not
 be interpreted as permission to delete or change the platform control.
+
+Create the processor stopped with the same bound connections:
+
+```bash
+python3 scripts/transcript_insights/create_credit_governance_processor_flow.py \
+    --config $CFG
+```
+
+Run it with an empty queue, then submit a no-op request whose desired state equals the current
+threshold. Verify `Succeeded`, a processed timestamp, and identical audited before/after control
+fields before activation. It handles at most 20 pending requests per serial run and rejects stale
+or invalid requests without changing the platform.
 
 ## Routine operation
 

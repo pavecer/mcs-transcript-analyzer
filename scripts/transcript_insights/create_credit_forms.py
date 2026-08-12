@@ -19,6 +19,7 @@ ENTITIES = (
     "pvci_inventorysyncrun",
     "pvci_agentthresholdsnapshot",
     "pvci_governancesyncrun",
+    "pvci_thresholdchangerequest",
     "pvci_agentinventory",
     "pvci_creditusage",
     "pvci_creditcapacitysnapshot",
@@ -199,6 +200,51 @@ def governance_sync_form() -> str:
         columns="1",
     )
     return f"<form><tabs>{forms.tab('gs_summary', 'Run', run)}{forms.tab('gs_error_tab', 'Errors', error)}</tabs></form>"
+
+
+def threshold_request_form() -> str:
+    request = forms.section(
+        "tr_request",
+        "Requested control",
+        forms.row(forms.field_cell("tr_name", "pvci_name", forms.TEXT, "Agent"),
+                  forms.field_cell("tr_status", "pvci_status", forms.TEXT, "Status"))
+        + forms.row(forms.field_cell("tr_limit", "pvci_requestedlimit", DECIMAL, "Requested limit"),
+                    forms.field_cell("tr_notify_pct", "pvci_requestednotificationthreshold", forms.INT, "Notify at percent"))
+        + forms.row(forms.field_cell("tr_notify", "pvci_requestednotifyifovercapacity", forms.BOOL, "Notify near limit"),
+                    forms.field_cell("tr_stop_limit", "pvci_requestedstopifovercapacity", forms.BOOL, "Stop at limit"))
+        + forms.row(forms.field_cell("tr_stop_now", "pvci_requestedstopresource", forms.BOOL, "Stop immediately"),
+                    forms.field_cell("tr_requested", "pvci_requestedon", forms.DATE, "Requested on"))
+        + forms.row(forms.field_cell("tr_processed", "pvci_processedon", forms.DATE, "Processed on"),
+                    forms.field_cell("tr_agent", "pvci_agentid", forms.LOOKUP, "Agent inventory")),
+    )
+    scope = forms.section(
+        "tr_scope",
+        "Scope and expected state",
+        forms.row(forms.field_cell("tr_environment", "pvci_environmentid", forms.TEXT, "Environment ID"),
+                  forms.field_cell("tr_resource", "pvci_resourceid", forms.TEXT, "Resource ID"))
+        + forms.row(forms.field_cell("tr_entitlement", "pvci_entitlementid", forms.TEXT, "Entitlement"),
+                    forms.field_cell("tr_key", "pvci_requestkey", forms.TEXT, "Request key"))
+        + forms.row(forms.field_cell("tr_expected_limit", "pvci_expectedlimit", DECIMAL, "Expected limit"),
+                    forms.field_cell("tr_expected_pct", "pvci_expectednotificationthreshold", forms.INT, "Expected notify percent"))
+        + forms.row(forms.field_cell("tr_expected_notify", "pvci_expectednotifyifovercapacity", forms.BOOL, "Expected notify"),
+                    forms.field_cell("tr_expected_stop", "pvci_expectedstopifovercapacity", forms.BOOL, "Expected stop at limit"))
+        + forms.row(forms.field_cell("tr_expected_stopped", "pvci_expectedstopresource", forms.BOOL, "Expected explicit stop")),
+    )
+    justification = forms.section(
+        "tr_justification",
+        "Justification and processing",
+        forms.row(forms.field_cell("tr_justification_text", "pvci_justification", forms.MEMO, "Justification", rowspan=8))
+        + forms.row(forms.field_cell("tr_error_text", "pvci_error", forms.MEMO, "Processing error", rowspan=8)),
+        columns="1",
+    )
+    audit = forms.section(
+        "tr_audit",
+        "Before and after",
+        forms.row(forms.field_cell("tr_before", "pvci_beforejson", forms.MEMO, "Before JSON", rowspan=18, pcf=True, depth=3, height=420))
+        + forms.row(forms.field_cell("tr_after", "pvci_afterjson", forms.MEMO, "After JSON", rowspan=18, pcf=True, depth=3, height=420)),
+        columns="1",
+    )
+    return f"<form><tabs>{forms.tab('tr_summary', 'Request', request + scope + justification)}{forms.tab('tr_audit_tab', 'Audit', audit)}</tabs>{forms.control_descriptions()}</form>"
 
 
 def usage_form() -> str:
@@ -420,6 +466,7 @@ def main() -> None:
             "pvci_inventorysyncrun": inventory_sync_form,
             "pvci_agentthresholdsnapshot": threshold_form,
             "pvci_governancesyncrun": governance_sync_form,
+            "pvci_thresholdchangerequest": threshold_request_form,
             "pvci_agentinventory": agent_form,
             "pvci_creditusage": usage_form,
             "pvci_creditcapacitysnapshot": capacity_form,

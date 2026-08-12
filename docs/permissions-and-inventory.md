@@ -2,7 +2,7 @@
 
 ## What the managed solution includes
 
-Version `1.3.0.0` includes two least-privilege Dataverse application roles. Both roles are mapped
+Version `1.3.0.0` includes three least-privilege Dataverse application roles. All are mapped
 to the model-driven app and apply to the same Dataverse data sources used by the code app:
 
 - **PVCI Analyst** provides organization-level read access to transcript, flow, inventory, credit,
@@ -12,6 +12,8 @@ to the model-driven app and apply to the same Dataverse data sources used by the
    `pvci_creditprivacysetting` and `pvci_credituserusage`, and read on `systemuser`. These privileges
    let the synchronous disclosure plug-in record the initiating user/time and resolve or revoke all
    stored names.
+- **PVCI Credit Administrator** has Analyst read access plus create/read access on audited threshold
+   requests. It cannot update outcomes or call licensing APIs directly.
 
 The preview code app must still be shared with users or groups through **Manage access**. App
 sharing grants the app shell; one of the packaged Dataverse roles grants its additional data
@@ -27,6 +29,7 @@ There are three independent permission boundaries:
 | Read and write PVCI data | Owner of `pvci_dataversesync` with access to the PVCI tables and Custom APIs in the collector environment | No; the connection is target-local |
 | Enumerate tenant environments and base agents | Owner of `pvci_powerplatformadminv2` with **Power Platform Administrator** tenant role | Flow and reference packaged; target connection/role external |
 | Read agent credit threshold controls | Owner of `pvci_powerplatformapi` with Power Platform licensing administration access | Read-only flow/reference packaged; target connection/role external |
+| Submit agent threshold changes | **PVCI Credit Administrator** plus app sharing | Role/request table/processor packaged; privileged flow connection external |
 | Read detailed agent configuration in every environment | Inventory identity with appropriate Dataverse access in every source environment | Detailed enrichment not implemented in `1.3.0.0` |
 | Open the apps as an analyst | **PVCI Analyst** plus model-driven/code-app sharing | Role packaged; assignments and code-app sharing external |
 | Reveal or revoke stored user names | **PVCI Privacy Approver** plus app sharing | Role and audited plug-in packaged; assignment external |

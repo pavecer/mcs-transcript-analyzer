@@ -24,6 +24,7 @@
         "pvci_inventorysyncrun": ["Read"],
         "pvci_agentthresholdsnapshot": ["Read"],
         "pvci_governancesyncrun": ["Read"],
+        "pvci_thresholdchangerequest": ["Read"],
         "pvci_agentinventory": ["Read"],
         "pvci_creditusage": ["Read"],
         "pvci_creditcapacitysnapshot": ["Read"],
@@ -46,6 +47,7 @@
         "pvci_inventorysyncrun": ["Read"],
         "pvci_agentthresholdsnapshot": ["Read"],
         "pvci_governancesyncrun": ["Read"],
+        "pvci_thresholdchangerequest": ["Read"],
         "pvci_agentinventory": ["Read"],
         "pvci_creditusage": ["Read"],
         "pvci_creditcapacitysnapshot": ["Read"],
@@ -53,6 +55,29 @@
         "pvci_credituserusage": ["Read", "Write"],
         "pvci_creditprivacysetting": ["Read", "Write"],
         "systemuser": ["Read"]
+      }
+    },
+    {
+      "name": "PVCI Credit Administrator",
+      "description": "PVCI Analyst access plus permission to submit audited Copilot Credit threshold change requests.",
+      "baseRole": "App Opener",
+      "tablePrivileges": {
+        "pvci_transcriptsession": ["Read"],
+        "pvci_transcriptturn": ["Read"],
+        "pvci_transcriptidentitymap": ["Read"],
+        "pvci_flowrundetail": ["Read"],
+        "pvci_syncstate": ["Read"],
+        "pvci_environmentinventory": ["Read"],
+        "pvci_inventorysyncrun": ["Read"],
+        "pvci_agentthresholdsnapshot": ["Read"],
+        "pvci_governancesyncrun": ["Read"],
+        "pvci_thresholdchangerequest": ["Create", "Read"],
+        "pvci_agentinventory": ["Read"],
+        "pvci_creditusage": ["Read"],
+        "pvci_creditcapacitysnapshot": ["Read"],
+        "pvci_creditsyncrun": ["Read"],
+        "pvci_credituserusage": ["Read"],
+        "pvci_creditprivacysetting": ["Read"]
       }
     }
   ],
@@ -539,6 +564,51 @@
           "schemaName": "pvci_GovernanceSyncRun_RunKey",
           "displayName": "Governance Sync Run Key",
           "columns": ["pvci_runkey"]
+        }
+      ]
+    },
+    {
+      "schemaName": "pvci_ThresholdChangeRequest",
+      "displayName": "Agent Threshold Change Request",
+      "displayCollectionName": "Agent Threshold Change Requests",
+      "ownershipType": "UserOwned",
+      "primaryColumn": "pvci_Name",
+      "columns": {
+        "pvci_RequestKey": { "type": "string", "maxLength": 200, "displayName": "Request Key" },
+        "pvci_EnvironmentId": { "type": "string", "displayName": "Environment ID" },
+        "pvci_ResourceId": { "type": "string", "displayName": "Resource ID" },
+        "pvci_EntitlementId": { "type": "string", "displayName": "Entitlement ID" },
+        "pvci_Status": { "type": "string", "displayName": "Request Status" },
+        "pvci_RequestedLimit": { "type": "decimal", "precision": 4, "minValue": 0, "displayName": "Requested Monthly Limit" },
+        "pvci_RequestedNotificationThreshold": { "type": "int", "displayName": "Requested Notification Percent" },
+        "pvci_RequestedNotifyIfOverCapacity": { "type": "bool", "displayName": "Requested Notify Near Limit" },
+        "pvci_RequestedStopIfOverCapacity": { "type": "bool", "displayName": "Requested Stop At Limit" },
+        "pvci_RequestedStopResource": { "type": "bool", "displayName": "Requested Explicit Stop" },
+        "pvci_ExpectedLimit": { "type": "decimal", "precision": 4, "minValue": 0, "displayName": "Expected Current Limit" },
+        "pvci_ExpectedNotificationThreshold": { "type": "int", "displayName": "Expected Notification Percent" },
+        "pvci_ExpectedNotifyIfOverCapacity": { "type": "bool", "displayName": "Expected Notify Near Limit" },
+        "pvci_ExpectedStopIfOverCapacity": { "type": "bool", "displayName": "Expected Stop At Limit" },
+        "pvci_ExpectedStopResource": { "type": "bool", "displayName": "Expected Explicit Stop" },
+        "pvci_Justification": { "type": "text", "displayName": "Justification" },
+        "pvci_RequestedOn": { "type": "datetime", "displayName": "Requested On" },
+        "pvci_ProcessedOn": { "type": "datetime", "displayName": "Processed On" },
+        "pvci_BeforeJson": { "type": "text", "displayName": "Before JSON" },
+        "pvci_AfterJson": { "type": "text", "displayName": "After JSON" },
+        "pvci_Error": { "type": "text", "displayName": "Processing Error" }
+      },
+      "alternateKeys": [
+        {
+          "schemaName": "pvci_ThresholdChangeRequest_RequestKey",
+          "displayName": "Threshold Change Request Key",
+          "columns": ["pvci_requestkey"]
+        }
+      ],
+      "lookups": [
+        {
+          "schemaName": "pvci_AgentId",
+          "displayName": "Agent Inventory",
+          "referencedTable": "pvci_agentinventory",
+          "relationshipName": "pvci_agentinventory_thresholdrequest"
         }
       ]
     }

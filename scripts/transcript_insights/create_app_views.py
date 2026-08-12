@@ -21,6 +21,7 @@ ENVIRONMENT = "pvci_environmentinventory"
 INVENTORY_SYNC = "pvci_inventorysyncrun"
 THRESHOLD = "pvci_agentthresholdsnapshot"
 GOVERNANCE_SYNC = "pvci_governancesyncrun"
+THRESHOLD_REQUEST = "pvci_thresholdchangerequest"
 AGENT = "pvci_agentinventory"
 CREDIT = "pvci_creditusage"
 CAPACITY = "pvci_creditcapacitysnapshot"
@@ -119,6 +120,7 @@ def main() -> None:
         isc = otc(s, base, h, INVENTORY_SYNC)
         thc = otc(s, base, h, THRESHOLD)
         gsc = otc(s, base, h, GOVERNANCE_SYNC)
+        trc = otc(s, base, h, THRESHOLD_REQUEST)
         ac = otc(s, base, h, AGENT)
         cc = otc(s, base, h, CREDIT)
         capc = otc(s, base, h, CAPACITY)
@@ -343,6 +345,37 @@ def main() -> None:
                     "pvci_startedon",
                 ),
                 grid(gsc, "pvci_governancesyncrunid", governance_sync_cols),
+            )
+        )
+
+        request_cols = [
+            ("pvci_name", 220),
+            ("pvci_status", 90),
+            ("pvci_requestedlimit", 110),
+            ("pvci_requestednotificationthreshold", 100),
+            ("pvci_requestedstopifovercapacity", 90),
+            ("pvci_requestedstopresource", 90),
+            ("pvci_requestedon", 140),
+            ("pvci_processedon", 140),
+        ]
+        request_attrs = [c[0] for c in request_cols] + ["pvci_thresholdchangerequestid"]
+        results.append(
+            upsert_view(
+                s, base, token, THRESHOLD_REQUEST, "Threshold Change Requests - Recent",
+                fetch(THRESHOLD_REQUEST, request_attrs, "pvci_requestedon"),
+                grid(trc, "pvci_thresholdchangerequestid", request_cols),
+            )
+        )
+        results.append(
+            upsert_view(
+                s, base, token, THRESHOLD_REQUEST, "Threshold Change Requests - Pending",
+                fetch(
+                    THRESHOLD_REQUEST,
+                    request_attrs,
+                    "pvci_requestedon",
+                    filt='<filter type="and"><condition attribute="pvci_status" operator="eq" value="Pending" /></filter>',
+                ),
+                grid(trc, "pvci_thresholdchangerequestid", request_cols),
             )
         )
 
