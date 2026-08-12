@@ -1,21 +1,21 @@
 {
   "schemaVersion": 1,
-  "sourceCommit": "3dff3c28714ecd6c88e5ec809352497d7ee481e5",
-  "generatedAtUtc": "2026-08-12T09:22:14+00:00",
+  "sourceCommit": "db675c0110586e2c55484bc978ce130a10736769",
+  "generatedAtUtc": "2026-08-12T13:43:40+00:00",
   "artifacts": {
     "core": {
-      "filename": "pvConversationInsights-managed-1.3.0.0.zip",
+      "filename": "pvConversationInsights-managed-1.3.1.0.zip",
       "managed": true,
-      "sha256": "dd38eb51982640e7c2a7ad39907e4ca30f897a2b3ae7cee6668585233f2c2416",
+      "sha256": "90e4a6d3ac16e6e0bef3fe1c9e7f9bf12f4b04d29acecd57898c623224089c01",
       "solutionUniqueName": "pvConversationInsights",
-      "version": "1.3.0.0"
+      "version": "1.3.1.0"
     },
     "codeApp": {
-      "filename": "pvConversationInsightsCodeApp-managed-1.3.0.0.zip",
+      "filename": "pvConversationInsightsCodeApp-managed-1.3.1.0.zip",
       "managed": true,
-      "sha256": "387742595923ab8dcf3624b5c39800ce527fb09005bedbc67bf55b4c14809e33",
+      "sha256": "3e4c141a138f301af03b83435067a61afdc82803ad7550cfcfdcfcd3cbd6a67c",
       "solutionUniqueName": "pvConversationInsightsCodeApp",
-      "version": "1.3.0.0"
+      "version": "1.3.1.0"
     }
   }
 }
