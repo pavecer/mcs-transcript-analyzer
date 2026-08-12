@@ -241,7 +241,6 @@
                 },
                 "parameters": {
                   "api-version": "2022-03-01-preview",
-                  "$top": 100,
                   "$skip": "@variables('EnvironmentSkip')"
                 }
               }

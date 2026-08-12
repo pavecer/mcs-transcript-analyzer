@@ -25,7 +25,8 @@ class InventorySyncFlowTests(unittest.TestCase):
 
         self.assertEqual("ListEnvironmentsForUser", environment_action["inputs"]["host"]["operationId"])
         self.assertEqual(ADMIN_API_VERSION, environment_action["inputs"]["parameters"]["api-version"])
-        self.assertEqual(ENVIRONMENT_PAGE_SIZE, environment_action["inputs"]["parameters"]["$top"])
+        self.assertNotIn("$top", environment_action["inputs"]["parameters"])
+        self.assertEqual("@variables('EnvironmentSkip')", environment_action["inputs"]["parameters"]["$skip"])
         self.assertEqual("QueryResources", resource_action["inputs"]["host"]["operationId"])
         self.assertEqual("PowerPlatformResources", resource_action["inputs"]["parameters"]["body/TableName"])
         self.assertEqual(100, resource_action["inputs"]["parameters"]["body/Options/Top"])

@@ -175,7 +175,6 @@ def build_definition() -> dict[str, Any]:
                         "ListEnvironmentsForUser",
                         {
                             "api-version": ADMIN_API_VERSION,
-                            "$top": ENVIRONMENT_PAGE_SIZE,
                             "$skip": "@variables('EnvironmentSkip')",
                         },
                         {},
