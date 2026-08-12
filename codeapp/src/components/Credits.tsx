@@ -26,6 +26,7 @@ import type { Pvci_inventorysyncruns } from "../generated/models/Pvci_inventorys
 import type { Pvci_thresholdchangerequests } from "../generated/models/Pvci_thresholdchangerequestsModel";
 import type { SessionRow } from "../lib/model";
 import { loadAllPages } from "../lib/paging";
+import { parseWholeNumberInput } from "../lib/wholeNumberInput";
 
 const USAGE_FIELDS = [
   "pvci_creditusageid", "pvci_usagedate", "pvci_environmentid", "pvci_resourceid",
@@ -130,8 +131,8 @@ export function Credits({ sidebarTarget }: { sidebarTarget: HTMLElement | null }
   const [correlationSessions, setCorrelationSessions] = useState<SessionRow[]>([]);
   const [privacyBusy, setPrivacyBusy] = useState(false);
   const [editingThreshold, setEditingThreshold] = useState<Pvci_agentthresholdsnapshots | null>(null);
-  const [requestedLimit, setRequestedLimit] = useState(0);
-  const [requestedNotification, setRequestedNotification] = useState(80);
+  const [requestedLimit, setRequestedLimit] = useState("0");
+  const [requestedNotification, setRequestedNotification] = useState("80");
   const [requestedNotify, setRequestedNotify] = useState(true);
   const [requestedStopAtLimit, setRequestedStopAtLimit] = useState(false);
   const [requestedStopResource, setRequestedStopResource] = useState(false);
@@ -516,8 +517,8 @@ export function Credits({ sidebarTarget }: { sidebarTarget: HTMLElement | null }
 
   const openThresholdRequest = (row: Pvci_agentthresholdsnapshots) => {
     setEditingThreshold(row);
-    setRequestedLimit(row.pvci_limit ?? 0);
-    setRequestedNotification(row.pvci_notificationthreshold ?? 80);
+    setRequestedLimit(String(row.pvci_limit ?? 0));
+    setRequestedNotification(String(row.pvci_notificationthreshold ?? 80));
     setRequestedNotify(row.pvci_notifyifovercapacity ?? true);
     setRequestedStopAtLimit(row.pvci_stopifovercapacity ?? false);
     setRequestedStopResource(row.pvci_stopresource ?? false);
@@ -526,7 +527,9 @@ export function Credits({ sidebarTarget }: { sidebarTarget: HTMLElement | null }
 
   const submitThresholdRequest = async () => {
     if (!editingThreshold || requestBusy) return;
-    if (!Number.isInteger(requestedLimit) || requestedLimit < 0 || !Number.isInteger(requestedNotification) || requestedNotification < 0 || requestedNotification > 100 || requestJustification.trim().length < 10) {
+    const parsedLimit = parseWholeNumberInput(requestedLimit);
+    const parsedNotification = parseWholeNumberInput(requestedNotification);
+    if (parsedLimit === null || parsedNotification === null || parsedNotification > 100 || requestJustification.trim().length < 10) {
       setError("Provide a non-negative whole-number limit, a whole-number notification percentage from 0 to 100, and a justification of at least 10 characters.");
       return;
     }
@@ -548,8 +551,8 @@ export function Credits({ sidebarTarget }: { sidebarTarget: HTMLElement | null }
         pvci_resourceid: editingThreshold.pvci_resourceid,
         pvci_entitlementid: editingThreshold.pvci_entitlementid ?? "MCSMessages",
         pvci_status: "Pending",
-        pvci_requestedlimit: requestedLimit,
-        pvci_requestednotificationthreshold: requestedNotification,
+        pvci_requestedlimit: parsedLimit,
+        pvci_requestednotificationthreshold: parsedNotification,
         pvci_requestednotifyifovercapacity: requestedNotify,
         pvci_requestedstopifovercapacity: requestedStopAtLimit,
         pvci_requestedstopresource: requestedStopResource,
@@ -885,8 +888,8 @@ export function Credits({ sidebarTarget }: { sidebarTarget: HTMLElement | null }
               <button type="button" className="privacy-action revoke" onClick={() => setEditingThreshold(null)}>Cancel</button>
             </div>
             <div className="governance-editor-grid">
-              <label>Monthly limit<input type="number" min="0" step="1" value={requestedLimit} onChange={(event) => setRequestedLimit(Number(event.target.value))} /></label>
-              <label>Notify at %<input type="number" min="0" max="100" step="1" value={requestedNotification} onChange={(event) => setRequestedNotification(Number(event.target.value))} /></label>
+              <label>Monthly limit<input type="number" min="0" step="1" value={requestedLimit} onChange={(event) => setRequestedLimit(event.target.value)} /></label>
+              <label>Notify at %<input type="number" min="0" max="100" step="1" value={requestedNotification} onChange={(event) => setRequestedNotification(event.target.value)} /></label>
               <label className="governance-check"><input type="checkbox" checked={requestedNotify} onChange={(event) => setRequestedNotify(event.target.checked)} /> Notify near limit</label>
               <label className="governance-check"><input type="checkbox" checked={requestedStopAtLimit} onChange={(event) => setRequestedStopAtLimit(event.target.checked)} /> Stop at limit</label>
               <label className="governance-check"><input type="checkbox" checked={requestedStopResource} onChange={(event) => setRequestedStopResource(event.target.checked)} /> Stop immediately</label>
