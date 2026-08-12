@@ -65,9 +65,9 @@ any environment.
 ## Copilot Credit collector
 
 Read [Permissions and tenant inventory](permissions-and-inventory.md) before binding the collector
-connections. Version `1.2.0.0` packages **PVCI Analyst** and **PVCI Privacy Approver** roles and a
-standalone Admin V2/One Inventory collector; tenant roles and physical connections remain
-target-local.
+connections. Version `1.3.0.0` packages **PVCI Analyst** and **PVCI Privacy Approver** roles plus
+standalone inventory and read-only governance collectors; tenant roles and physical connections
+remain target-local.
 
 Create an **HTTP with Microsoft Entra ID (preauthorized)** connection before creating the flow. In
 commercial cloud, set both connection fields to:
@@ -151,6 +151,26 @@ If activation reports `ApiPolicyApiGroupViolation`, add
 For an environment-group policy, save and publish the group rules. A runtime HTTP `442` whose
 `Last refresh` predates the policy update is propagation lag; leave the flow stopped and retry only
 after the runtime cache refreshes.
+
+## Read-only credit governance collector
+
+Create a second **HTTP with Microsoft Entra ID (preauthorized)** connection. Set both connection
+fields to `https://api.powerplatform.com/`. Do not reuse `pvci_licensinghttp`; it has a different
+token audience. Bind and create the flow stopped:
+
+```bash
+python3 scripts/transcript_insights/create_credit_governance_flow.py \
+    --config $CFG \
+    --http-connection-id shared-webcontents-00000000
+```
+
+Run it manually, then verify the newest `pvci_governancesyncrun` reports the expected threshold
+count and zero rejects before adding `--activate`. The workflow definition contains one Power
+Platform API `GET` and one Dataverse Custom API import. It contains no licensing PUT/PATCH action.
+
+Threshold rows are matched to Agent Inventory by normalized tenant/environment/resource identity.
+Unlinked controls are retained and shown in both apps. A limit of zero or an absent match must not
+be interpreted as permission to delete or change the platform control.
 
 ## Routine operation
 

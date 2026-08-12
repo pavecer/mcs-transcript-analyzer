@@ -1,7 +1,7 @@
 # Dataverse data model
 
 PV Conversation Insights stores derived transcript analytics, tenant inventory, and Copilot Credit
-reporting facts in thirteen custom Dataverse tables. It reads native Dataverse, Power Platform
+reporting facts in fifteen custom Dataverse tables. It reads native Dataverse, Power Platform
 inventory, and licensing data but does
 not modify the source records or capacity settings. Logical names are used throughout this
 reference because they are shared by the plugin, Python tools, code app, and Web API.
@@ -19,6 +19,7 @@ erDiagram
     PVCI_SYNCSTATE ||--|| CONVERSATIONTRANSCRIPT : "watermark"
     PVCI_ENVIRONMENTINVENTORY ||--o{ PVCI_AGENTINVENTORY : "pvci_environmentinventoryid"
     PVCI_AGENTINVENTORY ||--o{ PVCI_CREDITUSAGE : "pvci_agentid"
+    PVCI_AGENTINVENTORY ||--o{ PVCI_AGENTTHRESHOLDSNAPSHOT : "pvci_agentid"
     PVCI_CREDITCAPACITYSNAPSHOT }o--|| ENVIRONMENT : "source identity"
     PVCI_CREDITSYNCRUN ||--o{ PVCI_CREDITUSAGE : "import audit"
     PVCI_CREDITPRIVACYSETTING ||--o{ PVCI_CREDITUSERUSAGE : "controls name disclosure"
@@ -40,6 +41,8 @@ map rows cache resolution results; each session also retains a direct `systemuse
 | Environment inventory | `pvci_environmentinventory` | One row per tenant environment | `pvci_sourcekey` alternate key |
 | Inventory sync run | `pvci_inventorysyncrun` | One row per inventory invocation | `pvci_runkey` alternate key |
 | Agent inventory | `pvci_agentinventory` | One row per tenant, environment, and observed resource | `pvci_sourcekey` alternate key |
+| Agent threshold snapshot | `pvci_agentthresholdsnapshot` | One row per tenant, environment, resource, entitlement, and source day | `pvci_sourcekey` alternate key |
+| Governance sync run | `pvci_governancesyncrun` | One row per threshold collector invocation | `pvci_runkey` alternate key |
 | Credit usage | `pvci_creditusage` | One row per PPAC resource/source-period fact | `pvci_sourcekey` alternate key |
 | Capacity snapshot | `pvci_creditcapacitysnapshot` | One row per tenant, environment, entitlement, and as-of date | `pvci_sourcekey` alternate key |
 | Credit sync run | `pvci_creditsyncrun` | One row per collector/import invocation | `pvci_runkey` alternate key |
@@ -69,8 +72,20 @@ separate from credit-collection health.
 Stores resource identity, canonical environment lookup, display/schema names, resource type,
 lifecycle metadata, and harness classification evidence. PPAC One Inventory supplies tenant-wide
 base metadata, including agents with zero credit usage; billing-only resources remain visible when
-inventory cannot resolve them. Harness remains `unknown` unless verified evidence or an audited
-override supports a more specific value.
+inventory cannot resolve them. Direct `isCLIAgent=true` maps to GitHub Copilot, false maps only to
+not-GitHub, and missing evidence remains unknown.
+
+### `pvci_agentthresholdsnapshot`
+
+Stores daily read-only copies of Power Platform resource thresholds: canonical tenant/environment/
+resource identity, entitlement, monthly limit, current consumption, notification threshold,
+notification flag, stop-at-limit flag, explicit-stop flag, source timestamps, raw JSON, and an
+optional exact Agent Inventory lookup. The source key includes the source day so history is retained.
+
+### `pvci_governancesyncrun`
+
+Stores governance collector source count, create/update/reject outcomes, status, timestamps,
+schema version, and bounded errors independently of credit and inventory health.
 
 ### `pvci_creditusage`
 

@@ -50,6 +50,7 @@
     <RolePrivilege name="prvReadPluginTraceLog" level="Global" />
     <RolePrivilege name="prvReadPluginType" level="Global" />
     <RolePrivilege name="prvReadpvci_AgentInventory" level="Global" />
+    <RolePrivilege name="prvReadpvci_AgentThresholdSnapshot" level="Global" />
     <RolePrivilege name="prvReadpvci_CreditCapacitySnapshot" level="Global" />
     <RolePrivilege name="prvReadpvci_CreditPrivacySetting" level="Global" />
     <RolePrivilege name="prvReadpvci_CreditSyncRun" level="Global" />
@@ -57,6 +58,7 @@
     <RolePrivilege name="prvReadpvci_CreditUserUsage" level="Global" />
     <RolePrivilege name="prvReadpvci_EnvironmentInventory" level="Global" />
     <RolePrivilege name="prvReadpvci_FlowRunDetail" level="Global" />
+    <RolePrivilege name="prvReadpvci_GovernanceSyncRun" level="Global" />
     <RolePrivilege name="prvReadpvci_InventorySyncRun" level="Global" />
     <RolePrivilege name="prvReadpvci_SyncState" level="Global" />
     <RolePrivilege name="prvReadpvci_TranscriptIdentityMap" level="Global" />

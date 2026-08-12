@@ -7,6 +7,8 @@
   <EntityRelationship Name="business_unit_pvci_transcriptturn" />
   <EntityRelationship Name="lk_pvci_agentinventory_createdby" />
   <EntityRelationship Name="lk_pvci_agentinventory_modifiedby" />
+  <EntityRelationship Name="lk_pvci_agentthresholdsnapshot_createdby" />
+  <EntityRelationship Name="lk_pvci_agentthresholdsnapshot_modifiedby" />
   <EntityRelationship Name="lk_pvci_creditcapacitysnapshot_createdby" />
   <EntityRelationship Name="lk_pvci_creditcapacitysnapshot_modifiedby" />
   <EntityRelationship Name="lk_pvci_creditprivacysetting_createdby" />
@@ -21,6 +23,8 @@
   <EntityRelationship Name="lk_pvci_environmentinventory_modifiedby" />
   <EntityRelationship Name="lk_pvci_flowrundetail_createdby" />
   <EntityRelationship Name="lk_pvci_flowrundetail_modifiedby" />
+  <EntityRelationship Name="lk_pvci_governancesyncrun_createdby" />
+  <EntityRelationship Name="lk_pvci_governancesyncrun_modifiedby" />
   <EntityRelationship Name="lk_pvci_inventorysyncrun_createdby" />
   <EntityRelationship Name="lk_pvci_inventorysyncrun_modifiedby" />
   <EntityRelationship Name="lk_pvci_syncstate_createdby" />
@@ -32,12 +36,14 @@
   <EntityRelationship Name="lk_pvci_transcriptturn_createdby" />
   <EntityRelationship Name="lk_pvci_transcriptturn_modifiedby" />
   <EntityRelationship Name="organization_pvci_agentinventory" />
+  <EntityRelationship Name="organization_pvci_agentthresholdsnapshot" />
   <EntityRelationship Name="organization_pvci_creditcapacitysnapshot" />
   <EntityRelationship Name="organization_pvci_creditprivacysetting" />
   <EntityRelationship Name="organization_pvci_creditsyncrun" />
   <EntityRelationship Name="organization_pvci_creditusage" />
   <EntityRelationship Name="organization_pvci_credituserusage" />
   <EntityRelationship Name="organization_pvci_environmentinventory" />
+  <EntityRelationship Name="organization_pvci_governancesyncrun" />
   <EntityRelationship Name="organization_pvci_inventorysyncrun" />
   <EntityRelationship Name="owner_pvci_flowrundetail" />
   <EntityRelationship Name="owner_pvci_syncstate" />
@@ -45,6 +51,7 @@
   <EntityRelationship Name="owner_pvci_transcriptsession" />
   <EntityRelationship Name="owner_pvci_transcriptturn" />
   <EntityRelationship Name="pvci_agentinventory_creditusage" />
+  <EntityRelationship Name="pvci_agentinventory_thresholdsnapshot" />
   <EntityRelationship Name="pvci_environmentinventory_agentinventory" />
   <EntityRelationship Name="pvci_systemuser_transcriptsession" />
   <EntityRelationship Name="pvci_transcriptsession_transcriptturn" />

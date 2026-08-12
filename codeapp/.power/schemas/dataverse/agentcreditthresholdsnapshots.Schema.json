@@ -1,0 +1,495 @@
+{
+  "name": "pvci_agentthresholdsnapshot",
+  "title": "Agent Credit Threshold Snapshots",
+  "schema": {
+    "type": "array",
+    "items": {
+      "type": "object",
+      "x-ms-dataverse-entity": true,
+      "x-ms-dataverse-entityset": "pvci_agentthresholdsnapshots",
+      "x-ms-dataverse-primary-id": "pvci_agentthresholdsnapshotid",
+      "x-ms-dataverse-primary-name": "pvci_name",
+      "properties": {
+        "createdby": {
+          "type": "string",
+          "title": "Created By",
+          "x-ms-dataverse-attribute": "createdby",
+          "x-ms-dataverse-type": "LookupType",
+          "x-ms-schema-name": "CreatedBy",
+          "x-ms-read-only": true
+        },
+        "createdbyname": {
+          "type": "string",
+          "title": "createdbyname",
+          "x-ms-dataverse-attribute": "createdbyname",
+          "x-ms-dataverse-type": "StringType",
+          "x-ms-schema-name": "CreatedByName",
+          "x-ms-read-only": true,
+          "maxLength": 100
+        },
+        "createdbyyominame": {
+          "type": "string",
+          "title": "createdbyyominame",
+          "x-ms-dataverse-attribute": "createdbyyominame",
+          "x-ms-dataverse-type": "StringType",
+          "x-ms-schema-name": "CreatedByYomiName",
+          "x-ms-read-only": true,
+          "required": true,
+          "maxLength": 100
+        },
+        "createdon": {
+          "type": "string",
+          "title": "Created On",
+          "x-ms-dataverse-attribute": "createdon",
+          "x-ms-dataverse-type": "DateTimeType",
+          "x-ms-schema-name": "CreatedOn",
+          "x-ms-read-only": true
+        },
+        "createdonbehalfby": {
+          "type": "string",
+          "title": "Created By (Delegate)",
+          "x-ms-dataverse-attribute": "createdonbehalfby",
+          "x-ms-dataverse-type": "LookupType",
+          "x-ms-schema-name": "CreatedOnBehalfBy",
+          "x-ms-read-only": true
+        },
+        "createdonbehalfbyname": {
+          "type": "string",
+          "title": "createdonbehalfbyname",
+          "x-ms-dataverse-attribute": "createdonbehalfbyname",
+          "x-ms-dataverse-type": "StringType",
+          "x-ms-schema-name": "CreatedOnBehalfByName",
+          "x-ms-read-only": true,
+          "maxLength": 100
+        },
+        "createdonbehalfbyyominame": {
+          "type": "string",
+          "title": "createdonbehalfbyyominame",
+          "x-ms-dataverse-attribute": "createdonbehalfbyyominame",
+          "x-ms-dataverse-type": "StringType",
+          "x-ms-schema-name": "CreatedOnBehalfByYomiName",
+          "x-ms-read-only": true,
+          "required": true,
+          "maxLength": 100
+        },
+        "importsequencenumber": {
+          "type": "string",
+          "title": "Import Sequence Number",
+          "x-ms-dataverse-attribute": "importsequencenumber",
+          "x-ms-dataverse-type": "IntegerType",
+          "x-ms-schema-name": "ImportSequenceNumber"
+        },
+        "modifiedby": {
+          "type": "string",
+          "title": "Modified By",
+          "x-ms-dataverse-attribute": "modifiedby",
+          "x-ms-dataverse-type": "LookupType",
+          "x-ms-schema-name": "ModifiedBy",
+          "x-ms-read-only": true
+        },
+        "modifiedbyname": {
+          "type": "string",
+          "title": "modifiedbyname",
+          "x-ms-dataverse-attribute": "modifiedbyname",
+          "x-ms-dataverse-type": "StringType",
+          "x-ms-schema-name": "ModifiedByName",
+          "x-ms-read-only": true,
+          "maxLength": 100
+        },
+        "modifiedbyyominame": {
+          "type": "string",
+          "title": "modifiedbyyominame",
+          "x-ms-dataverse-attribute": "modifiedbyyominame",
+          "x-ms-dataverse-type": "StringType",
+          "x-ms-schema-name": "ModifiedByYomiName",
+          "x-ms-read-only": true,
+          "required": true,
+          "maxLength": 100
+        },
+        "modifiedon": {
+          "type": "string",
+          "title": "Modified On",
+          "x-ms-dataverse-attribute": "modifiedon",
+          "x-ms-dataverse-type": "DateTimeType",
+          "x-ms-schema-name": "ModifiedOn",
+          "x-ms-read-only": true
+        },
+        "modifiedonbehalfby": {
+          "type": "string",
+          "title": "Modified By (Delegate)",
+          "x-ms-dataverse-attribute": "modifiedonbehalfby",
+          "x-ms-dataverse-type": "LookupType",
+          "x-ms-schema-name": "ModifiedOnBehalfBy",
+          "x-ms-read-only": true
+        },
+        "modifiedonbehalfbyname": {
+          "type": "string",
+          "title": "modifiedonbehalfbyname",
+          "x-ms-dataverse-attribute": "modifiedonbehalfbyname",
+          "x-ms-dataverse-type": "StringType",
+          "x-ms-schema-name": "ModifiedOnBehalfByName",
+          "x-ms-read-only": true,
+          "maxLength": 100
+        },
+        "modifiedonbehalfbyyominame": {
+          "type": "string",
+          "title": "modifiedonbehalfbyyominame",
+          "x-ms-dataverse-attribute": "modifiedonbehalfbyyominame",
+          "x-ms-dataverse-type": "StringType",
+          "x-ms-schema-name": "ModifiedOnBehalfByYomiName",
+          "x-ms-read-only": true,
+          "required": true,
+          "maxLength": 100
+        },
+        "organizationid": {
+          "type": "string",
+          "title": "Organization Id",
+          "x-ms-dataverse-attribute": "organizationid",
+          "x-ms-dataverse-type": "LookupType",
+          "x-ms-schema-name": "OrganizationId",
+          "x-ms-read-only": true
+        },
+        "organizationidname": {
+          "type": "string",
+          "title": "organizationidname",
+          "x-ms-dataverse-attribute": "organizationidname",
+          "x-ms-dataverse-type": "StringType",
+          "x-ms-schema-name": "OrganizationIdName",
+          "x-ms-read-only": true,
+          "required": true,
+          "maxLength": 100
+        },
+        "overriddencreatedon": {
+          "type": "string",
+          "title": "Record Created On",
+          "x-ms-dataverse-attribute": "overriddencreatedon",
+          "x-ms-dataverse-type": "DateTimeType",
+          "x-ms-schema-name": "OverriddenCreatedOn"
+        },
+        "pvci_agentid": {
+          "type": "string",
+          "title": "Agent Inventory",
+          "x-ms-dataverse-attribute": "pvci_agentid",
+          "x-ms-dataverse-type": "LookupType",
+          "x-ms-schema-name": "pvci_AgentId"
+        },
+        "pvci_agentidname": {
+          "type": "string",
+          "title": "pvci_agentidname",
+          "x-ms-dataverse-attribute": "pvci_agentidname",
+          "x-ms-dataverse-type": "StringType",
+          "x-ms-schema-name": "pvci_AgentIdName",
+          "x-ms-read-only": true,
+          "maxLength": 200
+        },
+        "pvci_agentthresholdsnapshotid": {
+          "type": "string",
+          "title": "Agent Credit Threshold Snapshot",
+          "x-ms-dataverse-attribute": "pvci_agentthresholdsnapshotid",
+          "x-ms-dataverse-type": "UniqueidentifierType",
+          "x-ms-schema-name": "pvci_AgentThresholdSnapshotId",
+          "x-ms-dataverse-primary-id": true,
+          "required": true,
+          "x-ms-keyType": "primary"
+        },
+        "pvci_capturedon": {
+          "type": "string",
+          "title": "Captured On",
+          "x-ms-dataverse-attribute": "pvci_capturedon",
+          "x-ms-dataverse-type": "DateTimeType",
+          "x-ms-schema-name": "pvci_CapturedOn"
+        },
+        "pvci_createdonsource": {
+          "type": "string",
+          "title": "Threshold Created On",
+          "x-ms-dataverse-attribute": "pvci_createdonsource",
+          "x-ms-dataverse-type": "DateTimeType",
+          "x-ms-schema-name": "pvci_CreatedOnSource"
+        },
+        "pvci_entitlementid": {
+          "type": "string",
+          "title": "Entitlement ID",
+          "x-ms-dataverse-attribute": "pvci_entitlementid",
+          "x-ms-dataverse-type": "StringType",
+          "x-ms-schema-name": "pvci_EntitlementId",
+          "maxLength": 1000
+        },
+        "pvci_environmentid": {
+          "type": "string",
+          "title": "Environment ID",
+          "x-ms-dataverse-attribute": "pvci_environmentid",
+          "x-ms-dataverse-type": "StringType",
+          "x-ms-schema-name": "pvci_EnvironmentId",
+          "maxLength": 1000
+        },
+        "pvci_limit": {
+          "type": "string",
+          "title": "Monthly Credit Limit",
+          "x-ms-dataverse-attribute": "pvci_limit",
+          "x-ms-dataverse-type": "DecimalType",
+          "x-ms-schema-name": "pvci_Limit"
+        },
+        "pvci_name": {
+          "type": "string",
+          "title": "Name",
+          "x-ms-dataverse-attribute": "pvci_name",
+          "x-ms-dataverse-type": "StringType",
+          "x-ms-schema-name": "pvci_Name",
+          "x-ms-dataverse-primary-name": true,
+          "required": true,
+          "maxLength": 200
+        },
+        "pvci_notificationthreshold": {
+          "type": "string",
+          "title": "Notification Threshold Percent",
+          "x-ms-dataverse-attribute": "pvci_notificationthreshold",
+          "x-ms-dataverse-type": "IntegerType",
+          "x-ms-schema-name": "pvci_NotificationThreshold"
+        },
+        "pvci_notifyifovercapacity": {
+          "type": "string",
+          "title": "Notify Near Limit",
+          "x-ms-dataverse-attribute": "pvci_notifyifovercapacity",
+          "x-ms-dataverse-type": "BooleanType",
+          "x-ms-schema-name": "pvci_NotifyIfOverCapacity",
+          "enum": [
+            "No",
+            "Yes"
+          ],
+          "x-ms-enum-values": [
+            0,
+            1
+          ],
+          "Color": [
+            null,
+            null
+          ],
+          "x-ms-optionsetmetadataid": "2e86dbb8-0f96-f111-8076-7ced8d95b46e",
+          "x-ms-isGlobal": false,
+          "x-ms-optionsetdisplayname": "Notify Near Limit",
+          "x-ms-optionSetType": "Boolean"
+        },
+        "pvci_notifyifovercapacityname": {
+          "type": "string",
+          "title": "pvci_notifyifovercapacityname",
+          "x-ms-dataverse-attribute": "pvci_notifyifovercapacityname",
+          "x-ms-dataverse-type": "VirtualType",
+          "x-ms-schema-name": "pvci_notifyifovercapacityName",
+          "x-ms-read-only": true
+        },
+        "pvci_rawjson": {
+          "type": "string",
+          "title": "Raw Source JSON",
+          "x-ms-dataverse-attribute": "pvci_rawjson",
+          "x-ms-dataverse-type": "MemoType",
+          "x-ms-schema-name": "pvci_RawJson",
+          "maxLength": 1048576
+        },
+        "pvci_resourceconsumption": {
+          "type": "string",
+          "title": "Current Consumption",
+          "x-ms-dataverse-attribute": "pvci_resourceconsumption",
+          "x-ms-dataverse-type": "DecimalType",
+          "x-ms-schema-name": "pvci_ResourceConsumption"
+        },
+        "pvci_resourceid": {
+          "type": "string",
+          "title": "Resource ID",
+          "x-ms-dataverse-attribute": "pvci_resourceid",
+          "x-ms-dataverse-type": "StringType",
+          "x-ms-schema-name": "pvci_ResourceId",
+          "maxLength": 1000
+        },
+        "pvci_sourceapi": {
+          "type": "string",
+          "title": "Source API",
+          "x-ms-dataverse-attribute": "pvci_sourceapi",
+          "x-ms-dataverse-type": "StringType",
+          "x-ms-schema-name": "pvci_SourceApi",
+          "maxLength": 1000
+        },
+        "pvci_sourcekey": {
+          "type": "string",
+          "title": "Source Key",
+          "x-ms-dataverse-attribute": "pvci_sourcekey",
+          "x-ms-dataverse-type": "StringType",
+          "x-ms-schema-name": "pvci_SourceKey",
+          "maxLength": 200
+        },
+        "pvci_sourceschemaversion": {
+          "type": "string",
+          "title": "Source Schema Version",
+          "x-ms-dataverse-attribute": "pvci_sourceschemaversion",
+          "x-ms-dataverse-type": "StringType",
+          "x-ms-schema-name": "pvci_SourceSchemaVersion",
+          "maxLength": 1000
+        },
+        "pvci_stopifovercapacity": {
+          "type": "string",
+          "title": "Stop At Limit",
+          "x-ms-dataverse-attribute": "pvci_stopifovercapacity",
+          "x-ms-dataverse-type": "BooleanType",
+          "x-ms-schema-name": "pvci_StopIfOverCapacity",
+          "enum": [
+            "No",
+            "Yes"
+          ],
+          "x-ms-enum-values": [
+            0,
+            1
+          ],
+          "Color": [
+            null,
+            null
+          ],
+          "x-ms-optionsetmetadataid": "3286dbb8-0f96-f111-8076-7ced8d95b46e",
+          "x-ms-isGlobal": false,
+          "x-ms-optionsetdisplayname": "Stop At Limit",
+          "x-ms-optionSetType": "Boolean"
+        },
+        "pvci_stopifovercapacityname": {
+          "type": "string",
+          "title": "pvci_stopifovercapacityname",
+          "x-ms-dataverse-attribute": "pvci_stopifovercapacityname",
+          "x-ms-dataverse-type": "VirtualType",
+          "x-ms-schema-name": "pvci_stopifovercapacityName",
+          "x-ms-read-only": true
+        },
+        "pvci_stopresource": {
+          "type": "string",
+          "title": "Agent Explicitly Stopped",
+          "x-ms-dataverse-attribute": "pvci_stopresource",
+          "x-ms-dataverse-type": "BooleanType",
+          "x-ms-schema-name": "pvci_StopResource",
+          "enum": [
+            "No",
+            "Yes"
+          ],
+          "x-ms-enum-values": [
+            0,
+            1
+          ],
+          "Color": [
+            null,
+            null
+          ],
+          "x-ms-optionsetmetadataid": "acdee4be-0f96-f111-8076-7ced8d95b46e",
+          "x-ms-isGlobal": false,
+          "x-ms-optionsetdisplayname": "Agent Explicitly Stopped",
+          "x-ms-optionSetType": "Boolean"
+        },
+        "pvci_stopresourcename": {
+          "type": "string",
+          "title": "pvci_stopresourcename",
+          "x-ms-dataverse-attribute": "pvci_stopresourcename",
+          "x-ms-dataverse-type": "VirtualType",
+          "x-ms-schema-name": "pvci_stopresourceName",
+          "x-ms-read-only": true
+        },
+        "pvci_tenantid": {
+          "type": "string",
+          "title": "Tenant ID",
+          "x-ms-dataverse-attribute": "pvci_tenantid",
+          "x-ms-dataverse-type": "StringType",
+          "x-ms-schema-name": "pvci_TenantId",
+          "maxLength": 1000
+        },
+        "statecode": {
+          "type": "string",
+          "title": "Status",
+          "x-ms-dataverse-attribute": "statecode",
+          "x-ms-dataverse-type": "StateType",
+          "x-ms-schema-name": "statecode",
+          "required": true,
+          "enum": [
+            "Active",
+            "Inactive"
+          ],
+          "x-ms-enum-values": [
+            0,
+            1
+          ],
+          "Color": [
+            null,
+            null
+          ],
+          "x-ms-optionsetmetadataid": "57cf739d-0f96-f111-8076-7ced8d95b46e",
+          "x-ms-isGlobal": false,
+          "x-ms-optionsetdisplayname": "Status",
+          "x-ms-optionSetType": "State"
+        },
+        "statecodename": {
+          "type": "string",
+          "title": "statecodename",
+          "x-ms-dataverse-attribute": "statecodename",
+          "x-ms-dataverse-type": "VirtualType",
+          "x-ms-schema-name": "statecodeName",
+          "x-ms-read-only": true
+        },
+        "statuscode": {
+          "type": "string",
+          "title": "Status Reason",
+          "x-ms-dataverse-attribute": "statuscode",
+          "x-ms-dataverse-type": "StatusType",
+          "x-ms-schema-name": "statuscode",
+          "enum": [
+            "Active",
+            "Inactive"
+          ],
+          "x-ms-enum-values": [
+            1,
+            2
+          ],
+          "Color": [
+            null,
+            null
+          ],
+          "x-ms-optionsetmetadataid": "61cf739d-0f96-f111-8076-7ced8d95b46e",
+          "x-ms-isGlobal": false,
+          "x-ms-optionsetdisplayname": "Status Reason",
+          "x-ms-optionSetType": "Status"
+        },
+        "statuscodename": {
+          "type": "string",
+          "title": "statuscodename",
+          "x-ms-dataverse-attribute": "statuscodename",
+          "x-ms-dataverse-type": "VirtualType",
+          "x-ms-schema-name": "statuscodeName",
+          "x-ms-read-only": true
+        },
+        "timezoneruleversionnumber": {
+          "type": "string",
+          "title": "Time Zone Rule Version Number",
+          "x-ms-dataverse-attribute": "timezoneruleversionnumber",
+          "x-ms-dataverse-type": "IntegerType",
+          "x-ms-schema-name": "TimeZoneRuleVersionNumber"
+        },
+        "utcconversiontimezonecode": {
+          "type": "string",
+          "title": "UTC Conversion Time Zone Code",
+          "x-ms-dataverse-attribute": "utcconversiontimezonecode",
+          "x-ms-dataverse-type": "IntegerType",
+          "x-ms-schema-name": "UTCConversionTimeZoneCode"
+        },
+        "versionnumber": {
+          "type": "string",
+          "title": "Version Number",
+          "x-ms-dataverse-attribute": "versionnumber",
+          "x-ms-dataverse-type": "BigIntType",
+          "x-ms-schema-name": "VersionNumber",
+          "x-ms-read-only": true
+        }
+      },
+      "required": [
+        "createdbyyominame",
+        "createdonbehalfbyyominame",
+        "modifiedbyyominame",
+        "modifiedonbehalfbyyominame",
+        "organizationidname",
+        "pvci_agentthresholdsnapshotid",
+        "pvci_name",
+        "statecode"
+      ]
+    }
+  }
+}

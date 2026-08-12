@@ -2,21 +2,25 @@ import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { CreditTrend, HBar } from "./Chart";
 import { Pvci_agentinventoriesService } from "../generated/services/Pvci_agentinventoriesService";
+import { Pvci_agentthresholdsnapshotsService } from "../generated/services/Pvci_agentthresholdsnapshotsService";
 import { Pvci_creditcapacitysnapshotsService } from "../generated/services/Pvci_creditcapacitysnapshotsService";
 import { Pvci_creditsyncrunsService } from "../generated/services/Pvci_creditsyncrunsService";
 import { Pvci_creditusagesService } from "../generated/services/Pvci_creditusagesService";
 import { Pvci_credituserusagesService } from "../generated/services/Pvci_credituserusagesService";
 import { Pvci_creditprivacysettingsService } from "../generated/services/Pvci_creditprivacysettingsService";
 import { Pvci_environmentinventoriesService } from "../generated/services/Pvci_environmentinventoriesService";
+import { Pvci_governancesyncrunsService } from "../generated/services/Pvci_governancesyncrunsService";
 import { Pvci_inventorysyncrunsService } from "../generated/services/Pvci_inventorysyncrunsService";
 import { Pvci_transcriptsessionsService } from "../generated/services/Pvci_transcriptsessionsService";
 import type { Pvci_agentinventories } from "../generated/models/Pvci_agentinventoriesModel";
+import type { Pvci_agentthresholdsnapshots } from "../generated/models/Pvci_agentthresholdsnapshotsModel";
 import type { Pvci_creditcapacitysnapshots } from "../generated/models/Pvci_creditcapacitysnapshotsModel";
 import type { Pvci_creditsyncruns } from "../generated/models/Pvci_creditsyncrunsModel";
 import type { Pvci_creditusages } from "../generated/models/Pvci_creditusagesModel";
 import type { Pvci_credituserusages } from "../generated/models/Pvci_credituserusagesModel";
 import type { Pvci_creditprivacysettings } from "../generated/models/Pvci_creditprivacysettingsModel";
 import type { Pvci_environmentinventories } from "../generated/models/Pvci_environmentinventoriesModel";
+import type { Pvci_governancesyncruns } from "../generated/models/Pvci_governancesyncrunsModel";
 import type { Pvci_inventorysyncruns } from "../generated/models/Pvci_inventorysyncrunsModel";
 import type { SessionRow } from "../lib/model";
 import { loadAllPages } from "../lib/paging";
@@ -37,6 +41,17 @@ const AGENT_FIELDS = [
   "pvci_agentinventoryid", "pvci_resourceid", "pvci_displayname", "pvci_environmentid",
   "pvci_environmentname", "pvci_harness", "pvci_resourcetype", "pvci_classificationconfidence",
   "pvci_agentstatus", "pvci_hasdetailedaccess", "pvci_inventorysource",
+];
+
+const THRESHOLD_FIELDS = [
+  "pvci_agentthresholdsnapshotid", "pvci_environmentid", "pvci_resourceid", "pvci_entitlementid",
+  "pvci_limit", "pvci_resourceconsumption", "pvci_notificationthreshold", "pvci_notifyifovercapacity",
+  "pvci_stopifovercapacity", "pvci_stopresource", "pvci_capturedon", "_pvci_agentid_value",
+];
+
+const GOVERNANCE_SYNC_FIELDS = [
+  "pvci_governancesyncrunid", "pvci_name", "pvci_status", "pvci_startedon", "pvci_completedon",
+  "pvci_thresholdcount", "pvci_createdcount", "pvci_updatedcount", "pvci_rejectedcount",
 ];
 
 const ENVIRONMENT_FIELDS = [
@@ -76,10 +91,13 @@ const CORRELATION_SESSION_FIELDS = [
 
 type CreditMode = "total" | "billed" | "nonbilled";
 type PeriodGrain = "day" | "week";
+type HarnessFilter = "*" | "github_copilot" | "not_github_copilot" | "unknown";
 type ResourceSummary = {
   label: string;
   resourceId: string;
   environmentId?: string;
+  harness: Exclude<HarnessFilter, "*">;
+  threshold?: Pvci_agentthresholdsnapshots;
   billed: number;
   nonbilled: number;
   facts: number;
@@ -89,6 +107,8 @@ export function Credits({ sidebarTarget }: { sidebarTarget: HTMLElement | null }
   const [usage, setUsage] = useState<Pvci_creditusages[]>([]);
   const [capacity, setCapacity] = useState<Pvci_creditcapacitysnapshots[]>([]);
   const [agents, setAgents] = useState<Pvci_agentinventories[]>([]);
+  const [thresholds, setThresholds] = useState<Pvci_agentthresholdsnapshots[]>([]);
+  const [governanceSyncRuns, setGovernanceSyncRuns] = useState<Pvci_governancesyncruns[]>([]);
   const [environments, setEnvironments] = useState<Pvci_environmentinventories[]>([]);
   const [inventorySyncRuns, setInventorySyncRuns] = useState<Pvci_inventorysyncruns[]>([]);
   const [syncRuns, setSyncRuns] = useState<Pvci_creditsyncruns[]>([]);
@@ -97,6 +117,7 @@ export function Credits({ sidebarTarget }: { sidebarTarget: HTMLElement | null }
   const [correlationSessions, setCorrelationSessions] = useState<SessionRow[]>([]);
   const [privacyBusy, setPrivacyBusy] = useState(false);
   const [environment, setEnvironment] = useState("*");
+  const [harness, setHarness] = useState<HarnessFilter>("*");
   const [resource, setResource] = useState("*");
   const [selectedUser, setSelectedUser] = useState("*");
   const [navigatorSearch, setNavigatorSearch] = useState("");
@@ -109,10 +130,12 @@ export function Credits({ sidebarTarget }: { sidebarTarget: HTMLElement | null }
     let cancelled = false;
     void (async () => {
       try {
-        const [usageResult, capacityResult, agentResult, environmentResult, inventorySyncResult, syncResult, userResult, privacyResult, sessionResult] = await Promise.all([
+        const [usageResult, capacityResult, agentResult, thresholdResult, governanceSyncResult, environmentResult, inventorySyncResult, syncResult, userResult, privacyResult, sessionResult] = await Promise.all([
           loadAllPages((skipToken, maxPageSize) => Pvci_creditusagesService.getAll({ select: USAGE_FIELDS, orderBy: ["pvci_usagedate desc"], maxPageSize, skipToken })),
           loadAllPages((skipToken, maxPageSize) => Pvci_creditcapacitysnapshotsService.getAll({ select: CAPACITY_FIELDS, orderBy: ["pvci_asofdate desc"], maxPageSize, skipToken })),
           loadAllPages((skipToken, maxPageSize) => Pvci_agentinventoriesService.getAll({ select: AGENT_FIELDS, orderBy: ["pvci_displayname asc"], maxPageSize, skipToken })),
+          loadAllPages((skipToken, maxPageSize) => Pvci_agentthresholdsnapshotsService.getAll({ select: THRESHOLD_FIELDS, orderBy: ["pvci_capturedon desc"], maxPageSize, skipToken })),
+          Pvci_governancesyncrunsService.getAll({ select: GOVERNANCE_SYNC_FIELDS, orderBy: ["pvci_startedon desc"], top: 50 }),
           loadAllPages((skipToken, maxPageSize) => Pvci_environmentinventoriesService.getAll({ select: ENVIRONMENT_FIELDS, orderBy: ["pvci_displayname asc"], maxPageSize, skipToken })),
           Pvci_inventorysyncrunsService.getAll({ select: INVENTORY_SYNC_FIELDS, orderBy: ["pvci_startedon desc"], top: 50 }),
           Pvci_creditsyncrunsService.getAll({ select: SYNC_FIELDS, orderBy: ["pvci_startedon desc"], top: 50 }),
@@ -124,6 +147,8 @@ export function Credits({ sidebarTarget }: { sidebarTarget: HTMLElement | null }
         setUsage(usageResult);
         setCapacity(capacityResult);
         setAgents(agentResult);
+        setThresholds(thresholdResult);
+        setGovernanceSyncRuns((governanceSyncResult.data ?? []) as unknown as Pvci_governancesyncruns[]);
         setEnvironments(environmentResult);
         setInventorySyncRuns((inventorySyncResult.data ?? []) as unknown as Pvci_inventorysyncruns[]);
         setSyncRuns((syncResult.data ?? []) as unknown as Pvci_creditsyncruns[]);
@@ -157,14 +182,46 @@ export function Credits({ sidebarTarget }: { sidebarTarget: HTMLElement | null }
   }, [agents, capacity, environments]);
   const revealUserNames = privacy?.pvci_revealusernames === true;
 
-  const environmentUsage = useMemo(
+  const environmentScopedUsage = useMemo(
     () => usage.filter((row) => environment === "*" || sameId(row.pvci_environmentid, environment)),
     [usage, environment]
   );
-  const environmentAgents = useMemo(
+  const environmentScopedAgents = useMemo(
     () => agents.filter((row) => environment === "*" || sameId(row.pvci_environmentid, environment)),
     [agents, environment]
   );
+  const agentHarnessByKey = useMemo(() => {
+    const values = new Map<string, Exclude<HarnessFilter, "*">>();
+    environmentScopedAgents.forEach((row) => {
+      values.set(
+        resourceIdentityKey(row.pvci_environmentid, row.pvci_resourceid ?? row.pvci_agentinventoryid),
+        normalizeHarness(row.pvci_harness)
+      );
+    });
+    return values;
+  }, [environmentScopedAgents]);
+  const environmentAgents = useMemo(
+    () => environmentScopedAgents.filter((row) =>
+      harness === "*" || normalizeHarness(row.pvci_harness) === harness
+    ),
+    [environmentScopedAgents, harness]
+  );
+  const environmentUsage = useMemo(
+    () => environmentScopedUsage.filter((row) => {
+      if (harness === "*") return true;
+      const effectiveHarness = agentHarnessByKey.get(resourceKey(row)) ?? normalizeHarness(row.pvci_harness);
+      return effectiveHarness === harness;
+    }),
+    [agentHarnessByKey, environmentScopedUsage, harness]
+  );
+  const latestThresholdByKey = useMemo(() => {
+    const values = new Map<string, Pvci_agentthresholdsnapshots>();
+    thresholds.forEach((row) => {
+      const key = resourceIdentityKey(row.pvci_environmentid, row.pvci_resourceid ?? "unknown");
+      if (!values.has(key)) values.set(key, row);
+    });
+    return values;
+  }, [thresholds]);
   const resourceSummaries = useMemo(() => {
     const summaries = new Map<string, ResourceSummary>();
     environmentAgents.forEach((row) => {
@@ -174,6 +231,8 @@ export function Credits({ sidebarTarget }: { sidebarTarget: HTMLElement | null }
         label: row.pvci_displayname ?? row.pvci_resourceid ?? "Unknown agent",
         resourceId,
         environmentId: row.pvci_environmentid,
+        harness: normalizeHarness(row.pvci_harness),
+        threshold: latestThresholdByKey.get(key),
         billed: 0,
         nonbilled: 0,
         facts: 0,
@@ -185,6 +244,8 @@ export function Credits({ sidebarTarget }: { sidebarTarget: HTMLElement | null }
         label: row.pvci_agentname ?? row.pvci_resourceid ?? "Unknown resource",
         resourceId: row.pvci_resourceid ?? row.pvci_agentname ?? "unknown",
         environmentId: row.pvci_environmentid,
+        harness: agentHarnessByKey.get(key) ?? normalizeHarness(row.pvci_harness),
+        threshold: latestThresholdByKey.get(key),
         billed: 0,
         nonbilled: 0,
         facts: 0,
@@ -197,7 +258,20 @@ export function Credits({ sidebarTarget }: { sidebarTarget: HTMLElement | null }
     return [...summaries.entries()].sort((left, right) =>
       (right[1].billed + right[1].nonbilled) - (left[1].billed + left[1].nonbilled)
     );
-  }, [environmentAgents, environmentUsage]);
+  }, [agentHarnessByKey, environmentAgents, environmentUsage, latestThresholdByKey]);
+  const scopedThresholds = useMemo(
+    () => [...latestThresholdByKey.values()].filter((row) => {
+      if (environment !== "*" && !sameId(row.pvci_environmentid, environment)) return false;
+      if (harness === "*") return true;
+      const key = resourceIdentityKey(row.pvci_environmentid, row.pvci_resourceid ?? "unknown");
+      return (agentHarnessByKey.get(key) ?? "unknown") === harness;
+    }),
+    [agentHarnessByKey, environment, harness, latestThresholdByKey]
+  );
+  const resourceLabelsByKey = useMemo(
+    () => new Map(resourceSummaries.map(([key, summary]) => [key, summary.label])),
+    [resourceSummaries]
+  );
   const scopedUsage = useMemo(
     () => environmentUsage.filter((row) => resource === "*" || resourceKey(row) === resource),
     [environmentUsage, resource]
@@ -364,6 +438,8 @@ export function Credits({ sidebarTarget }: { sidebarTarget: HTMLElement | null }
 
   const latestSync = syncRuns[0];
   const latestInventorySync = inventorySyncRuns[0];
+  const latestGovernanceSync = governanceSyncRuns[0];
+  const linkedThresholdCount = scopedThresholds.filter((row) => row._pvci_agentid_value).length;
   const detailedEnvironmentCount = environments.filter((row) => row.pvci_hasdetailedaccess).length;
   const latestUsageDate = environmentUsage.reduce<string | undefined>(
     (latest, row) => !latest || (row.pvci_usagedate ?? "") > latest ? row.pvci_usagedate : latest,
@@ -416,6 +492,12 @@ export function Credits({ sidebarTarget }: { sidebarTarget: HTMLElement | null }
         <option value="*">All environments</option>
         {environmentOptions.map(([id, label]) => <option key={id} value={id}>{label}</option>)}
       </select>
+      <select className="search" value={harness} onChange={(event) => { setHarness(event.target.value as HarnessFilter); setResource("*"); }}>
+        <option value="*">All harness evidence</option>
+        <option value="github_copilot">GitHub Copilot harness</option>
+        <option value="not_github_copilot">Not GitHub Copilot harness</option>
+        <option value="unknown">Unknown harness</option>
+      </select>
 
       <div className="credit-nav-heading">
         <span>Agents and resources</span>
@@ -432,7 +514,7 @@ export function Credits({ sidebarTarget }: { sidebarTarget: HTMLElement | null }
               <span className="si-user" title={summary.label}>{summary.label}</span>
               <span className="chip">{fmtCredits(summary.billed + summary.nonbilled)}</span>
             </div>
-            <div className="si-sub muted small">{fmtFacts(summary.facts)} · {fmtCredits(summary.billed)} billed</div>
+            <div className="si-sub muted small">{fmtFacts(summary.facts)} · {harnessLabel(summary.harness)} · {thresholdLabel(summary.threshold)}</div>
           </button>
         ))}
       </div>
@@ -472,6 +554,7 @@ export function Credits({ sidebarTarget }: { sidebarTarget: HTMLElement | null }
           <span>Usage through <strong>{fmtDate(latestUsageDate)}</strong></span>
           <span>Credit sync <strong>{fmtDateTime(latestSync?.pvci_completedon)}</strong></span>
           <span>Inventory sync <strong>{fmtDateTime(latestInventorySync?.pvci_completedon)}</strong></span>
+          <span>Governance sync <strong>{fmtDateTime(latestGovernanceSync?.pvci_completedon)}</strong></span>
         </div>
       </div>
 
@@ -675,6 +758,36 @@ export function Credits({ sidebarTarget }: { sidebarTarget: HTMLElement | null }
           <span>{detailedEnvironmentCount} detailed access</span>
         </div>
 
+        <SectionHeading text="Agent credit limits · read-only" help="Latest Power Platform resource-threshold state. This release reports controls but does not change them." className="report-subheading" />
+        <div className="sync-strip">
+          <span>{latestGovernanceSync?.pvci_name ?? "No governance sync run"}</span>
+          <span className={`conf ${latestGovernanceSync?.pvci_status === "success" ? "high" : "multiple"}`}>{latestGovernanceSync?.pvci_status ?? "not configured"}</span>
+          <span>{scopedThresholds.length} controls in scope</span>
+          <span>{linkedThresholdCount} linked</span>
+          <span>{scopedThresholds.length - linkedThresholdCount} unlinked</span>
+        </div>
+        <div className="credit-table-wrap">
+          <table className="runtable credit-table">
+            <thead><tr><th>Agent or resource</th><th>Environment ID</th><th>Used</th><th>Limit</th><th>Utilization</th><th>Alert</th><th>Enforcement</th></tr></thead>
+            <tbody>
+              {scopedThresholds.map((row) => {
+                const key = resourceIdentityKey(row.pvci_environmentid, row.pvci_resourceid ?? "unknown");
+                return (
+                  <tr key={row.pvci_agentthresholdsnapshotid}>
+                    <td>{resourceLabelsByKey.get(key) ?? row.pvci_resourceid ?? "Unknown resource"}</td>
+                    <td className="mono">{row.pvci_environmentid ?? "Unknown"}</td>
+                    <td className="mono">{fmtCredits(row.pvci_resourceconsumption ?? 0)}</td>
+                    <td className="mono">{fmtCredits(row.pvci_limit ?? 0)}</td>
+                    <td>{fmtPercent(thresholdUtilization(row))}</td>
+                    <td>{row.pvci_notifyifovercapacity ? `${row.pvci_notificationthreshold ?? 0}%` : "Off"}</td>
+                    <td><span className={`conf ${row.pvci_stopresource || row.pvci_stopifovercapacity ? "multiple" : "high"}`}>{thresholdEnforcement(row)}</span></td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+
         <SectionHeading text="Environment capacity" help="Latest PPAC capacity snapshots by environment, including allocation, consumption, availability, pool policy, and status." className="report-subheading" />
         <div className="credit-table-wrap">
         <table className="runtable credit-table">
@@ -788,6 +901,33 @@ function sameId(left?: string, right?: string) {
   return Boolean(left && right && left.toLowerCase() === right.toLowerCase());
 }
 
+function normalizeHarness(value?: string): Exclude<HarnessFilter, "*"> {
+  if (value === "github_copilot" || value === "not_github_copilot") return value;
+  return "unknown";
+}
+
+function harnessLabel(value: Exclude<HarnessFilter, "*">) {
+  if (value === "github_copilot") return "GitHub harness";
+  if (value === "not_github_copilot") return "Not GitHub harness";
+  return "Unknown harness";
+}
+
+function thresholdLabel(row?: Pvci_agentthresholdsnapshots) {
+  if (!row) return "No limit record";
+  return `${fmtCredits(row.pvci_resourceconsumption ?? 0)} / ${fmtCredits(row.pvci_limit ?? 0)} credits`;
+}
+
+function thresholdUtilization(row: Pvci_agentthresholdsnapshots) {
+  const limit = row.pvci_limit ?? 0;
+  return limit > 0 ? (row.pvci_resourceconsumption ?? 0) / limit : 0;
+}
+
+function thresholdEnforcement(row: Pvci_agentthresholdsnapshots) {
+  if (row.pvci_stopresource) return "Stopped";
+  if (row.pvci_stopifovercapacity) return "Stop at limit";
+  return "Monitor only";
+}
+
 function sessionMatchesResource(session: SessionRow, resourceId: string, resourceLabel: string | null) {
   if (sameId(session.pvci_botid, resourceId)) return true;
   return Boolean(resourceLabel && session.pvci_botname?.toLowerCase() === resourceLabel.toLowerCase());
@@ -828,6 +968,10 @@ function periodKey(value: string | undefined, grain: PeriodGrain) {
 
 function fmtCredits(value: number) {
   return value.toLocaleString(undefined, { maximumFractionDigits: 2 });
+}
+
+function fmtPercent(value: number) {
+  return value.toLocaleString(undefined, { style: "percent", maximumFractionDigits: 1 });
 }
 
 function fmtFacts(value: number) {

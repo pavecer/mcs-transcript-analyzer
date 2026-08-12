@@ -9,15 +9,18 @@ harness runtimes; it does not use the separate GitHub Copilot product billing AP
 | Component | Current behavior |
 | --- | --- |
 | `PVCI Collect Copilot Credit Usage (scheduled)` | Runs daily, re-reads seven days, follows up to 20 pages of 100 resource rows, imports user rows in bounded 250-row chunks, and captures environment capacity |
+| `PVCI Collect Credit Governance (scheduled)` | Reads the public Power Platform resource-threshold endpoint daily and imports read-only agent control snapshots with separate health |
 | `pvci_ImportCreditUsageBatch` | Validates tenant scope, normalizes raw PPAC responses, computes stable keys, and idempotently imports bounded batches |
-| `pvci_agentinventory` | One row per observed tenant, environment, and resource ID; harness remains `unknown` without verified evidence |
+| `pvci_agentinventory` | One row per observed tenant, environment, and resource ID; `properties.isCLIAgent` classifies GitHub, not-GitHub, or unknown without inference |
+| `pvci_agentthresholdsnapshot` | Daily tenant/environment/resource threshold snapshots: limit, consumption, notification, stop-at-limit, and explicit-stop state |
+| `pvci_governancesyncrun` | Governance collector freshness, threshold counts, import outcomes, and bounded errors |
 | `pvci_creditusage` | One row per source resource/period fact with billed and non-billed credits and optional driver dimensions |
 | `pvci_creditcapacitysnapshot` | One row per environment, entitlement, and source as-of date |
 | `pvci_creditsyncrun` | Collector freshness, combined user/resource/capacity import counts, status, schema version, and bounded errors |
 | `pvci_credituserusage` | Separate user/source-period projection; source user GUID is the default label and no name is accepted from PPAC |
 | `pvci_creditprivacysetting` | Singleton, default-off, shared and audited approval controlling server-side name resolution and revocation |
-| Model-driven app | Agent, usage, user consumption, privacy approval, capacity, unresolved-resource, unknown-harness, and sync-run views/forms |
-| Code app | Left-rail environment, agent/resource, and user navigator; credit totals, user consumption and approval, contribution, source-period trends, capacity, and data quality |
+| Model-driven app | Agent, threshold, usage, user consumption, privacy approval, capacity, unresolved-resource, harness, and sync-run views/forms |
+| Code app | Environment and exact harness filters; agent/resource and user navigation; threshold utilization; credit trends; capacity; privacy; and collector health |
 
 The licensing connection uses **HTTP with Microsoft Entra ID (preauthorized)**. For commercial
 cloud, both its Base Resource URL and Microsoft Entra ID Resource URI are
@@ -26,6 +29,35 @@ cloud, both its Base Resource URL and Microsoft Entra ID Resource URI are
 `pvci_CreditReportingTenantId` environment variable. The solution exports an empty default and no
 current value, credentials, or physical connection ID; each target supplies those deployment
 bindings during import.
+
+The governance collector uses a separate **HTTP with Microsoft Entra ID (preauthorized)**
+connection whose Base Resource URL and Microsoft Entra ID Resource URI are both
+`https://api.powerplatform.com/`. It binds through `pvci_powerplatformapi`. One HTTP connection
+cannot represent both licensing audiences, and neither physical connection ID is exported.
+
+## Harness classification and credit limits
+
+Power Platform Inventory supplies `properties.isCLIAgent` on supported agent rows. The importer
+preserves three states:
+
+- `github_copilot` when the direct property is `true`;
+- `not_github_copilot` when the direct property is `false`;
+- `unknown` when the property is absent or not boolean.
+
+`false` does not prove the Standard harness, so the app labels it **Not GitHub Copilot harness**.
+It does not infer harness from orchestration mode, model, tools, creation date, or evaluations.
+
+The governance collector reads:
+
+```text
+GET https://api.powerplatform.com/licensing/entitlements/MCSMessages/resourceThresholds
+  ?api-version=2024-10-01
+```
+
+The endpoint returns tenant-wide threshold rows keyed by environment and resource. PVCI stores one
+idempotent snapshot per source day and links exact tenant/environment/resource matches to Agent
+Inventory. Unlinked threshold resources remain visible. Version `1.3.0.0` is read-only: it does not
+call the per-resource threshold PUT endpoint or environment allocation mutation APIs.
 
 ## Supported reporting grain
 
@@ -168,8 +200,8 @@ Session-level “credits” can only be a clearly labeled estimate or period cor
 
 ## Known limitations and next work
 
-- Harness remains `unknown` until a controlled standard-versus-GitHub-harness probe finds a stable,
-  documented discriminator or an administrator supplies an audited override.
+- `properties.isCLIAgent` is not present on every inventory row; missing evidence remains unknown.
+- A false `isCLIAgent` value distinguishes only not-GitHub, not a specific alternative harness.
 - The current resource endpoint does not guarantee daily agent facts for every query.
 - Feature, channel, model, tool, and knowledge dimensions require the richer Agent Usage History
   projection or a completed PPAC report schema; missing dimensions are not inferred.
@@ -179,6 +211,9 @@ Session-level “credits” can only be a clearly labeled estimate or period cor
 - A completed PPAC CSV capture is still required to validate report-only columns and correction
   behavior.
 - User-name disclosure is a global setting; row-level/per-viewer approval is not implemented.
+- Agent threshold changes and environment allocation changes are not implemented in `1.3.0.0`;
+  future writes require a separate privileged role, request/approval record, read-before-write,
+  stale-state detection, and before/after audit.
 
 See [Cross-environment Copilot credit consumption](cross-environment-credit-consumption-design.md)
 for evidence, architecture decisions, delivery phases, and source references.

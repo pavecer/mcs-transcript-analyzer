@@ -37,6 +37,8 @@ class SecurityRoleContractTests(unittest.TestCase):
             "pvci_syncstate",
             "pvci_environmentinventory",
             "pvci_inventorysyncrun",
+            "pvci_agentthresholdsnapshot",
+            "pvci_governancesyncrun",
             "pvci_agentinventory",
             "pvci_creditusage",
             "pvci_creditcapacitysnapshot",

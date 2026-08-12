@@ -7,7 +7,7 @@
       "uniqueName": "pvConversationInsightsPublisher",
       "prefix": "pvci"
     },
-    "version": "1.2.0.0"
+    "version": "1.3.0.0"
   },
   "securityRoles": [
     {
@@ -22,6 +22,8 @@
         "pvci_syncstate": ["Read"],
         "pvci_environmentinventory": ["Read"],
         "pvci_inventorysyncrun": ["Read"],
+        "pvci_agentthresholdsnapshot": ["Read"],
+        "pvci_governancesyncrun": ["Read"],
         "pvci_agentinventory": ["Read"],
         "pvci_creditusage": ["Read"],
         "pvci_creditcapacitysnapshot": ["Read"],
@@ -42,6 +44,8 @@
         "pvci_syncstate": ["Read"],
         "pvci_environmentinventory": ["Read"],
         "pvci_inventorysyncrun": ["Read"],
+        "pvci_agentthresholdsnapshot": ["Read"],
+        "pvci_governancesyncrun": ["Read"],
         "pvci_agentinventory": ["Read"],
         "pvci_creditusage": ["Read"],
         "pvci_creditcapacitysnapshot": ["Read"],
@@ -468,6 +472,73 @@
           "schemaName": "pvci_CreditPrivacySetting_SettingKey",
           "displayName": "Credit Privacy Setting Key",
           "columns": ["pvci_settingkey"]
+        }
+      ]
+    },
+    {
+      "schemaName": "pvci_AgentThresholdSnapshot",
+      "displayName": "Agent Credit Threshold Snapshot",
+      "displayCollectionName": "Agent Credit Threshold Snapshots",
+      "ownershipType": "OrganizationOwned",
+      "primaryColumn": "pvci_Name",
+      "columns": {
+        "pvci_SourceKey": { "type": "string", "maxLength": 200, "displayName": "Source Key" },
+        "pvci_TenantId": { "type": "string", "displayName": "Tenant ID" },
+        "pvci_EnvironmentId": { "type": "string", "displayName": "Environment ID" },
+        "pvci_ResourceId": { "type": "string", "displayName": "Resource ID" },
+        "pvci_EntitlementId": { "type": "string", "displayName": "Entitlement ID" },
+        "pvci_Limit": { "type": "decimal", "precision": 4, "minValue": 0, "displayName": "Monthly Credit Limit" },
+        "pvci_ResourceConsumption": { "type": "decimal", "precision": 4, "minValue": 0, "displayName": "Current Consumption" },
+        "pvci_NotificationThreshold": { "type": "int", "displayName": "Notification Threshold Percent" },
+        "pvci_NotifyIfOverCapacity": { "type": "bool", "displayName": "Notify Near Limit" },
+        "pvci_StopIfOverCapacity": { "type": "bool", "displayName": "Stop At Limit" },
+        "pvci_StopResource": { "type": "bool", "displayName": "Agent Explicitly Stopped" },
+        "pvci_CreatedOnSource": { "type": "datetime", "displayName": "Threshold Created On" },
+        "pvci_CapturedOn": { "type": "datetime", "displayName": "Captured On" },
+        "pvci_SourceApi": { "type": "string", "displayName": "Source API" },
+        "pvci_SourceSchemaVersion": { "type": "string", "displayName": "Source Schema Version" },
+        "pvci_RawJson": { "type": "text", "displayName": "Raw Source JSON" }
+      },
+      "alternateKeys": [
+        {
+          "schemaName": "pvci_AgentThresholdSnapshot_SourceKey",
+          "displayName": "Agent Threshold Snapshot Source Key",
+          "columns": ["pvci_sourcekey"]
+        }
+      ],
+      "lookups": [
+        {
+          "schemaName": "pvci_AgentId",
+          "displayName": "Agent Inventory",
+          "referencedTable": "pvci_agentinventory",
+          "relationshipName": "pvci_agentinventory_thresholdsnapshot"
+        }
+      ]
+    },
+    {
+      "schemaName": "pvci_GovernanceSyncRun",
+      "displayName": "Credit Governance Sync Run",
+      "displayCollectionName": "Credit Governance Sync Runs",
+      "ownershipType": "OrganizationOwned",
+      "primaryColumn": "pvci_Name",
+      "columns": {
+        "pvci_RunKey": { "type": "string", "maxLength": 200, "displayName": "Run Key" },
+        "pvci_Source": { "type": "string", "displayName": "Source" },
+        "pvci_StartedOn": { "type": "datetime", "displayName": "Started On" },
+        "pvci_CompletedOn": { "type": "datetime", "displayName": "Completed On" },
+        "pvci_Status": { "type": "string", "displayName": "Status" },
+        "pvci_ThresholdCount": { "type": "int", "displayName": "Threshold Count" },
+        "pvci_CreatedCount": { "type": "int", "displayName": "Created Count" },
+        "pvci_UpdatedCount": { "type": "int", "displayName": "Updated Count" },
+        "pvci_RejectedCount": { "type": "int", "displayName": "Rejected Count" },
+        "pvci_SchemaVersion": { "type": "string", "displayName": "Schema Version" },
+        "pvci_Error": { "type": "text", "displayName": "Error" }
+      },
+      "alternateKeys": [
+        {
+          "schemaName": "pvci_GovernanceSyncRun_RunKey",
+          "displayName": "Governance Sync Run Key",
+          "columns": ["pvci_runkey"]
         }
       ]
     }

@@ -19,6 +19,8 @@ TURN = "pvci_transcriptturn"
 IDENTITY = "pvci_transcriptidentitymap"
 ENVIRONMENT = "pvci_environmentinventory"
 INVENTORY_SYNC = "pvci_inventorysyncrun"
+THRESHOLD = "pvci_agentthresholdsnapshot"
+GOVERNANCE_SYNC = "pvci_governancesyncrun"
 AGENT = "pvci_agentinventory"
 CREDIT = "pvci_creditusage"
 CAPACITY = "pvci_creditcapacitysnapshot"
@@ -115,6 +117,8 @@ def main() -> None:
         ic = otc(s, base, h, IDENTITY)
         ec = otc(s, base, h, ENVIRONMENT)
         isc = otc(s, base, h, INVENTORY_SYNC)
+        thc = otc(s, base, h, THRESHOLD)
+        gsc = otc(s, base, h, GOVERNANCE_SYNC)
         ac = otc(s, base, h, AGENT)
         cc = otc(s, base, h, CREDIT)
         capc = otc(s, base, h, CAPACITY)
@@ -281,6 +285,64 @@ def main() -> None:
                     filt='<filter type="and"><condition attribute="pvci_harness" operator="eq" value="unknown" /></filter>',
                 ),
                 grid(ac, "pvci_agentinventoryid", agent_cols),
+            )
+        )
+        results.append(
+            upsert_view(
+                s, base, token, AGENT, "Agent Inventory - GitHub Copilot Harness",
+                fetch(
+                    AGENT,
+                    agent_attrs,
+                    "pvci_displayname",
+                    desc=False,
+                    filt='<filter type="and"><condition attribute="pvci_harness" operator="eq" value="github_copilot" /></filter>',
+                ),
+                grid(ac, "pvci_agentinventoryid", agent_cols),
+            )
+        )
+
+        threshold_cols = [
+            ("pvci_resourceid", 240),
+            ("pvci_environmentid", 240),
+            ("pvci_resourceconsumption", 110),
+            ("pvci_limit", 110),
+            ("pvci_notificationthreshold", 100),
+            ("pvci_notifyifovercapacity", 90),
+            ("pvci_stopifovercapacity", 90),
+            ("pvci_stopresource", 90),
+            ("pvci_capturedon", 140),
+        ]
+        results.append(
+            upsert_view(
+                s, base, token, THRESHOLD, "Agent Credit Thresholds - Latest",
+                fetch(
+                    THRESHOLD,
+                    [c[0] for c in threshold_cols] + ["pvci_agentthresholdsnapshotid"],
+                    "pvci_capturedon",
+                ),
+                grid(thc, "pvci_agentthresholdsnapshotid", threshold_cols),
+            )
+        )
+
+        governance_sync_cols = [
+            ("pvci_name", 220),
+            ("pvci_status", 90),
+            ("pvci_startedon", 140),
+            ("pvci_completedon", 140),
+            ("pvci_thresholdcount", 100),
+            ("pvci_createdcount", 90),
+            ("pvci_updatedcount", 90),
+            ("pvci_rejectedcount", 90),
+        ]
+        results.append(
+            upsert_view(
+                s, base, token, GOVERNANCE_SYNC, "Credit Governance Sync Runs - Latest",
+                fetch(
+                    GOVERNANCE_SYNC,
+                    [c[0] for c in governance_sync_cols] + ["pvci_governancesyncrunid"],
+                    "pvci_startedon",
+                ),
+                grid(gsc, "pvci_governancesyncrunid", governance_sync_cols),
             )
         )
 

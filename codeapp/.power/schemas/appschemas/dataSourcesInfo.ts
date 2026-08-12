@@ -12,6 +12,13 @@ export const dataSourcesInfo = {
     "dataSourceType": "Dataverse",
     "apis": {}
   },
+  "pvci_agentthresholdsnapshots": {
+    "tableId": "",
+    "version": "",
+    "primaryKey": "pvci_agentthresholdsnapshotid",
+    "dataSourceType": "Dataverse",
+    "apis": {}
+  },
   "pvci_creditcapacitysnapshots": {
     "tableId": "",
     "version": "",
@@ -58,6 +65,13 @@ export const dataSourcesInfo = {
     "tableId": "",
     "version": "",
     "primaryKey": "pvci_flowrundetailid",
+    "dataSourceType": "Dataverse",
+    "apis": {}
+  },
+  "pvci_governancesyncruns": {
+    "tableId": "",
+    "version": "",
+    "primaryKey": "pvci_governancesyncrunid",
     "dataSourceType": "Dataverse",
     "apis": {}
   },
