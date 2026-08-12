@@ -2,25 +2,24 @@
 
 ## Status
 
-**Implemented and deployed for hands-on validation on `feature/copilot-credit-reporting` in the
-confirmed Power Platform test tenant/environment. It has not been committed, published, or merged
-to the public default branch. Production deployment remains prohibited until explicit human
-approval.**
+**Released in `1.3.0.0` on 2026-08-12 after PVE Dev hands-on approval, managed Sandbox upgrade
+validation, CI, and public-package hash verification.**
 
 Current implementation status:
 
-- Complete: dependency-free, schema-only HAR contract extractor with focused sanitization and path
-  regression tests.
-- Complete: real-capture extraction of 50 licensing requests across 23 endpoint templates and four
-  API versions, without retaining captured identifiers or values.
-- Complete in PVE Dev: four Dataverse tables, alternate keys, relationship, Custom API/import
-  plug-in, scheduled licensing usage/capacity collector, model-driven views/forms/sitemap, and code
-  app Credits workspace.
-- Complete: authenticated collector smoke runs, idempotent imports, sync audit counts, solution
-  export/repack, and focused Python/.NET/React validation.
-- Pending: Power Platform Inventory collector, completed PPAC CSV capture, verified harness
-  discriminator, controlled billing-context matrix, user-usage security-role hardening, and
-  hands-on user approval.
+- Delivered: licensing usage/capacity and tenant-wide user collection with overlap, paging,
+  idempotent import, source lineage, privacy-controlled names, and separate sync health.
+- Delivered: Admin V2/One Inventory environment and agent collection independent of usage,
+  including zero-usage agents and direct `properties.isCLIAgent` classification.
+- Delivered: read-only resource-threshold snapshots, risk bands, separate governance health, and
+  human-readable agent/environment joins with unresolved controls retained.
+- Delivered: `PVCI Apply Credit Governance Requests (scheduled)`, the Credit Administrator role,
+  synchronous request guard, stale-state protection, one-resource threshold PUT, read-back, and
+  before/after audit.
+- Delivered: model-driven administration and preview code-app analysis/lifecycle surfaces.
+- Still pending or intentionally excluded: completed PPAC CSV schema evidence, exact billing-event
+  joins, per-user limit APIs, detailed Dataverse enrichment in every source environment, forecasts,
+  and environment allocation/TenantPool/PayGo mutation.
 
 The operational source of truth for the implemented grain and per-user boundary is
 [Copilot Credit reporting](credit-reporting.md).
@@ -44,8 +43,8 @@ resources are not silently counted as standard harness agents.
 
 ## Recommendation
 
-Extend Conversation Insights into a tenant-level cost and operations hub with three collectors and
-one shared Dataverse reporting model:
+Operate Conversation Insights as a tenant-level cost and operations hub with four evidence paths,
+one guarded mutation path, and one shared Dataverse reporting model:
 
 1. A central scheduled cloud flow reads Copilot Credit capacity and usage from the Power Platform
    licensing service through **HTTP with Microsoft Entra ID (preauthorized)**.
@@ -59,6 +58,9 @@ one shared Dataverse reporting model:
 5. The model-driven app provides durable administration and auditable grids. The code app provides
    comparative analytics, contribution analysis, and drill-through to the likely operational
    drivers of usage.
+6. A separate governance collector reads current agent/resource thresholds. Authorized users
+  create guarded Dataverse requests; a privileged serial processor validates expected state,
+  writes one resource threshold, and reads back without changing environment allocations.
 
 ```mermaid
 flowchart LR
@@ -74,6 +76,8 @@ flowchart LR
         AGENT[pvci_agentinventory]
         USAGE[pvci_creditusage]
         CAP[pvci_creditcapacitysnapshot]
+        THRESH[pvci_agentthresholdsnapshot]
+        REQUEST[pvci_thresholdchangerequest]
         TRANS[pvci_transcriptsession and diagnostics]
         APPS[Model-driven app and code app]
     end
@@ -84,6 +88,9 @@ flowchart LR
     API --> AGENT
     API --> USAGE
     API --> CAP
+    LIC -->|threshold state| FLOW
+    FLOW --> THRESH
+    REQUEST -->|expected and desired state| FLOW
     ENV -->|existing transcript sync| TRANS
     AGENT --> APPS
     USAGE --> APPS
@@ -145,12 +152,17 @@ must never be added to Copilot Credits as if the units were interchangeable.
   `EntitlementConsumptionTenantPerUserDetailsReport`, but both jobs remained `NotStarted`. No CSV
   body or completed report schema is present in this HAR.
 
-### Observed write contract, out of reporting scope
+### Observed write contracts and the implemented boundary
 
 The HAR contains `PUT /v0.1/tenants/{tenantId}/allocationsV2`, used to change an environment's
-allocation, tenant-pool behavior, and alert threshold. This proves PPAC supports capacity mutation,
-but phase 1 must be strictly read-only. Allocation recommendations can be shown later; applying a
-recommendation requires a separate approval, privilege, audit, and rollback design.
+allocation, tenant-pool behavior, and alert threshold. PVCI does not call this route. Environment allocation, TenantPool, and PayGo mutation remain out of scope and require a separate approval,
+privilege, audit, and rollback design.
+
+Version `1.3.0.0` implements only the narrower documented Power Platform resource-threshold path:
+the collector reads tenant-wide threshold state, and `PVCI Apply Credit Governance Requests
+(scheduled)` can PUT one environment/resource threshold after a synchronous Create guard,
+read-before-write expected-state comparison, and mandatory justification. A failed read-back after
+an attempted PUT is `AppliedUnverified`, not Failed, so operators verify live state before retrying.
 
 ### Contract support level
 
@@ -565,7 +577,8 @@ Do not claim exact causal savings unless a controlled before/after test confirms
 
 ### Least privilege and data protection
 
-- Keep phase 1 read-only against PPAC and Inventory.
+- Keep usage, capacity, and Inventory collection read-only. Restrict writes to the audited
+  per-resource threshold processor; do not add allocation/TenantPool/PayGo routes to that flow.
 - Separate deployment, collector, analyst, and user-detail roles.
 - Apply field-level security to user identifiers and raw payloads.
 - Do not store access tokens, connection secrets, or report download URLs.
@@ -575,65 +588,21 @@ Do not claim exact causal savings unless a controlled before/after test confirms
 
 ## Delivery phases
 
-### Phase 0: contract and classification proof
-
-1. Capture a completed PPAC usage CSV and redact a fixture.
-2. Run the controlled harness and billing-context matrix.
-3. Query raw Inventory records for known standard and GitHub harness agents.
-4. Identify or disprove a stable harness discriminator.
-5. Confirm source grain, pagination, lookback, latency, decimal precision, and correction behavior.
-6. Compare the observed fields with Copilot Agent Kit's Agent Usage History schema.
-7. Decide whether the licensing endpoint dependency is acceptable with a CSV fallback.
-
-Exit criterion: fixtures and a written contract map prove every required field or mark it optional.
-
-### Phase 1: Dataverse schema and dry-run importer
-
-1. Add inventory, usage, capacity snapshot, and sync-run tables.
-2. Add alternate keys/source hashes and relationships.
-3. Register `pvci_ImportCreditUsageBatch` with `DryRun` support.
-4. Import HAR and controlled-probe fixtures into a disposable/test environment.
-5. Prove idempotency, schema-drift rejection, tenant mismatch rejection, and decimal fidelity.
-
-### Phase 2: scheduled collectors
-
-1. Add Inventory sync.
-2. Add licensing usage and capacity sync with overlap and pagination.
-3. Add on-demand 180-day backfill.
-4. Add retry, failure isolation, freshness alerts, and manual CSV fallback.
-5. Run in PVE Dev with read-only tenant access.
-
-### Phase 3: model-driven app
-
-1. Add forms, views, charts, and the Credits and Capacity sitemap area.
-2. Add unresolved, unknown-harness, and sync-health operational views.
-3. Validate role-based access and restricted user data.
-
-### Phase 4: code app reporting
-
-1. Add the Credits workspace and independent paged data access.
-2. Add overview, harness comparison, agent, feature, capacity, and data-quality views.
-3. Add explainability drill-through to existing sessions, tools, and flow runs.
-4. Add export and freshness/lineage labels.
-
-### Phase 5: advanced analysis
-
-1. Add period-level efficiency ratios.
-2. Add forecasts and anomaly detection.
-3. Add test/evaluation budget indicators.
-4. Add read-only capacity reallocation recommendations.
-
-### Phase 6: test, review, and release
-
-1. Reconcile totals against PPAC for at least two complete reporting periods.
-2. Reconcile standard and GitHub harness controlled tests separately.
-3. Verify billed plus non-billed totals at tenant, environment, agent, feature, and period grains.
-4. Verify unresolved rows remain visible and don't distort harness totals.
-5. Run full plug-in, flow, Python, PCF, code-app, solution, and security validation.
-6. Deploy the feature branch to the test tenant.
-7. Wait for explicit hands-on user approval before public merge or release.
+| Phase | `1.3.0.0` status | Remaining work |
+| --- | --- | --- |
+| Contract and classification proof | Partial | Direct GitHub discriminator and observed API schemas are proven; completed PPAC CSV and a broader controlled billing matrix remain pending |
+| Dataverse schema and importer | Delivered | Continue schema-drift fixtures as Microsoft changes payloads |
+| Scheduled collectors | Delivered for usage, capacity, users, inventory, and thresholds | 180-day backfill and CSV fallback remain future work |
+| Model-driven app | Delivered | Add richer charts only when source grain remains explicit |
+| Code app reporting | Delivered for overview, source-period trends, correlation context, risk, privacy, and request lifecycle | Export and advanced forecast experiences remain future work |
+| Guarded threshold changes | Delivered | Per-user limits and environment allocation are not implemented |
+| Test, review, and release | Delivered for `1.3.0.0` | Continue reconciliation over longer reporting periods and repeat managed-upgrade validation for each release |
 
 ## Acceptance criteria
+
+These are the design target, not a claim that every optional source dimension is populated. The
+released surfaces label missing dimensions, unresolved identities, and correlation boundaries
+instead of manufacturing data.
 
 - All tenant environments and all PPAC-reported resources are represented, including unresolved
   and non-GUID resources.

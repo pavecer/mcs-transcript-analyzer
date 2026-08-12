@@ -39,6 +39,7 @@ def fail(message: str) -> None:
 def validate_html(html: str, config: dict[str, dict[str, str]]) -> None:
     required = [
         'id="capabilities"',
+        'id="credits"',
         'id="architecture"',
         'id="install"',
         'id="preview-download"',
@@ -56,6 +57,8 @@ def validate_html(html: str, config: dict[str, dict[str, str]]) -> None:
         'wireDownloadGate("trust-package", "download-package")',
         'wireDownloadGate("trust-codeapp", "download-codeapp")',
         "Preview features can change, have limited support, or become unavailable.",
+        "Per-user limits are not available",
+        "docs/credit-reporting.md",
         "docs/permissions-and-inventory.md",
     ]
     missing = [value for value in required if value not in html]

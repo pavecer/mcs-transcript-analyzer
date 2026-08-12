@@ -3,7 +3,7 @@
 ## Components
 
 | Component | Runs where | Purpose |
-|---|---|---|
+| --- | --- | --- |
 | `pvci_SyncConversationTranscripts` | Dataverse sandbox plugin | Incremental sync. No token needed — reads via `IOrganizationService` |
 | Scheduled cloud flow | Power Automate | Calls the Custom API hourly in a drain loop |
 | `sync_transcripts.py` | Local / CI | Same logic, uncapped — bulk backfill and re-derivation |
@@ -12,17 +12,20 @@
 | Code app | Browser (preview) | Replay timeline, trends, tool and flow drill-down |
 | `PVCI Collect Copilot Credit Usage` | Power Automate | Daily read-only PPAC resource usage and capacity collection with seven-day overlap |
 | `PVCI Collect Tenant Agent Inventory` | Power Automate | Daily environment and agent inventory independent of credit activity |
+| `PVCI Collect Credit Governance` | Power Automate | Daily read-only collection of per-agent threshold and enforcement state |
+| `PVCI Apply Credit Governance Requests` | Power Automate | Serial read-before-write processor for audited per-agent threshold requests |
 | `pvci_ImportCreditUsageBatch` | Dataverse sandbox plugin | Tenant validation, raw-response normalization, stable-key upsert, and sync audit |
 | `CreditUserDisclosure` | Dataverse sandbox plugin | Shared approval audit, user-name resolution, and revocation cleanup |
+| `ThresholdChangeRequestGuard` | Dataverse synchronous plugin | Forces Pending/server time, validates request shape, and strips caller-supplied outcomes |
 | Credit reporting surfaces | Model-driven app + code app | Agent/resource contribution, source periods, capacity, freshness, and data quality |
-| `PVCI Analyst` / `PVCI Privacy Approver` | Dataverse security | Read-only app access and separately authorized audited name disclosure |
+| `PVCI Analyst` / `PVCI Privacy Approver` / `PVCI Credit Administrator` | Dataverse security | Read-only analysis, separately authorized name disclosure, and audited threshold request submission |
 
 ## Data model
 
 See [Dataverse data model](data-model.md) for the complete table, column, relationship, key,
 lineage, and retention reference.
 
-```
+```text
 pvci_transcriptsession          one row per transcript
   ├─ pvci_UserId  →  systemuser (lookup, resolved from from.aadObjectId)
   ├─ environment: Power Platform EnvironmentId · EnvironmentName · DataSource lineage stamp
@@ -52,6 +55,9 @@ pvci_creditcapacitysnapshot     one row per environment/entitlement/as-of date
 pvci_creditsyncrun              one row per collector/import invocation
 pvci_credituserusage            one row per user/source-period fact; GUID label by default
 pvci_creditprivacysetting       singleton shared name-disclosure approval
+pvci_agentthresholdsnapshot     daily read-only per-agent control state
+pvci_governancesyncrun          threshold collector health and outcomes
+pvci_thresholdchangerequest     desired/expected state, lifecycle, and before/after audit
 
 First-class `pvci_environmentid` and `pvci_environmentname` columns drive environment display and
 filtering. `pvci_datasource` also carries a lineage stamp:
@@ -62,6 +68,13 @@ Credit reporting has a separate truth boundary from transcripts. PPAC values are
 billing facts. Environment/resource/date overlap with sessions can explain likely drivers, but no
 reviewed source exposes a billing-event ID that joins one charge to one transcript turn. See
 [Copilot Credit reporting](credit-reporting.md) for source grain and per-user handling.
+
+Credit governance uses a split-authority design. The browser can create a validated Pending request
+but cannot call the Power Platform licensing API or update processor-owned outcomes. The flow owner
+re-reads current state, rejects stale requests, writes one resource threshold, and reads back. A
+post-write verification failure is recorded as `AppliedUnverified` rather than pretending the PUT
+did not happen. Environment allocations, TenantPool, PayGo, and per-user limits are outside this
+write path.
 
 ## Sync semantics
 
@@ -95,7 +108,7 @@ guaranteed on every activity: `from`, `timestamp`, `timestampMs`, `type`.
 Derived per session:
 
 | Value | Source |
-|---|---|
+| --- | --- |
 | End user | the single distinct `from.aadObjectId` where `role == 1` |
 | Channel | the single distinct `channelId` |
 | Test mode | `ConversationInfo.isDesignMode` |
@@ -124,7 +137,7 @@ outliers you are looking for.
 Two window sources, in order of precision:
 
 | Source | Precision | Availability |
-|---|---|---|
+| --- | --- | --- |
 | `DialogTracing` → `InvokeFlowAction` | Exact start/end | **Design mode only** |
 | `DynamicPlanStepTriggered` → `…Finished` | Coarse window | All channels |
 

@@ -1,9 +1,11 @@
 # Dataverse `conversationtranscripts` API Reference
 
-**Copilot Studio conversation transcripts via the Dataverse Web API**
+## Scope
+
+Copilot Studio conversation transcripts via the Dataverse Web API.
 
 | | |
-|---|---|
+| --- | --- |
 | Status | Verified against a live environment |
 | Validated | 2026-07-31 |
 | Environment | `PVE Dev` — `006cf8b9-27f8-e2f7-8a14-9be3642d8552` |
@@ -18,7 +20,7 @@
 Copilot Studio surfaces transcripts in two different places, and they are **not** the same data.
 
 | | Monitor / Analytics export | `conversationtranscripts` (this doc) |
-|---|---|---|
+| --- | --- | --- |
 | Transport | `GET /api/botmanagement/v1/transcript` on the regional gateway | Dataverse Web API |
 | Format | CSV, one row per session | JSON, full Bot Framework activity stream |
 | End-user identity | ✗ not present | ✅ `from.aadObjectId` |
@@ -103,7 +105,7 @@ Small (~160 chars). Identifies the agent. All four keys were present on 8 of 8 t
 ```
 
 | Key | Notes |
-|---|---|
+| --- | --- |
 | `BotId` | Agent id. **Not** the same as the `botId` in maker-portal URLs |
 | `AADTenantId` | Entra tenant |
 | `BotName` | Agent schema name |
@@ -127,13 +129,13 @@ An ordered Bot Framework activity stream. **457 activities across 8 transcripts*
 
 Only these four appear on **every** activity:
 
-```
+```text
 from · timestamp · timestampMs · type
 ```
 
 Every other field is conditional. **A parser must treat all of the following as optional:**
 
-```
+```text
 attachments · channelData · channelId · id · name
 replyToId · text · textFormat · value · valueType
 ```
@@ -141,7 +143,7 @@ replyToId · text · textFormat · value · valueType
 ### 4.2 Field reference
 
 | Field | Type | Notes |
-|---|---|---|
+| --- | --- | --- |
 | `type` | string | See §4.3 |
 | `timestamp` | **integer** | ⚠️ **Unix epoch seconds** — not ISO 8601 |
 | `timestampMs` | integer | Same instant in milliseconds |
@@ -157,15 +159,17 @@ replyToId · text · textFormat · value · valueType
 | `attachments` | array | Adaptive Cards etc. |
 | `channelData` | object | See §4.4 |
 
-> ⚠️ **The single most common parsing bug.** `timestamp` is an integer epoch, so naive ISO date parsing fails silently or throws. Convert explicitly:
-> ```python
-> datetime.fromtimestamp(int(a["timestamp"]), tz=timezone.utc)
-> ```
+> ⚠️ **The single most common parsing bug.** `timestamp` is an integer epoch, so naive ISO date
+> parsing fails silently or throws. Convert explicitly:
+
+```python
+datetime.fromtimestamp(int(a["timestamp"]), tz=timezone.utc)
+```
 
 ### 4.3 Activity types observed
 
 | `type` | Count | Meaning |
-|---|---|---|
+| --- | --- | --- |
 | `event` | 215 | Orchestration + dialog telemetry (§4.5) |
 | `trace` | 180 | Internal diagnostics |
 | `message` | 51 | **Human-readable turns** |
@@ -182,7 +186,7 @@ Role distribution across all activities: `role 0` (agent) = 422, `role 1` (user)
 
 Keys observed, with frequency:
 
-```
+```text
 feedbackLoop 29 · tenant 19 · source 10 · legacy 4
 enableDiagnostics 4 · testMode 4 · clientActivityID 4
 settings 3 · postBack 3 · attachmentSizes 1
@@ -204,7 +208,7 @@ Sample:
 ### 4.5 Event names — the reasoning trace
 
 | `name` | Count | Meaning |
-|---|---|---|
+| --- | --- | --- |
 | `DialogTracing` | 180 | Fine-grained dialog step telemetry |
 | `DynamicPlanReceived` | 6 | Generative orchestrator produced a plan |
 | `DynamicPlanReceivedDebug` | 6 | Debug variant with fuller detail |
@@ -225,7 +229,7 @@ This is the question the CSV export cannot answer. Here it is deterministic.
 
 **Verified across all 8 transcripts: each transcript contains exactly one distinct `aadObjectId` and exactly one distinct `channelId`.**
 
-```
+```text
 1580540b  users=1 [0833bba9]  chans={msteams}
 64b02c27  users=1 [0833bba9]  chans={msteams}
 a3979f8a  users=1 [0833bba9]  chans={m365copilot}
@@ -238,7 +242,7 @@ b95b2a6e  users=1 [4992e828]  chans={msteams}
 
 ### 5.1 Derivation rules
 
-```
+```text
 user_aad_object_id = the single distinct from.aadObjectId where role == 1
 channel            = the single distinct channelId
 session_start_utc  = min(timestamp)   → epoch seconds
@@ -362,6 +366,33 @@ optional `Users`. The users response contains nested rows with `userId`, `asOfDa
 Resource and user projections are alternative views of consumption. Never sum them together.
 Neither supplies a shared billing-event ID for an exact transcript/action join. See
 [Copilot Credit reporting](credit-reporting.md) for source-period behavior and privacy controls.
+
+### Agent threshold governance
+
+Threshold governance uses a separate HTTP with Microsoft Entra ID connection and audience:
+`https://api.powerplatform.com/`. It must not reuse the licensing reporting connection.
+
+```http
+GET /licensing/entitlements/MCSMessages/resourceThresholds?api-version=2024-10-01
+```
+
+The response is tenant-wide and keyed by `environmentId` plus `resourceId`. PVCI preserves limit,
+resource consumption, notification percentage/flag, stop-at-limit, explicit stop, source time, and
+raw lineage in daily `pvci_agentthresholdsnapshot` rows.
+
+An authorized processor applies one resource request through:
+
+```http
+PUT /licensing/environments/{environmentId}/entitlements/MCSMessages/
+  resources/{resourceId}/threshold?api-version=2024-10-01
+```
+
+The body carries `limit`, `notificationThreshold`, `notifyIfOverCapacity`,
+`stopIfOverCapacity`, `stopResource`, and the current `resourceConsumption`. The browser does not
+call this route. It creates `pvci_thresholdchangerequest`; a synchronous plug-in forces Pending and
+strips outcome fields, and the flow compares every expected value with a fresh GET before PUT.
+After PUT it reads back and stores before/after JSON. A post-PUT verification failure is
+`AppliedUnverified`. The processor contains no environment allocation, TenantPool, or PayGo route.
 
 ---
 

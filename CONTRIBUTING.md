@@ -46,6 +46,9 @@ python3 -m py_compile scripts/transcript_insights/*.py
 (cd plugin && dotnet build -c Release)          # must be warning-free
 (cd pcf/JsonViewer && npm run build)
 (cd codeapp && npm run build && npx eslint .)
+python3 scripts/validate_documentation.py
+python3 scripts/validate_site.py
+python3 scripts/validate_browser_policy.py
 ```
 
 If you changed sync or correlation logic, also prove parity against a real environment:
@@ -57,6 +60,11 @@ python3 scripts/transcript_insights/sync_transcripts.py --config $CFG --full --r
 ```
 
 State in the PR which environment you tested against and what the before/after row counts were.
+
+Browser and UI validation must reuse an already shared VS Code built-in browser page. Workspace
+instructions and a PreToolUse hook block external Playwright, Chrome, and Chromium launches. Run
+`python3 scripts/validate_browser_policy.py` after changing `.github/hooks/` or
+`.github/instructions/browser-use.instructions.md`.
 
 ## Schema changes
 
@@ -75,11 +83,17 @@ refresh the anonymized product preview when the UI changes, bump the four-part s
 and export a new managed solution ZIP.
 
 Follow [`site/README.md`](site/README.md) for the full release checklist. Before opening the PR,
-run:
+use the repo-scoped `.github/skills/release-documentation/SKILL.md` workflow and run:
 
 ```bash
+python3 scripts/validate_documentation.py
 python3 scripts/validate_site.py
 ```
+
+`config/documentation-contract.json` inventories the affected surfaces and product inputs. If a
+listed product input changed, review every indexed surface before replacing `productSourceDigest`
+with `python3 scripts/validate_documentation.py --print-digest`. CI rejects stale documentation,
+unindexed credit/release surfaces, missing component coverage, and incomplete code-app setup.
 
 The ZIP must be imported into a clean sandbox before release. Confirm that all custom components,
 including the JSON Viewer PCF, are embedded in the solution rather than left as dependencies on
@@ -90,7 +104,7 @@ the source environment.
 Short imperative subject, and explain *why* in the body when the reason is not obvious from the
 diff. Reference the behaviour being fixed rather than the file changed.
 
-```
+```text
 Skip already-ingested transcripts by default
 
 Transcripts are immutable once finalised, so re-parsing rewrote sessions and

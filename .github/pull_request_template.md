@@ -1,20 +1,23 @@
-## What and why
+# What and why
 
 <!-- What changes, and the behaviour it fixes or enables. -->
 
 ## Validation
 
-```
+```text
 python3 -m py_compile scripts/transcript_insights/*.py
 (cd plugin && dotnet build -c Release)
 (cd pcf/JsonViewer && npm run build)
 (cd codeapp && npm run build)
+python3 scripts/validate_documentation.py
+python3 scripts/validate_site.py
+python3 scripts/validate_browser_policy.py
 ```
 
 - [ ] All four build clean (plugin warning-free)
 - [ ] Tested against a real Dataverse environment
 
-Environment tested: <!-- e.g. dev / sandbox --> 
+Environment tested: <!-- e.g. dev / sandbox -->
 Row counts before → after: <!-- sessions / turns -->
 
 ## Checklist
@@ -25,3 +28,5 @@ Row counts before → after: <!-- sessions / turns -->
 - [ ] No environment config, HAR captures, transcript content or user identifiers committed
 - [ ] No broad `except Exception` that could hide a failure
 - [ ] Docs updated if behaviour or limitations changed
+- [ ] Documentation contract reviewed and both documentation/site validators pass
+- [ ] Browser/UI validation reused the shared VS Code browser; browser policy gate passes

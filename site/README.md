@@ -3,6 +3,7 @@
 The public presentation is deployed from this directory by `.github/workflows/pages.yml`.
 The two managed solution ZIPs are release artifacts, not generic source archives: they must be
 exported from their deployed Dataverse solutions and pass `scripts/validate_site.py`.
+Product capabilities, setup, and public copy must also pass `scripts/validate_documentation.py`.
 
 ## Required for every user-visible feature
 
@@ -30,23 +31,38 @@ exported from their deployed Dataverse solutions and pass `scripts/validate_site
      --managed --overwrite --environment <approved-dataverse-url>
    ```
 
-6. Regenerate the manifest and validate both packages:
+6. Review every surface indexed by `config/documentation-contract.json`. When a listed product
+   input changed, update the reviewed product digest only after documentation is complete:
+
+   ```bash
+   python3 scripts/validate_documentation.py --list-surfaces
+   python3 scripts/validate_documentation.py --print-digest
+   ```
+
+7. Regenerate the manifest and validate documentation and both packages:
 
    ```bash
    python3 scripts/update_release_manifest.py --source-commit "$(git rev-parse HEAD)"
+   python3 scripts/validate_documentation.py
    python3 scripts/validate_site.py
    ```
 
-7. Refresh `assets/conversation-insights-preview.png` when the visible product changes. Use
+8. Refresh `assets/conversation-insights-preview.png` when the visible product changes. Use
    anonymized sample data only; never capture a real tenant, transcript, user, or environment.
-8. Test both independent acknowledgment gates at desktop and mobile widths.
-9. Import the core ZIP and then the preview ZIP into a clean sandbox before publishing. Bind both
-   connection references, set required environment variables, activate both flows, and verify both
-   apps open. Also test an upgrade over the previous public version when that package is available.
+9. Test both independent acknowledgment gates and the public Credits section at desktop and mobile widths.
+10. Import the core ZIP and then the preview ZIP into a clean sandbox before publishing. Bind all
+   target-local connection references, set required environment variables, smoke-test all five flows,
+   and verify both apps open. Also test an upgrade over the previous public version when
+   that package is available.
 
 The validator checks that both packages are managed, versions match the release config, the JSON
 Viewer PCF and code app are embedded in the correct package, checksums match the manifest, both
 risk gates are present, and local site links resolve.
+
+The documentation validator derives table/role/workflow/dependency counts, verifies required
+Copilot Credit coverage, checks README data-source commands, discovers unindexed release surfaces,
+and compares current product inputs with the reviewed digest. The checked-in
+`.github/skills/release-documentation/SKILL.md` describes the corresponding agent workflow.
 
 ## Publishing
 

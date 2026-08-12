@@ -1,0 +1,143 @@
+{
+  "schemaVersion": 1,
+  "productSourceDigest": "061b026af872a186fefaf4630e9fc9cdef4baf650a959da255c7c8392c922912",
+  "productInputs": [
+    "config/release-packages.json",
+    "solution/pvConversationInsights/solution-definition.json",
+    "codeapp/src/components/Credits.tsx",
+    "codeapp/src/lib/thresholdRequestState.ts",
+    "plugin/ImportCreditUsageBatch.cs",
+    "plugin/ThresholdChangeRequestGuard.cs",
+    "scripts/transcript_insights/create_credit_sync_flow.py",
+    "scripts/transcript_insights/create_inventory_sync_flow.py",
+    "scripts/transcript_insights/create_credit_governance_flow.py",
+    "scripts/transcript_insights/create_credit_governance_processor_flow.py"
+  ],
+  "indexedSurfaces": [
+    ".github/pull_request_template.md",
+    ".github/skills/release-documentation/SKILL.md",
+    ".github/workflows/build.yml",
+    ".github/workflows/pages.yml",
+    ".github/workflows/refresh-packages.yml",
+    "CONTRIBUTING.md",
+    "README.md",
+    "docs/api-reference.md",
+    "docs/architecture.md",
+    "docs/credit-reporting.md",
+    "docs/cross-environment-credit-consumption-design.md",
+    "docs/data-model.md",
+    "docs/flow-run-detail-findings.md",
+    "docs/monitor-endpoint-findings.md",
+    "docs/operations.md",
+    "docs/permissions-and-inventory.md",
+    "docs/release-automation.md",
+    "scripts/transcript_insights/README.md",
+    "site/README.md",
+    "site/index.html"
+  ],
+  "surfaceCoverage": {
+    "README.md": [
+      "{customTableCount} custom tables",
+      "{roleCount} application roles",
+      "{workflowCount} scheduled flows",
+      "PVCI Credit Administrator",
+      "create_credit_governance_flow.py",
+      "create_credit_governance_processor_flow.py",
+      "pvci_thresholdchangerequest"
+    ],
+    "docs/architecture.md": [
+      "PVCI Collect Credit Governance",
+      "PVCI Apply Credit Governance Requests",
+      "PVCI Credit Administrator",
+      "pvci_thresholdchangerequest"
+    ],
+    "docs/api-reference.md": [
+      "https://api.powerplatform.com/",
+      "resourceThresholds?api-version=2024-10-01",
+      "PUT /licensing/environments/{environmentId}",
+      "AppliedUnverified"
+    ],
+    "docs/credit-reporting.md": [
+      "Critical",
+      "High",
+      "Watch",
+      "Requested",
+      "Processing",
+      "AppliedUnverified",
+      "duplicate",
+      "Per-user Copilot Studio limits"
+    ],
+    "docs/data-model.md": [
+      "{customTableCount} custom Dataverse tables",
+      "per-resource threshold",
+      "AppliedUnverified"
+    ],
+    "docs/cross-environment-credit-consumption-design.md": [
+      "Released in `1.3.0.0`",
+      "PVCI Apply Credit Governance Requests",
+      "AppliedUnverified",
+      "Environment allocation, TenantPool, and PayGo mutation remain out of scope"
+    ],
+    "docs/operations.md": [
+      "PVCI Credit Administrator",
+      "pvci_powerplatformapi",
+      "create_credit_governance_flow.py",
+      "create_credit_governance_processor_flow.py",
+      "AppliedUnverified"
+    ],
+    "docs/permissions-and-inventory.md": [
+      "PVCI Credit Administrator",
+      "pvci_powerplatformapi",
+      "PVCI Apply Credit Governance Requests",
+      "all three collectors"
+    ],
+    "scripts/transcript_insights/README.md": [
+      "{customTableCount} custom tables",
+      "PVCI Credit Administrator",
+      "create_credit_governance_flow.py",
+      "create_credit_governance_processor_flow.py"
+    ],
+    "docs/release-automation.md": [
+      "config/documentation-contract.json",
+      "scripts/validate_documentation.py",
+      ".github/skills/release-documentation/SKILL.md",
+      "productSourceDigest"
+    ],
+    "CONTRIBUTING.md": [
+      "scripts/validate_documentation.py",
+      "config/documentation-contract.json",
+      ".github/skills/release-documentation/SKILL.md"
+    ],
+    ".github/pull_request_template.md": [
+      "python3 scripts/validate_documentation.py",
+      "Documentation contract reviewed"
+    ],
+    ".github/skills/release-documentation/SKILL.md": [
+      "config/documentation-contract.json",
+      "scripts/validate_documentation.py --list-surfaces",
+      "scripts/validate_documentation.py --print-digest",
+      "python3 scripts/validate_site.py"
+    ],
+    ".github/workflows/build.yml": [
+      "python3 scripts/validate_documentation.py"
+    ],
+    ".github/workflows/pages.yml": [
+      "python3 scripts/validate_documentation.py"
+    ],
+    "site/README.md": [
+      "scripts/validate_documentation.py --list-surfaces",
+      "scripts/validate_documentation.py --print-digest",
+      "smoke-test all five flows",
+      ".github/skills/release-documentation/SKILL.md"
+    ],
+    "site/index.html": [
+      "id=\"credits\"",
+      "Actual billed and non-billed",
+      "Spend-risk bands",
+      "Requested",
+      "Verify applied",
+      "Per-user limits are not available",
+      "docs/credit-reporting.md"
+    ]
+  }
+}
