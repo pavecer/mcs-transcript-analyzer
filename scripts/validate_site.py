@@ -11,6 +11,7 @@ from pathlib import Path
 from urllib.parse import urlparse
 
 from update_release_manifest import FULL_COMMIT_PATTERN, MANIFEST_PATH, inspect_package, read_config
+from validate_solution_ownership import main as validate_solution_ownership
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -113,6 +114,7 @@ def validate_preview() -> None:
 def main() -> None:
     if not INDEX.is_file():
         fail("site/index.html is missing")
+    validate_solution_ownership()
     config = read_config()
     validate_packages(config)
     validate_preview()

@@ -29,6 +29,8 @@ There are three independent permission boundaries:
 | Collect Copilot Credit usage | Owner of `pvci_licensinghttp` with the Power Platform administrative access accepted by the licensing service, plus a premium Power Automate entitlement | No; the connection is target-local |
 | Read and write PVCI data | Owner of `pvci_dataversesync` with access to the PVCI tables and Custom APIs in the collector environment | No; the connection is target-local |
 | Enumerate tenant environments and base agents | Owner of `pvci_powerplatformadminv2` with **Power Platform Administrator** tenant role | Flow and reference packaged; target connection/role external |
+| Probe source `conversationtranscripts` tables | Probe identity with a Dataverse-scoped token and Read privilege in each source organization | No source solution installation required |
+| Collect enabled source transcripts | Owner of `pvci_centralcollector`, present in each enabled source with organization-level Read on Conversation Transcript | Flow/reference packaged; source role assignment external |
 | Read agent credit threshold controls | Owner of `pvci_powerplatformapi` with Power Platform licensing administration access | Read-only collector/reference packaged; target connection/role external |
 | Submit agent threshold changes | **PVCI Credit Administrator** plus app sharing | Role/request table/processor packaged; privileged flow connection external |
 | Read detailed agent configuration in every environment | Inventory identity with appropriate Dataverse access in every source environment | Detailed enrichment not implemented in `1.3.0.0` |
@@ -70,6 +72,19 @@ environment and assign **System Administrator**:
 This broad cross-environment role is the same boundary documented by Copilot Agent Kit: tenant
 base inventory can be broader, while detailed feature metadata is available only where its
 Dataverse connection has System Administrator access.
+
+The same boundary applies to transcript discovery. The Power Platform admin inventory can tell the
+collector that an environment exists, but it cannot by itself grant Read access to that
+organization's `conversationtranscripts` table. Phase 1 records an explicit `access_denied` result
+for those environments so an empty result is never mistaken for missing activity.
+
+The scheduled central collector uses the identity behind `pvci_centralcollector`, which may differ
+from the identity used by the probe. Before setting `pvci_transcriptcollectorenabled=true`, add that
+connection owner to the source environment and assign a least-privilege role with organization-level
+Read on **Conversation Transcript**. `ThrowCrmSecurityException` naming
+`prvReadconversationtranscript` proves that this source role is missing; it is not fixed by changing
+the collector-environment PVCI roles. In the TPM upgrade-test tenant, the user performs this role
+assignment and connection refresh manually.
 
 See the Copilot Agent Kit references for its
 [inventory architecture](https://github.com/microsoft/Power-CAT-Copilot-Studio-Kit/blob/main/AGENT_INVENTORY.md)

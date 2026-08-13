@@ -6,6 +6,7 @@
 | --- | --- | --- |
 | `pvci_SyncConversationTranscripts` | Dataverse sandbox plugin | Incremental sync. No token needed — reads via `IOrganizationService` |
 | Scheduled cloud flow | Power Automate | Calls the Custom API hourly in a drain loop |
+| `probe_transcript_sources.py` | Local / CI during phase 1 | Builds a safe per-environment Dataverse transcript access registry from admin inventory |
 | `sync_transcripts.py` | Local / CI | Same logic, uncapped — bulk backfill and re-derivation |
 | `fetch_flow_run_details.py` | Local / CI | Pulls per-action inputs and outputs from the Power Automate API |
 | PCF `JsonViewer` | Model-driven forms | Collapsible, searchable JSON rendering |
@@ -17,6 +18,8 @@
 | `pvci_ImportCreditUsageBatch` | Dataverse sandbox plugin | Tenant validation, raw-response normalization, stable-key upsert, and sync audit |
 | `CreditUserDisclosure` | Dataverse sandbox plugin | Shared approval audit, user-name resolution, and revocation cleanup |
 | `ThresholdChangeRequestGuard` | Dataverse synchronous plugin | Forces Pending/server time, validates request shape, and strips caller-supplied outcomes |
+| `pvci_ImportCentralTranscriptBatch` | Dataverse sandbox plugin | Imports bounded source-environment transcript batches with composite tenant/environment/transcript idempotency |
+| `PVCI Collect Central Transcripts` | Packaged Power Automate flow in the core solution | Iterates Environment Inventory and uses Dataverse List rows from selected environment with a dynamic source URL before sending bounded batches to the collector API |
 | Credit reporting surfaces | Model-driven app + code app | Agent/resource contribution, source periods, capacity, freshness, and data quality |
 | `PVCI Analyst` / `PVCI Privacy Approver` / `PVCI Credit Administrator` | Dataverse security | Read-only analysis, separately authorized name disclosure, and audited threshold request submission |
 
@@ -189,6 +192,25 @@ as interleaving messages and reasoning in one chronological replay.
 The code app supports ESS-scoped cross-environment diagnostics through an environment filter.
 There is no tenant picker because one installed solution serves one tenant. New records use the
 first-class environment columns; legacy source stamps remain a read fallback.
+
+Central collection begins with a read-only source registry. Power Platform Admins V2 can
+enumerate tenant environments, but Dataverse table access is still evaluated in each source
+organization. A Power Platform service-admin identity may therefore produce a mix of readable,
+empty, and access-denied sources. The registry must retain those states rather than treating an
+access failure as an environment with no transcripts.
+
+The existing sync plugin remains source-local. It uses the executing organization's
+`IOrganizationService` and does not receive credentials for other organizations. The central flow
+reads approved sources through source-specific Power Automate connections and imports through
+`pvci_ImportCentralTranscriptBatch`. The API enforces a 25-row maximum and keys sessions by tenant,
+environment, and source transcript ID; a transcript GUID alone is not the cross-organization
+contract. Environment inventory stores probe status, collector enablement, watermark, last batch,
+status, and bounded error fields used by both apps.
+
+The public core solution is tenant-neutral and packages the importer, schema, model-driven app,
+single Dataverse connection reference, and generic central flow. Environment identity and
+enablement remain Dataverse rows, not solution metadata. The second managed solution contains only
+the preview code app and its declared dependencies.
 
 **Payload size guards.** Memo columns cap at 1,048,576 characters; writes are capped at 900,000
 with pretty-print falling back to compact and then truncation, flagged by `PayloadTruncated`.

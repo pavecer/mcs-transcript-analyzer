@@ -62,7 +62,9 @@ provisioned by the solution.
 
 Stores every environment returned by Power Platform for Admins V2 independently of capacity or
 credit activity: tenant/environment identity, display name, URL, type, geography, state, managed
-and Dataverse signals, detailed-access status, source schema, bounded raw JSON, and freshness.
+and Dataverse signals, detailed-access status, source schema, bounded raw JSON, and freshness. It
+also stores central transcript access status/reason, probe timestamp/sample count, collector
+enablement, per-source watermark, last batch size, collection status, and bounded collection error.
 
 ### `pvci_inventorysyncrun`
 

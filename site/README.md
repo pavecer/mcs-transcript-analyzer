@@ -53,7 +53,7 @@ records prioritized work and explicit product boundaries; update both with the p
    anonymized sample data only; never capture a real tenant, transcript, user, or environment.
 9. Test both independent acknowledgment gates and the public Credits section at desktop and mobile widths.
 10. Import the core ZIP and then the preview ZIP into a clean sandbox before publishing. Bind all
-   target-local connection references, set required environment variables, smoke-test all five flows,
+   target-local connection references, set required environment variables, smoke-test all six flows,
    and verify both apps open. Also test an upgrade over the previous public version when
    that package is available.
 

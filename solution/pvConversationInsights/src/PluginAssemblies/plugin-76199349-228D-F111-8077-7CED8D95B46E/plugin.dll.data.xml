@@ -8,6 +8,9 @@
     <PluginType AssemblyQualifiedName="PvciTranscripts.CreditUserDisclosure, plugin, Version=1.0.0.0, Culture=neutral, PublicKeyToken=a944d352ade9edd8" PluginTypeId="d09166a8-fc94-f111-8076-7ced8d95b46e" Name="PvciTranscripts.CreditUserDisclosure">
       <FriendlyName>Apply Credit User Name Disclosure</FriendlyName>
     </PluginType>
+    <PluginType AssemblyQualifiedName="PvciTranscripts.ImportCentralTranscriptBatch, plugin, Version=1.0.0.0, Culture=neutral, PublicKeyToken=a944d352ade9edd8" PluginTypeId="52907de7-8496-f111-8076-7ced8d95b46e" Name="PvciTranscripts.ImportCentralTranscriptBatch">
+      <FriendlyName>Import Central Transcript Batch</FriendlyName>
+    </PluginType>
     <PluginType AssemblyQualifiedName="PvciTranscripts.ImportCreditUsageBatch, plugin, Version=1.0.0.0, Culture=neutral, PublicKeyToken=a944d352ade9edd8" PluginTypeId="521eb685-ed94-f111-8076-7ced8d95b46e" Name="PvciTranscripts.ImportCreditUsageBatch">
       <FriendlyName>Import Copilot Credit Usage Batch</FriendlyName>
     </PluginType>

@@ -239,6 +239,11 @@ def main() -> None:
             ("pvci_state", 100),
             ("pvci_hasdataverse", 100),
             ("pvci_hasdetailedaccess", 110),
+            ("pvci_transcriptaccessstatus", 150),
+            ("pvci_transcriptcollectorenabled", 110),
+            ("pvci_transcriptprobeon", 140),
+            ("pvci_transcriptlastcollectedon", 150),
+            ("pvci_transcriptlastcollectionstatus", 140),
             ("pvci_lastsyncedon", 140),
         ]
         results.append(

@@ -173,3 +173,51 @@ stored in `pvci_environmentid`. The optional label override below is otherwise r
   "environmentName": "PVE Dev"
 }
 ```
+
+### Central transcript source discovery (phase 1)
+
+Classify which tenant environments can be read without a
+source-environment solution install:
+
+```bash
+pac admin list --json > output/test-tenant-admin-environments.json
+python3 scripts/transcript_insights/probe_transcript_sources.py \
+  --config config/transcript_solution_config.dev.json \
+  --inventory output/test-tenant-admin-environments.json \
+  --output output/transcript-source-registry.json
+```
+
+The probe requests a separate Dataverse audience token for each source organization and performs
+a one-row `conversationtranscripts` query. Its output is safe registry metadata only: source
+identity, access status, and a sample count. It distinguishes `readable_empty` from
+`access_denied`; it does not copy transcript payloads. The resulting registry is the input
+contract for the central collector.
+
+The central worker proof of concept can read and parse the registry-approved sources without
+writing by using `--dry-run`:
+
+```bash
+python3 scripts/transcript_insights/collect_central_transcripts.py \
+  --config config/transcript_solution_config.dev.json \
+  --registry output/transcript-source-registry.json \
+  --limit 1 --dry-run
+```
+
+The flow definition generator emits explicit source and collector Dataverse connection slots:
+
+```bash
+python3 scripts/transcript_insights/create_central_transcript_flow.py \
+  --registry output/transcript-source-registry.json \
+  --output output/central-transcript-flow.json
+```
+
+Register the collector-side `pvci_ImportCentralTranscriptBatch`, import the registry, and perform a
+one-row source smoke test before deploying the stopped solution flow. Each source connection must
+be created in the collector environment; a connection created in the source environment cannot be
+bound across environments. The Custom API caps batches at 25 and uses a composite tenant,
+environment, and source transcript key.
+
+The generic flow is packaged in `pvConversationInsights`. It reads Environment Inventory with the
+packaged `pvci_centralcollector` Dataverse reference and uses
+`ListRecordsWithOrganization` with each row's dynamic `pvci_environmenturl`. Environment names,
+IDs, URLs, and enablement remain runtime data; per-source connection references are forbidden.

@@ -1,0 +1,18 @@
+<customapi uniquename="pvci_ImportCentralTranscriptBatch">
+  <allowedcustomprocessingsteptype>0</allowedcustomprocessingsteptype>
+  <bindingtype>0</bindingtype>
+  <description default="Imports a bounded source-environment transcript batch with composite idempotency.">
+    <label description="Imports a bounded source-environment transcript batch with composite idempotency." languagecode="1033" />
+  </description>
+  <displayname default="Import Central Transcript Batch">
+    <label description="Import Central Transcript Batch" languagecode="1033" />
+  </displayname>
+  <iscustomizable>1</iscustomizable>
+  <isfunction>0</isfunction>
+  <isprivate>0</isprivate>
+  <name>pvci_ImportCentralTranscriptBatch</name>
+  <plugintypeid>
+    <plugintypeexportkey>52907de7-8496-f111-8076-7ced8d95b46e</plugintypeexportkey>
+  </plugintypeid>
+  <workflowsdkstepenabled>0</workflowsdkstepenabled>
+</customapi>

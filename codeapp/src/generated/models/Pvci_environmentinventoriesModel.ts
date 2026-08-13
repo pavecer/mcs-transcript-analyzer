@@ -34,6 +34,15 @@ export interface Pvci_environmentinventoriesBase {
   pvci_sourceschemaversion?: string;
   pvci_state?: string;
   pvci_tenantid?: string;
+  pvci_transcriptaccessreason?: string;
+  pvci_transcriptaccessstatus?: string;
+  pvci_transcriptcollectorenabled?: boolean;
+  pvci_transcriptlastbatchcount?: number;
+  pvci_transcriptlastcollectedon?: string;
+  pvci_transcriptlastcollectionerror?: string;
+  pvci_transcriptlastcollectionstatus?: string;
+  pvci_transcriptprobeon?: string;
+  pvci_transcriptsamplecount?: number;
   statecode: Pvci_environmentinventoriesstatecode;
   statuscode?: Pvci_environmentinventoriesstatuscode;
   timezoneruleversionnumber?: number;

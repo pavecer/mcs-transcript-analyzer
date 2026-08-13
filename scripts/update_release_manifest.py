@@ -21,6 +21,7 @@ MANIFEST_PATH = DOWNLOADS / "release-manifest.json"
 SOLUTION_DEFINITION_PATH = ROOT / "solution" / "pvConversationInsights" / "solution-definition.json"
 SOLUTION_XML_PATH = ROOT / "solution" / "pvConversationInsights" / "src" / "Other" / "Solution.xml"
 GENERATED_SERVICES_PATH = ROOT / "codeapp" / "src" / "generated" / "services"
+CORE_SOLUTION_SOURCE_PATH = ROOT / "solution" / "pvConversationInsights" / "src"
 FULL_COMMIT_PATTERN = re.compile(r"^[0-9a-f]{40}$")
 
 
@@ -60,6 +61,46 @@ def validate_release_config(config: dict[str, Any]) -> None:
             "Code-app generated services do not match requiredCoreTables: "
             f"missing={sorted(generated_services - expected_services)}, "
             f"stale={sorted(expected_services - generated_services)}"
+        )
+
+    forbidden_topology_markers = (
+        "pvci_transcript_http_",
+        "pvci_transcript_source_",
+    )
+    violations: list[str] = []
+    central_flow_files: list[Path] = []
+    for path in CORE_SOLUTION_SOURCE_PATH.rglob("*"):
+        if not path.is_file():
+            continue
+        relative = path.relative_to(ROOT).as_posix()
+        if path.name.startswith("PVCICollectCentralTranscripts") and path.suffix.lower() == ".json":
+            central_flow_files.append(path)
+        if path.suffix.lower() not in {".xml", ".json"}:
+            continue
+        text = path.read_text(encoding="utf-8", errors="ignore")
+        if any(marker in text for marker in forbidden_topology_markers):
+            violations.append(relative)
+    if violations:
+        raise RuntimeError(
+            "Core solution source contains tenant-specific central transcript topology: "
+            + ", ".join(sorted(set(violations)))
+        )
+    if len(central_flow_files) != 1:
+        raise RuntimeError(
+            "Core solution source must contain exactly one PVCI Collect Central Transcripts flow"
+        )
+    central_flow = central_flow_files[0].read_text(encoding="utf-8")
+    required_collector_markers = (
+        "ListRecordsWithOrganization",
+        "pvci_environmentinventories",
+        "pvci_environmenturl",
+        "pvci_centralcollector",
+        "pvci_ImportCentralTranscriptBatch",
+    )
+    missing = [marker for marker in required_collector_markers if marker not in central_flow]
+    if missing:
+        raise RuntimeError(
+            f"Core central transcript flow is missing required generic behavior: {missing}"
         )
 
 

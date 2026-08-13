@@ -1,0 +1,8 @@
+<customapiresponseproperty uniquename="Errors">
+  <displayname default="Bounded import errors">
+    <label description="Bounded import errors" languagecode="1033" />
+  </displayname>
+  <iscustomizable>1</iscustomizable>
+  <name>Errors</name>
+  <type>10</type>
+</customapiresponseproperty>

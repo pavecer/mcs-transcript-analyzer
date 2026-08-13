@@ -21,6 +21,12 @@ contract, implementation, managed package, and release manifest.
 
 ## Release procedure
 
+Programmatic tenant writes are permitted only when the authenticated tenant ID is
+`1938ee32-a258-454c-b8db-3a928341bd69`. Never automatically import or publish solution updates in
+the TPM manual-upgrade tenant. Candidate automation must build, validate, and publish artifacts only;
+the user performs TPM imports and upgrades manually. Tenant names, URLs, and profile aliases do not
+override the tenant-ID boundary.
+
 1. Review `ROADMAP.md` and move only completed, verified work into `CHANGELOG.md`.
 2. Add a dated changelog entry with user-visible behavior, boundaries, and both package artifacts.
 3. Update the public release-history and roadmap sections in `site/index.html`.
@@ -35,10 +41,18 @@ contract, implementation, managed package, and release manifest.
 
 For an affected-tenant bug fix, use `.github/workflows/candidate-release.yml` with a new
 backward-compatible version such as `1.3.1.0`. The workflow validates the source, builds a managed
-candidate from the stable package plus reviewed workflow changes, imports it into the supplied test
-tenant, and publishes a GitHub prerelease with an issue comment containing the direct ZIP URL.
+candidate from the stable package plus reviewed workflow changes, and publishes a GitHub prerelease
+with an issue comment containing the direct ZIP URL. It must not import into any tenant.
 Dataverse managed solutions cannot be exported from a managed target, so do not add a manual target
 export step or overwrite the stable package.
+
+For a feature candidate that needs cross-tenant validation before public release, use the next
+minor four-part version (for example `1.4.0.0`) for both core and code-app source solutions. If a
+candidate package must be corrected after import, increment only the fourth segment (for example
+`1.4.0.1`) and never overwrite the earlier ZIP. Export
+to `output/candidate/`; do not modify `site/downloads/`, the release manifest, changelog shipped
+section, or public release history until the candidate passes target-tenant validation. Candidate
+packages must pass the same component and tenant-neutrality checks as public packages.
 
 ## Roadmap discipline
 

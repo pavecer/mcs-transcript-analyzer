@@ -144,6 +144,88 @@
             </column>
           </columns>
         </tab>
+        <tab id="{4cc401a5-6af7-5149-9fa2-7eb9998e6cad}" name="ei_transcript_tab" verticallayout="true" showlabel="true" expanded="true">
+          <labels>
+            <label description="Transcript Collection" languagecode="1033" />
+          </labels>
+          <columns>
+            <column width="100%">
+              <sections>
+                <section id="{4fa5e5a1-12cf-53be-a8ac-9b6b7e5dbbda}" name="ei_transcripts" showlabel="true" showbar="false" columns="1" labelwidth="140" celllabelalignment="Left" celllabelposition="Left">
+                  <labels>
+                    <label description="Central transcript collection" languagecode="1033" />
+                  </labels>
+                  <rows>
+                    <row>
+                      <cell id="{fbc23aff-1e6b-5359-af0d-4dca622b6cd4}" showlabel="true">
+                        <labels>
+                          <label description="Access status" languagecode="1033" />
+                        </labels>
+                        <control id="pvci_transcriptaccessstatus" uniqueid="{16fe8dea-9c2a-533f-a620-33af9bc19fdf}" classid="{4273EDBD-AC1D-40d3-9FB2-095C621B552D}" datafieldname="pvci_transcriptaccessstatus" disabled="false" />
+                      </cell>
+                      <cell id="{56ece5e7-fe9d-5b39-82c9-46f564a0b1b2}" showlabel="true">
+                        <labels>
+                          <label description="Collector enabled" languagecode="1033" />
+                        </labels>
+                        <control id="pvci_transcriptcollectorenabled" uniqueid="{1c534db9-eedd-5463-94e0-e5ab5008f881}" classid="{B0C6723A-8503-4fd7-BB28-C8A06AC933C2}" datafieldname="pvci_transcriptcollectorenabled" disabled="false" />
+                      </cell>
+                    </row>
+                    <row>
+                      <cell id="{a4ca9cd9-580c-55c4-9e34-ef00ae092f52}" showlabel="true">
+                        <labels>
+                          <label description="Access reason" languagecode="1033" />
+                        </labels>
+                        <control id="pvci_transcriptaccessreason" uniqueid="{d288b06c-ac77-56e8-af35-e557ef14663f}" classid="{4273EDBD-AC1D-40d3-9FB2-095C621B552D}" datafieldname="pvci_transcriptaccessreason" disabled="false" />
+                      </cell>
+                      <cell id="{979867de-437f-514f-9521-a514ef87ceb0}" showlabel="true">
+                        <labels>
+                          <label description="Probe sample count" languagecode="1033" />
+                        </labels>
+                        <control id="pvci_transcriptsamplecount" uniqueid="{10837407-f250-5239-be0e-4c3694df58e5}" classid="{C6D124CA-7EDA-4a60-AEA9-7FB8D318B68F}" datafieldname="pvci_transcriptsamplecount" disabled="false" />
+                      </cell>
+                    </row>
+                    <row>
+                      <cell id="{1e586ed2-950e-5d4e-bf29-8c61b1a34d31}" showlabel="true">
+                        <labels>
+                          <label description="Last probe" languagecode="1033" />
+                        </labels>
+                        <control id="pvci_transcriptprobeon" uniqueid="{b0b57c7c-323e-58b6-852b-ffb2032116ee}" classid="{5B773807-9FB2-42db-97C3-7A91EFF8ADFF}" datafieldname="pvci_transcriptprobeon" disabled="false" />
+                      </cell>
+                      <cell id="{dc9fe984-c4da-5204-8e8d-63f484b5717c}" showlabel="true">
+                        <labels>
+                          <label description="Collection watermark" languagecode="1033" />
+                        </labels>
+                        <control id="pvci_transcriptlastcollectedon" uniqueid="{416a21ea-c14b-5442-a0d6-8dc261d7119e}" classid="{5B773807-9FB2-42db-97C3-7A91EFF8ADFF}" datafieldname="pvci_transcriptlastcollectedon" disabled="false" />
+                      </cell>
+                    </row>
+                    <row>
+                      <cell id="{27ac2a0a-2c84-597c-857b-eedc08a7ef5a}" showlabel="true">
+                        <labels>
+                          <label description="Last collection status" languagecode="1033" />
+                        </labels>
+                        <control id="pvci_transcriptlastcollectionstatus" uniqueid="{47d11d75-1339-51e8-ad92-dcbec96ea3fb}" classid="{4273EDBD-AC1D-40d3-9FB2-095C621B552D}" datafieldname="pvci_transcriptlastcollectionstatus" disabled="false" />
+                      </cell>
+                      <cell id="{9671472e-45a1-5a9d-82c7-ca5e2797e8a0}" showlabel="true">
+                        <labels>
+                          <label description="Last batch rows" languagecode="1033" />
+                        </labels>
+                        <control id="pvci_transcriptlastbatchcount" uniqueid="{58d7a695-45cd-5f1c-86da-2606f0f7b81e}" classid="{C6D124CA-7EDA-4a60-AEA9-7FB8D318B68F}" datafieldname="pvci_transcriptlastbatchcount" disabled="false" />
+                      </cell>
+                    </row>
+                    <row>
+                      <cell id="{aada474b-a998-57a3-9ee1-cba36433dc80}" rowspan="8" colspan="1" showlabel="true">
+                        <labels>
+                          <label description="Last collection error" languagecode="1033" />
+                        </labels>
+                        <control id="pvci_transcriptlastcollectionerror" uniqueid="{72ad7bcf-ee8f-5046-9e01-1e8dface2e87}" classid="{E0DECE4B-6FC8-4a8f-A065-082708572369}" datafieldname="pvci_transcriptlastcollectionerror" disabled="false" />
+                      </cell>
+                    </row>
+                  </rows>
+                </section>
+              </sections>
+            </column>
+          </columns>
+        </tab>
         <tab id="{7ed0b38a-769d-5d50-8a0b-16ab4065de2d}" name="ei_raw_tab" verticallayout="true" showlabel="true" expanded="true">
           <labels>
             <label description="Raw Source" languagecode="1033" />

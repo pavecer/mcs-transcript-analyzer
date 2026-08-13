@@ -4,18 +4,32 @@ This roadmap describes product direction, not a promise of delivery dates. The p
 this file must agree about supported behavior and boundaries. Use the status and exit criteria to
 keep work testable.
 
-Last reviewed: 2026-08-12
+Last reviewed: 2026-08-13
 
 ## Now
 
-### Validate the 1.3.1.0 tenant rollout
+### Central transcript source discovery
 
-- **Status:** Candidate validated; broader rollout verification pending
-- **Goal:** Import the core managed solution, optionally import the preview code app, and smoke-test the five scheduled flows in a clean sandbox and a second test tenant.
-- **Exit criteria:** Connection references, target tenant environment variable, roles, DLP/ACP policy, flow runs, both apps, and upgrade behavior are recorded in the release checklist.
+- **Status:** Implemented and tenant-probed in PVE Dev and TPM
+- **Goal:** Build a read-only tenant-wide source registry that uses the Power Platform admin inventory to test Dataverse transcript access per environment, without installing the solution into source environments.
+- **Exit criteria:** Met. PVE and TPM probes distinguish readable-with-data, readable-empty, access-denied, and unavailable environments without copying transcript content. Both apps expose the persisted status.
+- **Tracking:** [Operations guide](docs/operations.md), [architecture](docs/architecture.md), and `scripts/transcript_insights/probe_transcript_sources.py`
+
+### Validate the 1.4.0.2 tenant rollout
+
+- **Status:** Enabled-source-only candidate prepared; manual TPM upgrade validation required
+- **Goal:** Import the core managed solution, optionally import the preview code app, and smoke-test all six packaged flows in a clean sandbox and a second test tenant.
+- **Exit criteria:** The user manually imports the packages in TPM; connection references, target tenant environment variable, roles, DLP/ACP policy, flow runs, both apps, and upgrade behavior are recorded in the release checklist. Automated TPM imports do not count as upgrade evidence.
 - **Tracking:** [Operations guide](docs/operations.md) and [permissions checklist](docs/permissions-and-inventory.md)
 
 ## Next
+
+### Central transcript batch collector
+
+- **Status:** Generic selected-environment flow packaged and validated in PVE Dev; corrected 1.4.0.2 candidate awaits a user-performed TPM upgrade test
+- **Goal:** Read transcripts from registry-approved source environments and import normalized sessions and turns into the collector environment through a bounded, idempotent Custom API.
+- **Exit criteria:** PVE Preview to PVE Dev import/idempotent replay and generic-flow runs pass. Completion requires the user to import the corrected candidate in TPM, map `pvci_centralcollector`, enable a supported source, and observe a packaged-flow collection run.
+- **Tracking:** [Cross-environment design](docs/cross-environment-credit-consumption-design.md) and [architecture](docs/architecture.md)
 
 ### In-platform flow-run detail enrichment
 

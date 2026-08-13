@@ -122,7 +122,7 @@ namespace PvciTranscripts
             SetOutput(context, "Errors", string.Join("\n", errors.ToArray()));
         }
 
-        private class SyncResult
+        internal class SyncResult
         {
             public bool Created;
             public bool Skipped;
@@ -130,11 +130,49 @@ namespace PvciTranscripts
             public bool MultiUser;
         }
 
-        private class SourceEnvironment
+        internal class SourceEnvironment
         {
+            public string TenantId;
             public string Id;
             public string Name;
             public string OrganizationName;
+        }
+
+        internal static SyncResult ImportCentralRow(
+            IOrganizationService service,
+            ITracingService tracing,
+            Entity transcript,
+            string tenantId,
+            string environmentId,
+            string environmentName,
+            string organizationName,
+            bool includeTraces,
+            bool reprocess)
+        {
+            var source = new SourceEnvironment
+            {
+                TenantId = tenantId,
+                Id = environmentId,
+                Name = environmentName,
+                OrganizationName = organizationName,
+            };
+            string compositeId = CompositeTranscriptId(tenantId, environmentId, transcript.Id.ToString());
+            return new SyncConversationTranscripts().SyncOne(
+                service,
+                tracing,
+                transcript,
+                new Dictionary<string, Entity>(StringComparer.OrdinalIgnoreCase),
+                new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase),
+                includeTraces,
+                reprocess,
+                new List<Entity>(),
+                source,
+                compositeId);
+        }
+
+        internal static string CompositeTranscriptId(string tenantId, string environmentId, string transcriptId)
+        {
+            return string.Join(":", new[] { tenantId, environmentId, transcriptId }).ToLowerInvariant();
         }
 
         // --- query -----------------------------------------------------------
@@ -157,7 +195,7 @@ namespace PvciTranscripts
 
         // --- per transcript --------------------------------------------------
 
-        private SyncResult SyncOne(
+        internal SyncResult SyncOne(
             IOrganizationService service,
             ITracingService tracing,
             Entity transcript,
@@ -166,9 +204,10 @@ namespace PvciTranscripts
             bool includeTraces,
             bool reprocess,
             List<Entity> flowRuns,
-            SourceEnvironment sourceEnvironment)
+            SourceEnvironment sourceEnvironment,
+            string transcriptIdOverride = null)
         {
-            string transcriptId = transcript.Id.ToString();
+            string transcriptId = transcriptIdOverride ?? transcript.Id.ToString();
 
             // Transcripts are immutable once Copilot Studio writes them, so an already-ingested
             // one is skipped entirely: no re-parse, no rewrite, no turn churn.
@@ -336,7 +375,7 @@ namespace PvciTranscripts
             session["pvci_transcriptid"] = Trim(transcriptId, TextLimit);
             session["pvci_botid"] = Trim(Json.Str(metadata, "BotId"), TextLimit);
             session["pvci_botname"] = Trim(botDisplayName, TextLimit);
-            session["pvci_tenantid"] = Trim(Json.Str(metadata, "AADTenantId"), TextLimit);
+            session["pvci_tenantid"] = Trim(sourceEnvironment.TenantId ?? Json.Str(metadata, "AADTenantId"), TextLimit);
             session["pvci_environmentid"] = Trim(sourceEnvironment.Id, TextLimit);
             session["pvci_environmentname"] = Trim(sourceEnvironment.Name, TextLimit);
             session["pvci_useraadobjectid"] = Trim(userAad, TextLimit);
@@ -385,7 +424,9 @@ namespace PvciTranscripts
             session["pvci_metadatajson"] = metadataJson;
             session["pvci_transcriptcreatedon"] = createdOn;
             session["pvci_ingestedon"] = DateTime.UtcNow;
-            session["pvci_datasource"] = BuildSourceStamp(sourceEnvironment, Json.Str(metadata, "AADTenantId"));
+            session["pvci_datasource"] = BuildSourceStamp(
+                sourceEnvironment,
+                sourceEnvironment.TenantId ?? Json.Str(metadata, "AADTenantId"));
             session["pvci_correlationstatus"] = systemUser != null ? "exact" : (string.IsNullOrEmpty(userAad) ? "unmatched" : "heuristic");
             if (systemUser != null)
                 session["pvci_userid"] = new EntityReference("systemuser", systemUser.Id);

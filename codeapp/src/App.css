@@ -442,6 +442,8 @@ body {
 .scoped-user-detail h4 { margin: 0; font-size: 13px; }
 .credit-table-wrap { overflow-x: auto; }
 .credit-table { min-width: 820px; }
+.transcript-coverage-table { min-width: 1120px; }
+.transcript-coverage-table td:first-child { min-width: 180px; }
 .sync-strip { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; background: var(--bg-2); border: 1px solid var(--line); border-radius: 5px; padding: 9px 12px; color: var(--muted); }
 .sync-strip > span:first-child { color: var(--fg); font-weight: 600; }
 .user-credit-head { display: flex; align-items: center; justify-content: space-between; gap: 16px; }

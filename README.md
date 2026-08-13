@@ -18,11 +18,17 @@ Track shipped versions in [CHANGELOG.md](CHANGELOG.md) and planned work in [ROAD
 
 | Surface | What it is |
 | --- | --- |
-| **Dataverse solution** | 16 custom tables, views, forms, 3 application roles, a model-driven app, 2 Custom APIs, and 5 scheduled flows |
-| **Model-driven app** | GA, standard-licensed. Transcript operations plus Credits and Capacity grids and evidence forms |
-| **Code app** (preview) | React/Vite triage UI: replay, trends, flow failure map, and Copilot Credit reporting |
-| **Custom APIs + plugin** | Incremental transcript sync and validated, idempotent credit import |
+| **Dataverse solution** | 16 custom tables, views, forms, 3 application roles, a model-driven app, 3 Custom APIs, and 6 packaged scheduled flows |
+| **Model-driven app** | GA, standard-licensed. Transcript operations, environment collection coverage, Credits and Capacity grids, and evidence forms |
+| **Code app** (preview) | React/Vite triage UI: replay, trends, flow failure map, Copilot Credit reporting, and per-environment transcript collection status |
+| **Custom APIs + plugin** | Local incremental transcript sync, bounded cross-environment transcript import, and validated idempotent credit import |
 | **Python toolkit** | Bulk backfill, plugin registration, flow-run detail fetch |
+
+`PVCI Collect Central Transcripts (scheduled)` is packaged in the core solution. It uses one
+solution-aware Microsoft Dataverse connection reference and the supported selected-environment
+action to read source URLs dynamically from Environment Inventory. After import, map that one
+connection, let inventory/probe status populate, explicitly enable supported environments, and
+turn on the packaged flow. No tenant name, source ID, URL, or physical connection is hardcoded.
 
 ### Captured per session
 

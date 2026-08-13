@@ -26,6 +26,7 @@ concurrency:
   cancel-in-progress: false
 
 env:
+  ALLOWED_PROGRAMMATIC_TENANT_ID: 1938ee32-a258-454c-b8db-3a928341bd69
   CORE_SOLUTION: pvConversationInsights
   CODEAPP_SOLUTION: pvConversationInsightsCodeApp
   POWER_PLATFORM_CLIENT_ID: ${{ vars.POWER_PLATFORM_CLIENT_ID }}
@@ -82,6 +83,10 @@ jobs:
               missing=1
             fi
           done
+          if [[ "$POWER_PLATFORM_TENANT_ID" != "$ALLOWED_PROGRAMMATIC_TENANT_ID" ]]; then
+            echo "::error::Programmatic writes are allowed only in tenant $ALLOWED_PROGRAMMATIC_TENANT_ID."
+            missing=1
+          fi
           exit "$missing"
 
       - uses: actions/setup-node@v4

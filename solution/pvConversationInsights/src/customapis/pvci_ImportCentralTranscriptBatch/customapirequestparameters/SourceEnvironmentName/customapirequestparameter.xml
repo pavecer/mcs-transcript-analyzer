@@ -1,0 +1,9 @@
+<customapirequestparameter uniquename="SourceEnvironmentName">
+  <displayname default="Source environment display name">
+    <label description="Source environment display name" languagecode="1033" />
+  </displayname>
+  <iscustomizable>1</iscustomizable>
+  <isoptional>0</isoptional>
+  <name>SourceEnvironmentName</name>
+  <type>10</type>
+</customapirequestparameter>

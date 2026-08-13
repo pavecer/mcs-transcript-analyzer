@@ -1,0 +1,8 @@
+<customapiresponseproperty uniquename="Watermark">
+  <displayname default="Source watermark">
+    <label description="Source watermark" languagecode="1033" />
+  </displayname>
+  <iscustomizable>1</iscustomizable>
+  <name>Watermark</name>
+  <type>10</type>
+</customapiresponseproperty>

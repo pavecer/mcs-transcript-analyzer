@@ -69,7 +69,11 @@ const CHANGE_REQUEST_FIELDS = [
 const ENVIRONMENT_FIELDS = [
   "pvci_environmentinventoryid", "pvci_environmentid", "pvci_displayname", "pvci_environmenturl",
   "pvci_environmenttype", "pvci_geo", "pvci_state", "pvci_ismanaged", "pvci_hasdataverse",
-  "pvci_hasdetailedaccess", "pvci_lastsyncedon",
+  "pvci_hasdetailedaccess", "pvci_lastsyncedon", "pvci_transcriptaccessstatus",
+  "pvci_transcriptaccessreason", "pvci_transcriptprobeon", "pvci_transcriptsamplecount",
+  "pvci_transcriptcollectorenabled", "pvci_transcriptlastcollectedon",
+  "pvci_transcriptlastcollectionstatus", "pvci_transcriptlastcollectionerror",
+  "pvci_transcriptlastbatchcount",
 ];
 
 const INVENTORY_SYNC_FIELDS = [
@@ -505,6 +509,10 @@ export function Credits({ sidebarTarget }: { sidebarTarget: HTMLElement | null }
   const latestGovernanceSync = governanceSyncRuns[0];
   const linkedThresholdCount = scopedThresholds.filter((row) => row._pvci_agentid_value).length;
   const detailedEnvironmentCount = environments.filter((row) => row.pvci_hasdetailedaccess).length;
+  const transcriptReadableCount = environments.filter((row) =>
+    row.pvci_transcriptaccessstatus === "readable_with_rows" || row.pvci_transcriptaccessstatus === "readable_empty"
+  ).length;
+  const transcriptDeniedCount = environments.filter((row) => row.pvci_transcriptaccessstatus === "access_denied").length;
   const latestUsageDate = environmentUsage.reduce<string | undefined>(
     (latest, row) => !latest || (row.pvci_usagedate ?? "") > latest ? row.pvci_usagedate : latest,
     undefined
@@ -893,6 +901,35 @@ export function Credits({ sidebarTarget }: { sidebarTarget: HTMLElement | null }
           <span>{environments.length} environments</span>
           <span>{agents.length} agents/resources</span>
           <span>{detailedEnvironmentCount} detailed access</span>
+          <span>{transcriptReadableCount} transcript-readable</span>
+          <span>{transcriptDeniedCount} denied</span>
+        </div>
+
+        <SectionHeading text="Transcript collection coverage" help="Per-environment Dataverse transcript access established by the source probe, plus the most recent collector batch outcome and watermark." className="report-subheading" />
+        <div className="credit-table-wrap">
+          <table className="runtable credit-table transcript-coverage-table">
+            <thead><tr><th>Environment</th><th>Access</th><th>Collector</th><th>Probe</th><th>Sample</th><th>Watermark</th><th>Last batch</th><th>Result</th></tr></thead>
+            <tbody>
+              {environments.map((row) => (
+                <tr key={row.pvci_environmentinventoryid}>
+                  <td title={row.pvci_environmentid}>{row.pvci_displayname ?? row.pvci_environmentid ?? "Unknown"}</td>
+                  <td title={row.pvci_transcriptaccessreason}>
+                    <span className={`conf ${transcriptAccessClass(row.pvci_transcriptaccessstatus)}`}>{transcriptAccessLabel(row.pvci_transcriptaccessstatus)}</span>
+                  </td>
+                  <td>{row.pvci_transcriptcollectorenabled ? "Enabled" : "Off"}</td>
+                  <td>{fmtDateTime(row.pvci_transcriptprobeon)}</td>
+                  <td className="mono">{row.pvci_transcriptsamplecount ?? 0}</td>
+                  <td>{fmtDateTime(row.pvci_transcriptlastcollectedon)}</td>
+                  <td className="mono">{row.pvci_transcriptlastbatchcount ?? 0}</td>
+                  <td title={row.pvci_transcriptlastcollectionerror}>
+                    {row.pvci_transcriptlastcollectionstatus
+                      ? <span className={`conf ${row.pvci_transcriptlastcollectionstatus === "success" ? "high" : "multiple"}`}>{row.pvci_transcriptlastcollectionstatus}</span>
+                      : <span className="muted">Not run</span>}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
 
         <SectionHeading text="Agent credit limits" help="Latest Power Platform resource-threshold state. Authorized Credit Administrators can submit audited change requests for processor validation." className="report-subheading" />
@@ -1040,6 +1077,21 @@ export function Credits({ sidebarTarget }: { sidebarTarget: HTMLElement | null }
 
 function CreditKpi({ label, value, tone }: { label: string; value: string; tone?: string }) {
   return <div className="kpi"><div className="kpi-label">{label}</div><div className={`kpi-value ${tone ?? ""}`}>{value}</div></div>;
+}
+
+function transcriptAccessLabel(status?: string) {
+  if (status === "readable_with_rows") return "Readable · data";
+  if (status === "readable_empty") return "Readable · empty";
+  if (status === "access_denied") return "Access denied";
+  if (status === "unavailable") return "Unavailable";
+  if (status === "auth_error") return "Auth error";
+  return status ?? "Not probed";
+}
+
+function transcriptAccessClass(status?: string) {
+  if (status === "readable_with_rows") return "high";
+  if (status === "readable_empty") return "multiple";
+  return "risk-critical";
 }
 
 function sum(rows: Pvci_creditusages[], field: "pvci_billedcredits" | "pvci_nonbilledcredits") {

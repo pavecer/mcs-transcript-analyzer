@@ -103,6 +103,7 @@
       <RootComponent type="29" id="{0bfaa799-f094-f111-8076-7ced8d95b46e}" behavior="0" />
       <RootComponent type="29" id="{1afedf5c-1396-f111-8076-7ced8d95b46e}" behavior="0" />
       <RootComponent type="29" id="{320f4f61-b895-f111-8076-7ced8d95b46e}" behavior="0" />
+      <RootComponent type="29" id="{371b3cad-8596-f111-8076-7ced8d95b46e}" behavior="0" />
       <RootComponent type="29" id="{c8d754c8-1896-f111-8076-7ced8d95b46e}" behavior="0" />
       <RootComponent type="29" id="{eee71534-988d-f111-8077-7ced8d95b46e}" behavior="0" />
       <RootComponent type="62" schemaName="pvci_conversationinsights_sitemap" behavior="0" />
@@ -113,6 +114,12 @@
       <RootComponent type="92" id="{d29166a8-fc94-f111-8076-7ced8d95b46e}" behavior="0" />
     </RootComponents>
     <MissingDependencies>
+      <MissingDependency>
+        <Required type="1" schemaName="conversationtranscript" displayName="ConversationTranscript" solution="PowerVirtualAgentsCommon (2026.5.4.21205268)">
+          <package appName="CCI Bots" version="2026.5.4.21205268">msdynce_CustomerCareIntelligenceBots_Anchor (2026.5.4.21205268)</package>
+        </Required>
+        <Dependent type="29" displayName="PVCI Collect Central Transcripts (scheduled)" id="{371b3cad-8596-f111-8076-7ced8d95b46e}" />
+      </MissingDependency>
       <MissingDependency>
         <Required type="1" schemaName="systemuser" displayName="SystemUser" parentSchemaName="" solution="msdyn_UserShareSecuredFields (1.0.0.0)" />
         <Dependent type="1" schemaName="systemuser" displayName="SystemUser" />

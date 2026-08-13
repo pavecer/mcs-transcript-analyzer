@@ -299,6 +299,70 @@ incremental flow then labels new sessions automatically.
 Use `--reprocess` after changing parser logic. It rewrites sessions and replaces their turns,
 which issues new turn GUIDs.
 
+## Central transcript source discovery
+
+Phase 1 can classify all tenant environments without installing PVCI into each source environment.
+The probe consumes the read-only environment inventory returned by the Power Platform admin
+connection, requests a Dataverse-scoped token for each organization, and performs a one-row
+`conversationtranscripts` read. It writes only source metadata and access status; it never stores
+transcript content or identifiers.
+
+```powershell
+pac admin list --json > output/test-tenant-admin-environments.json
+python scripts/transcript_insights/probe_transcript_sources.py `
+    --config config/transcript_solution_config.dev.json `
+    --inventory output/test-tenant-admin-environments.json `
+    --output output/transcript-source-registry.json
+```
+
+The registry reports `readable_with_rows`, `readable_empty`, `access_denied`, `unavailable`, and
+authentication or transport errors separately. Only readable sources are candidates for the
+central collector. A `readable_empty` result means the identity can query the table but
+the one-row sample returned no records; it does not prove transcript capture is enabled.
+
+The source-local `pvci_SyncConversationTranscripts` plugin remains unchanged. The first central
+worker implementation is available as a bounded local/CI proof of concept:
+
+```powershell
+python scripts/transcript_insights/collect_central_transcripts.py `
+    --config config/transcript_solution_config.dev.json `
+    --registry output/transcript-source-registry.json `
+    --limit 1 --dry-run
+```
+
+It reads each enabled source with that organization's Dataverse audience, parses the transcript,
+and writes only to the configured collector Dataverse when `--dry-run` is omitted. It uses one
+watermark name per source (`central:<environmentId>`) and a composite transcript key containing
+tenant, environment, and source transcript ID.
+
+The packaged Power Automate flow is created in the core solution by the source generator. The
+generator is for core development and package maintenance, not post-import tenant setup:
+
+```powershell
+python scripts/transcript_insights/create_central_transcript_flow.py `
+    --output output/central-transcript-flow.json `
+    --deploy
+```
+
+`pvci_ImportCentralTranscriptBatch` is registered in the collector solution and enforces a
+25-row maximum. A PVE Preview to PVE Dev smoke import created one session and two turns; replaying
+the same source row skipped it through the composite key. During import, map the packaged
+`pvci_centralcollector` connection reference to one Microsoft Dataverse connection whose identity
+has read access in supported sources. The packaged flow dynamically supplies each inventory row's
+`pvci_environmenturl` to `ListRecordsWithOrganization`; no per-source connection is required.
+Keep `pvci_transcriptcollectorenabled` false until a source is reviewed. The scheduled flow queries
+only rows where that flag is true; environment discovery and access probing remain separate. Enable
+selected rows only after the connection identity can read `conversationtranscripts`, then turn on
+`PVCI Collect Central Transcripts (scheduled)`.
+
+If **Read source transcripts** fails with `ThrowCrmSecurityException` and
+`prvReadconversationtranscript`, the user behind `pvci_centralcollector` has no applicable security
+role in that source environment. In TPM, correct this manually: identify the connection owner, add
+that user to the source environment, and assign a least-privilege role with organization-level Read
+on **Conversation Transcript** (or System Administrator for a temporary test). Reauthenticate the
+connection if its token predates the assignment, then resubmit the run. Do not enable inaccessible
+source rows merely to make discovery results appear complete.
+
 Or invoke the Custom API directly:
 
 ```http
@@ -345,7 +409,7 @@ Afterwards, in the target environment:
 6. Assign **PVCI Analyst** to readers, **PVCI Privacy Approver** only to approved disclosure
     operators, and **PVCI Credit Administrator** only to threshold-change operators. Share the code
     app separately with the same users/groups.
-7. Save and smoke-test all five flows, including a no-op governance request, then activate the
+7. Save and smoke-test all six flows, including a no-op governance request, then activate the
     intended schedules and processor.
 8. Run the initial `--full` transcript load.
 9. Redeploy the code app (`npx power-apps init` + `push`) — it lives outside the core solution.

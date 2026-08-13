@@ -1,0 +1,9 @@
+<customapirequestparameter uniquename="SourceDataverseUrl">
+  <displayname default="Source Dataverse organization URL">
+    <label description="Source Dataverse organization URL" languagecode="1033" />
+  </displayname>
+  <iscustomizable>1</iscustomizable>
+  <isoptional>0</isoptional>
+  <name>SourceDataverseUrl</name>
+  <type>10</type>
+</customapirequestparameter>
