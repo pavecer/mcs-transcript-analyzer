@@ -15,20 +15,20 @@ Last reviewed: 2026-08-13
 - **Exit criteria:** Met. PVE and TPM probes distinguish readable-with-data, readable-empty, access-denied, and unavailable environments without copying transcript content. Both apps expose the persisted status.
 - **Tracking:** [Operations guide](docs/operations.md), [architecture](docs/architecture.md), and `scripts/transcript_insights/probe_transcript_sources.py`
 
-### Validate the 1.4.0.2 tenant rollout
+### Replace pre-authorized collection with zero-touch onboarding
 
-- **Status:** Enabled-source-only candidate prepared; manual TPM upgrade validation required
-- **Goal:** Import the core managed solution, optionally import the preview code app, and smoke-test all six packaged flows in a clean sandbox and a second test tenant.
-- **Exit criteria:** The user manually imports the packages in TPM; connection references, target tenant environment variable, roles, DLP/ACP policy, flow runs, both apps, and upgrade behavior are recorded in the release checklist. Automated TPM imports do not count as upgrade evidence.
+- **Status:** Architecture investigated; implementation blocked on choosing preview solution-only bootstrap versus GA external reconciler
+- **Goal:** Replace per-environment manual role assignment with one tenant-admin setup that continuously provisions and repairs least-privilege transcript access across eligible environments.
+- **Exit criteria:** One administrative consent/configuration onboards the existing environment inventory, a newly created environment is reconciled automatically, every application user has organization Read on Conversation Transcript without retained System Administrator, and denied/unsupported environments remain explicit.
 - **Tracking:** [Operations guide](docs/operations.md) and [permissions checklist](docs/permissions-and-inventory.md)
 
 ## Next
 
 ### Central transcript batch collector
 
-- **Status:** Generic selected-environment flow packaged and validated in PVE Dev; corrected 1.4.0.2 candidate awaits a user-performed TPM upgrade test
+- **Status:** Import and routing work for pre-authorized environments; `1.4.0.2` is not feature-complete for tenant-wide use
 - **Goal:** Read transcripts from registry-approved source environments and import normalized sessions and turns into the collector environment through a bounded, idempotent Custom API.
-- **Exit criteria:** PVE Preview to PVE Dev import/idempotent replay and generic-flow runs pass. Completion requires the user to import the corrected candidate in TPM, map `pvci_centralcollector`, enable a supported source, and observe a packaged-flow collection run.
+- **Exit criteria:** PVE Preview to PVE Dev import/idempotent replay and generic-flow runs pass. Completion additionally requires automated least-privilege source onboarding; manual role assignment in every environment is not accepted as completion.
 - **Tracking:** [Cross-environment design](docs/cross-environment-credit-consumption-design.md) and [architecture](docs/architecture.md)
 
 ### In-platform flow-run detail enrichment

@@ -193,19 +193,34 @@ The code app supports ESS-scoped cross-environment diagnostics through an enviro
 There is no tenant picker because one installed solution serves one tenant. New records use the
 first-class environment columns; legacy source stamps remain a read fallback.
 
-Central collection begins with a read-only source registry. Power Platform Admins V2 can
-enumerate tenant environments, but Dataverse table access is still evaluated in each source
-organization. A Power Platform service-admin identity may therefore produce a mix of readable,
-empty, and access-denied sources. The registry must retain those states rather than treating an
-access failure as an environment with no transcripts.
+Central collection begins with a read-only source registry. Power Platform Admins V2 can enumerate
+tenant environments, but Dataverse table access is still evaluated in each source organization.
+There is no documented tenant-wide API for raw transcripts. The Copilot Studio Monitor transcript
+route observed in the portal HAR is a first-party interactive endpoint; reusable
+`service.powerapps.com` tokens returned `403 UnauthenticatedUser` in two test environments.
+
+The Microsoft Dataverse selected-environment connector solves routing, not authorization. A Power
+Platform service-admin identity may therefore produce a mix of readable, empty, and access-denied
+sources. In the PVE tenant probe, 9 of 11 environments were readable and 2 were denied. TPM failed
+for every attempted environment because the mapped connection identity had no source transcript
+privilege. The registry must retain those states rather than treating access failure as no data.
 
 The existing sync plugin remains source-local. It uses the executing organization's
 `IOrganizationService` and does not receive credentials for other organizations. The central flow
-reads approved sources through source-specific Power Automate connections and imports through
+uses one selected-environment Dataverse connection and imports through
 `pvci_ImportCentralTranscriptBatch`. The API enforces a 25-row maximum and keys sessions by tenant,
 environment, and source transcript ID; a transcript GUID alone is not the cross-organization
 contract. Environment inventory stores probe status, collector enablement, watermark, last batch,
 status, and bounded error fields used by both apps.
+
+The scalable authorization design is a central reconciler, not manual onboarding. It provisions a
+dedicated application user in each eligible environment, creates or verifies a custom security role
+whose only data privilege is organization-level `prvReadconversationtranscript`, assigns that role,
+removes any bootstrap System Administrator role, verifies access, and continually reconciles new
+environments. Selected-environment Dataverse actions support the role/action/association work. The
+remaining product decision is supportability: Microsoft's tenant-admin `addAppUser` endpoint is
+preview and grants System Administrator initially; the GA `pac admin assign-user --application-user`
+route requires an external worker rather than a solution-only cloud flow.
 
 The public core solution is tenant-neutral and packages the importer, schema, model-driven app,
 single Dataverse connection reference, and generic central flow. Environment identity and

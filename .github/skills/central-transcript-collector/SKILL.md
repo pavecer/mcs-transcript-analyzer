@@ -79,6 +79,27 @@ source and read/write/Custom API permission in the collector. The selected-envir
 operation supports dynamic source URLs and user or service-principal connections. Tenant
 isolation, DLP, and Dataverse security still apply.
 
+This connection alone is not a tenant-wide authorization mechanism. Dataverse evaluates access in
+every source environment. The built-in `Bot Transcript Viewer` role grants user-depth transcript
+Read and does not provide an unattended collector organization-wide access to every agent's rows.
+Do not present manual per-environment user/role assignment as the scalable product design.
+
+For zero-touch tenant scale, use a central access reconciler that:
+
+1. discovers Dataverse environments through the tenant inventory;
+2. provisions one dedicated application user in each eligible source;
+3. creates or verifies a custom role with organization-level
+   `prvReadconversationtranscript` only;
+4. associates the application user to that role and removes temporary System Administrator;
+5. verifies a one-row transcript read and records health/drift in Environment Inventory; and
+6. repeats for newly discovered environments and repairs role drift.
+
+Microsoft documents `pac admin assign-user --application-user` for external automation. The BAP
+`addAppUser` endpoint that can be called by a packaged HTTP flow is preview and initially grants
+System Administrator. Therefore, a solution-only reconciler is not a GA-supported product path
+until that endpoint is accepted as a preview dependency or Microsoft exposes an equivalent GA
+connector/API. Never leave the temporary System Administrator role in place.
+
 ## Browser And OAuth Handling
 
 Repository browser policy normally requires the shared VS Code browser. Use it for portal
@@ -153,7 +174,8 @@ Before exporting:
    imports core first and code app second, maps packaged references, populates inventory, enables
    reviewed sources, and turns on the packaged collector. Do not perform those writes in TPM.
 
-The current cross-tenant feature candidate train is `1.4.0.2`. It limits scheduled reads to
-explicitly collector-enabled sources and is intended for a user-performed TPM upgrade test. The
-earlier `1.4.0.0` and `1.4.0.1` candidates must not be reused or overwritten. Published `1.3.1.0`
-artifacts are immutable and must not be replaced.
+Candidate `1.4.0.2` limits scheduled reads to explicitly collector-enabled sources, but it only
+works for environments where the mapped identity is already authorized. It is not the zero-touch
+tenant-wide solution and must not be promoted as feature-complete. The earlier `1.4.0.0` and
+`1.4.0.1` candidates must not be reused or overwritten. Published `1.3.1.0` artifacts are immutable
+and must not be replaced.

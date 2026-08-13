@@ -53,7 +53,7 @@
       "release-manifest.json"
     ],
     "ROADMAP.md": [
-      "Validate the 1.4.0.2 tenant rollout",
+      "Replace pre-authorized collection with zero-touch onboarding",
       "Detailed cross-environment agent enrichment",
       "Explicitly out of scope for the current product boundary",
       "CHANGELOG.md"
@@ -193,7 +193,7 @@
       "id=\"release-history\"",
       "id=\"roadmap\"",
       "1.3.0.0",
-      "Validate the 1.4.0.2 tenant rollout",
+      "Replace pre-authorized collection with zero-touch onboarding",
       "Detailed cross-environment agent enrichment",
       "CHANGELOG.md"
     ]
