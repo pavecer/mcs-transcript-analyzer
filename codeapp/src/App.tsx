@@ -1,9 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
 import { Pvci_transcriptsessionsService } from "./generated/services/Pvci_transcriptsessionsService";
 import { Pvci_transcriptturnsService } from "./generated/services/Pvci_transcriptturnsService";
+import { Pvci_environmentinventoriesService } from "./generated/services/Pvci_environmentinventoriesService";
 import { JsonTree } from "./components/JsonTree";
 import { Timeline } from "./components/Timeline";
 import { ToolCalls } from "./components/ToolCalls";
+import { KnowledgeCalls } from "./components/KnowledgeCalls";
+import { ReasoningFlow } from "./components/ReasoningFlow";
 import { FlowRuns } from "./components/FlowRuns";
 import { EssOps } from "./components/EssOps";
 import { Trends } from "./components/Trends";
@@ -36,7 +39,9 @@ const SESSION_FIELDS = [
   "pvci_correlationstatus", "pvci_initialusermessage",
   "pvci_firstresponsems", "pvci_avgresponsems", "pvci_maxresponsems",
   "pvci_toolcallcount", "pvci_toolerrorcount", "pvci_tooltotalms", "pvci_maxtoolms",
+  "pvci_knowledgecallcount", "pvci_knowledgesourcecount", "pvci_knowledgefailurecount",
   "pvci_sessionoutcome", "pvci_outcomereason",
+  "pvci_usererrorcount", "pvci_primaryerrorcode", "pvci_primaryerrortopic", "pvci_errorcategory",
   "pvci_isresolvedimplied", "pvci_turncount",
   "pvci_flowruncount", "pvci_flowrunfailurecount", "pvci_flowrunmaxms",
 ];
@@ -45,7 +50,7 @@ const SESSION_FIELDS = [
 const SESSION_DETAIL_FIELDS = [
   "pvci_transcriptsessionid",
   "pvci_activitiesjson", "pvci_conversationjson", "pvci_planeventsjson",
-  "pvci_metadatajson", "pvci_toolcallsjson", "pvci_flowrunsjson",
+  "pvci_metadatajson", "pvci_toolcallsjson", "pvci_knowledgecallsjson", "pvci_flowrunsjson", "pvci_primaryerrormessage",
 ];
 
 const TURN_FIELDS = [
@@ -54,7 +59,7 @@ const TURN_FIELDS = [
   "pvci_channelid", "pvci_timestamputc", "pvci_turntext", "pvci_valuejson", "pvci_latencyms",
 ];
 
-type Tab = "essops" | "replay" | "tools" | "flows" | "conversation" | "reasoning" | "raw";
+type Tab = "essops" | "replay" | "tools" | "knowledge" | "flows" | "conversation" | "reasoning" | "raw";
 type Theme = "light" | "dark";
 
 const THEME_STORAGE_KEY = "pvci-theme";
@@ -70,9 +75,10 @@ function initialTheme(): Theme {
 }
 
 const TAB_LABEL: Record<Tab, string> = {
-  essops: "ESS Ops",
+  essops: "Overview",
   replay: "Replay",
   tools: "Tool Calls",
+  knowledge: "Knowledge",
   flows: "Flow Runs",
   conversation: "Conversation JSON",
   reasoning: "Agent Reasoning",
@@ -91,7 +97,7 @@ export default function App() {
   const [hideTest, setHideTest] = useState(false);
   const [essOnly, setEssOnly] = useState(true);
   const [environmentFilter, setEnvironmentFilter] = useState("*");
-  const [tab, setTab] = useState<Tab>("replay");
+  const [tab, setTab] = useState<Tab>("essops");
   const [jsonFilter, setJsonFilter] = useState("");
   const [view, setView] = useState<"sessions" | "trends" | "credits">("sessions");
   const [creditsSidebarTarget, setCreditsSidebarTarget] = useState<HTMLDivElement | null>(null);
@@ -114,7 +120,30 @@ export default function App() {
           orderBy: ["pvci_startdatetimeutc desc"],
           top: 200,
         });
-        const rows = (res.data ?? []) as unknown as SessionRow[];
+        const rawRows = (res.data ?? []) as unknown as SessionRow[];
+        const environmentNames = new Map<string, string>();
+        try {
+          const inventoryRes = await Pvci_environmentinventoriesService.getAll({
+            select: ["pvci_environmentid", "pvci_displayname"],
+            top: 500,
+          });
+          const inventoryRows = (inventoryRes.data ?? []) as unknown as Array<{
+            pvci_environmentid?: string;
+            pvci_displayname?: string;
+          }>;
+          inventoryRows.forEach((environment) => {
+            if (environment.pvci_environmentid && environment.pvci_displayname) {
+              environmentNames.set(environment.pvci_environmentid.toLowerCase(), environment.pvci_displayname);
+            }
+          });
+        } catch {
+          // Session lineage still provides a friendly-name fallback when inventory is unavailable.
+        }
+        const rows = rawRows.map((session) => ({
+          ...session,
+          pvci_environmentname: environmentNames.get((session.pvci_environmentid ?? "").toLowerCase())
+            ?? session.pvci_environmentname,
+        }));
         setSessions(rows);
         if (rows.length) setSelected(rows[0]);
       } catch (e) {
@@ -125,9 +154,28 @@ export default function App() {
     })();
   }, []);
 
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return sessions.filter((session) => {
+      if (hideTest && session.pvci_istestmode) return false;
+      if (essOnly && !isEssSession(session)) return false;
+      if (environmentFilter !== "*" && sourceEnvironmentKey(session) !== environmentFilter) return false;
+      if (!q) return true;
+      return [
+        session.pvci_userdisplayname, session.pvci_userupn, session.pvci_channel, session.pvci_initialusermessage,
+        session.pvci_botname, session.pvci_topicname, session.pvci_primaryerrorcode, session.pvci_primaryerrortopic,
+        session.pvci_errorcategory, session.pvci_knowledgecallcount ? "knowledge" : undefined,
+      ].some((value) => (value ?? "").toLowerCase().includes(q));
+    });
+  }, [sessions, search, hideTest, essOnly, environmentFilter]);
+
+  const activeSession = selected && filtered.some((session) => session.pvci_transcriptsessionid === selected.pvci_transcriptsessionid)
+    ? selected
+    : filtered[0] ?? null;
+
   useEffect(() => {
-    const transcriptId = selected?.pvci_transcriptid;
-    const sessionId = selected?.pvci_transcriptsessionid;
+    const transcriptId = activeSession?.pvci_transcriptid;
+    const sessionId = activeSession?.pvci_transcriptsessionid;
     let cancelled = false;
 
     void (async () => {
@@ -164,7 +212,7 @@ export default function App() {
     return () => {
       cancelled = true;
     };
-  }, [selected]);
+  }, [activeSession]);
 
   const environmentOptions = useMemo(() => {
     const options = new Map<string, string>();
@@ -174,25 +222,9 @@ export default function App() {
     return [...options.entries()].sort((a, b) => a[1].localeCompare(b[1]));
   }, [sessions]);
 
-  const filtered = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    return sessions.filter((s) => {
-      if (hideTest && s.pvci_istestmode) return false;
-      if (essOnly && !isEssSession(s)) return false;
-
-      if (environmentFilter !== "*") {
-        if (sourceEnvironmentKey(s) !== environmentFilter) return false;
-      }
-
-      if (!q) return true;
-      return [s.pvci_userdisplayname, s.pvci_userupn, s.pvci_channel, s.pvci_initialusermessage, s.pvci_botname]
-        .some((v) => (v ?? "").toLowerCase().includes(q));
-    });
-  }, [sessions, search, hideTest, essOnly, environmentFilter]);
-
   return (
     <div className="app">
-      <aside className="sidebar">
+      {view !== "trends" && <aside className="sidebar">
         <div className="brand">
           <div>
             <h1>Conversation Insights</h1>
@@ -210,11 +242,11 @@ export default function App() {
         </div>
         <div className="viewswitch">
           <button className={view === "sessions" ? "on" : ""} onClick={() => setView("sessions")}>Sessions</button>
-          <button className={view === "trends" ? "on" : ""} onClick={() => setView("trends")}>Trends</button>
+          <button onClick={() => setView("trends")}>Trends</button>
           <button className={view === "credits" ? "on" : ""} onClick={() => setView("credits")}>Credits</button>
         </div>
         {view === "credits" && <div ref={setCreditsSidebarTarget} className="credits-sidebar-host" />}
-        {view !== "credits" && (
+        {view === "sessions" && (
           <>
             <input
               className="search"
@@ -228,7 +260,7 @@ export default function App() {
             </label>
             <label className="checkline">
               <input type="checkbox" checked={essOnly} onChange={(e) => setEssOnly(e.target.checked)} />
-              ESS only
+              ESS agents only
             </label>
             <select className="search" value={environmentFilter} onChange={(e) => setEnvironmentFilter(e.target.value)}>
               <option value="*">All environments</option>
@@ -243,8 +275,8 @@ export default function App() {
               {filtered.map((s) => (
                 <button
                   key={s.pvci_transcriptsessionid}
-                  className={`session-item${selected?.pvci_transcriptsessionid === s.pvci_transcriptsessionid ? " active" : ""}`}
-                  onClick={() => { setSelected(s); setTab("replay"); }}
+                  className={`session-item${activeSession?.pvci_transcriptsessionid === s.pvci_transcriptsessionid ? " active" : ""}`}
+                  onClick={() => { setSelected(s); setTab("essops"); }}
                 >
                   <div className="si-top">
                     <span className="si-user">{s.pvci_userdisplayname ?? "Unknown user"}</span>
@@ -278,41 +310,82 @@ export default function App() {
             </div>
           </>
         )}
-      </aside>
+      </aside>}
 
-      <main className="main">
+      <main className={`main${view === "trends" ? " trends-main" : ""}`}>
         {error && <div className="error">{error}</div>}
 
-        {view === "trends" && <Trends sessions={sessions} loading={loadingSessions} />}
+        {view === "trends" && (
+          <>
+            <header className="workspace-head">
+              <div className="workspace-brand">
+                <strong>Conversation Insights</strong>
+                <span>Conversation trends</span>
+              </div>
+              <div className="viewswitch workspace-switch">
+                <button onClick={() => setView("sessions")}>Sessions</button>
+                <button className="on">Trends</button>
+                <button onClick={() => setView("credits")}>Credits</button>
+              </div>
+              <button
+                className="theme-toggle"
+                type="button"
+                title={`Use ${theme === "dark" ? "light" : "dark"} mode`}
+                aria-label={`Use ${theme === "dark" ? "light" : "dark"} mode`}
+                onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+              >
+                <span aria-hidden="true">{theme === "dark" ? "☀" : "☾"}</span>
+              </button>
+            </header>
+            <Trends sessions={sessions} loading={loadingSessions} />
+          </>
+        )}
 
         {view === "credits" && <Credits sidebarTarget={creditsSidebarTarget} />}
 
-        {view === "sessions" && !selected && !loadingSessions && <div className="muted pad">Select a session.</div>}
+        {view === "sessions" && !activeSession && !loadingSessions && <div className="muted pad">No sessions match the current filters.</div>}
 
-        {view === "sessions" && selected && (
+        {view === "sessions" && activeSession && (
           <>
             <header className="detail-head">
               <div>
-                <h2>{selected.pvci_userdisplayname ?? "Unknown user"}</h2>
-                <div className="muted small">{selected.pvci_userupn ?? selected.pvci_useraadobjectid ?? "—"}</div>
+                <h2>{activeSession.pvci_userdisplayname ?? "Unknown user"}</h2>
+                <div className="muted small">{activeSession.pvci_userupn ?? activeSession.pvci_useraadobjectid ?? "—"}</div>
               </div>
               <dl className="facts">
-                <Fact k="Channel" v={selected.pvci_channel} />
-                <Fact k="Agent" v={selected.pvci_botname} />
-                <Fact k="Tenant" v={selected.pvci_tenantid} />
-                <Fact k="Environment" v={sourceEnvironmentLabel(selected)} />
-                <Fact k="Session topic" v={selected.pvci_topicname ?? selected.pvci_topicid} />
-                <Fact k="Started" v={fmtTime(selected.pvci_startdatetimeutc)} />
-                <Fact k="Duration" v={fmtDuration(selected.pvci_durationseconds)} />
-                <Fact k="Turns" v={`${selected.pvci_userturncount ?? 0} user / ${selected.pvci_agentturncount ?? 0} agent`} />
-                <Fact k="Outcome" v={`${selected.pvci_sessionoutcome ?? "—"} / ${selected.pvci_outcomereason ?? "—"}`} />
-                <Fact k="First reply" v={fmtMs(selected.pvci_firstresponsems)} />
-                <Fact k="Slowest reply" v={fmtMs(selected.pvci_maxresponsems)} />
-                <Fact k="Tool calls" v={`${selected.pvci_toolcallcount ?? 0}${selected.pvci_toolerrorcount ? ` (${selected.pvci_toolerrorcount} failed)` : ""}`} />
-                <Fact k="Slowest tool" v={fmtMs(selected.pvci_maxtoolms)} />
+                <Fact k="Channel" v={activeSession.pvci_channel} />
+                <Fact k="Agent" v={activeSession.pvci_botname} />
+                <Fact k="Tenant" v={activeSession.pvci_tenantid} />
+                <Fact k="Environment" v={sourceEnvironmentLabel(activeSession)} />
+                <Fact k="Mode" v={activeSession.pvci_istestmode ? "Test chat" : "Production channel"} />
+                <Fact k="Identity match" v={activeSession.pvci_correlationstatus ?? "unknown"} />
+                <Fact k="Capture" v={activeSession.pvci_payloadtruncated ? "Truncated" : "Complete stored payload"} />
+                <Fact k="Session topic" v={activeSession.pvci_topicname ?? activeSession.pvci_topicid} />
+                <Fact k="Started (UTC)" v={fmtTime(activeSession.pvci_startdatetimeutc)} />
+                <Fact k="Duration" v={fmtDuration(activeSession.pvci_durationseconds)} />
+                <Fact k="Turns" v={`${activeSession.pvci_userturncount ?? 0} user / ${activeSession.pvci_agentturncount ?? 0} agent`} />
+                <Fact k="Source outcome" v={activeSession.pvci_sessionoutcome} />
+                <Fact k="Outcome detail" v={activeSession.pvci_outcomereason} />
+                <Fact k="Implied resolved" v={activeSession.pvci_isresolvedimplied} />
                 <Fact
-                  k="Flow runs"
-                  v={`${selected.pvci_flowruncount ?? 0}${selected.pvci_flowrunfailurecount ? ` (${selected.pvci_flowrunfailurecount} failed)` : ""}`}
+                  k="User errors"
+                  v={activeSession.pvci_usererrorcount
+                    ? `${activeSession.pvci_usererrorcount} · ${activeSession.pvci_errorcategory ?? activeSession.pvci_primaryerrorcode ?? "user error"}`
+                    : "0"}
+                />
+                <Fact k="First reply" v={fmtMs(activeSession.pvci_firstresponsems)} />
+                <Fact k="Slowest reply" v={fmtMs(activeSession.pvci_maxresponsems)} />
+                <Fact
+                  k="Exact tool traces"
+                  v={activeSession.pvci_istestmode
+                    ? `${activeSession.pvci_toolcallcount ?? 0}${activeSession.pvci_toolerrorcount ? ` (${activeSession.pvci_toolerrorcount} failed)` : ""}`
+                    : "Unavailable in this transcript"}
+                />
+                <Fact k="Knowledge" v={`${activeSession.pvci_knowledgecallcount ?? 0} retrievals / ${activeSession.pvci_knowledgesourcecount ?? 0} source IDs`} />
+                <Fact k="Slowest exact tool" v={fmtMs(activeSession.pvci_maxtoolms)} />
+                <Fact
+                  k="Candidate flow matches"
+                  v={`${activeSession.pvci_flowruncount ?? 0}${activeSession.pvci_flowrunfailurecount ? ` (${activeSession.pvci_flowrunfailurecount} failed)` : ""}`}
                 />
               </dl>
             </header>
@@ -327,13 +400,17 @@ export default function App() {
 
             <section className="pane">
               {tab === "essops" ? (
-                <EssOps session={selected} turns={turns} loading={loadingTurns} />
+                <EssOps session={detail ? { ...activeSession, ...detail } : activeSession} turns={turns} loading={loadingTurns} />
               ) : tab === "replay" ? (
                 <Timeline turns={turns} loading={loadingTurns} />
               ) : tab === "tools" ? (
-                <ToolCalls json={detail?.pvci_toolcallsjson} loading={loadingTurns} />
+                <ToolCalls json={detail?.pvci_toolcallsjson} loading={loadingTurns} exactTelemetryAvailable={Boolean(activeSession.pvci_istestmode)} />
+              ) : tab === "knowledge" ? (
+                <KnowledgeCalls json={detail?.pvci_knowledgecallsjson} loading={loadingTurns} />
               ) : tab === "flows" ? (
                 <FlowRuns json={detail?.pvci_flowrunsjson} loading={loadingTurns} />
+              ) : tab === "reasoning" ? (
+                <ReasoningFlow json={detail?.pvci_planeventsjson} knowledgeJson={detail?.pvci_knowledgecallsjson} loading={loadingTurns} />
               ) : (
                 <>
                   <input
@@ -344,9 +421,7 @@ export default function App() {
                   />
                   <JsonPane
                     text={
-                      tab === "conversation" ? detail?.pvci_conversationjson
-                        : tab === "reasoning" ? detail?.pvci_planeventsjson
-                        : detail?.pvci_activitiesjson
+                      tab === "conversation" ? detail?.pvci_conversationjson : detail?.pvci_activitiesjson
                     }
                     filter={jsonFilter}
                     depth={tab === "raw" ? 2 : 3}

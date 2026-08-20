@@ -114,11 +114,42 @@ Derived per session:
 | --- | --- |
 | End user | the single distinct `from.aadObjectId` where `role == 1` |
 | Channel | the single distinct `channelId` |
+| Environment label | Environment Inventory `pvci_displayname` joined by exact environment ID |
 | Test mode | `ConversationInfo.isDesignMode` |
 | Outcome | the `SessionInfo` trace |
+| Primary topic | first `DynamicPlanStepTriggered.value.taskDialogId` |
+| User-facing runtime failure | `ErrorTraceData` where `value.isUserError == true` |
+| Knowledge retrieval | `KnowledgeTraceData` paired with the active search DynamicPlan step |
 | Reply latency | user utterance → first agent reply, via `timestampMs` |
 | Tool calls | `DialogTracing` actions of type `Invoke*`, paired start/end |
 | Reasoning | `DynamicPlan*` events |
+
+## Agent reasoning visualization
+
+The Agent Reasoning view renders recorded orchestration telemetry as grouped chronological
+sequences, not as a dependency graph. Across the validated sample, every `DynamicPlanReceived`
+contained one selected step, while a conversation could create several successive plans. The view
+therefore groups by `planIdentifier` and links `StepTriggered`, `StepBindUpdate`, `StepFinished`,
+`PlanFinished`, and Knowledge outcomes by `stepId`.
+
+The visualization shows request text already present in debug telemetry, selected topic/action,
+recorded routing rationale, argument **names**, auto-filled markers, elapsed time, completion state,
+and observable output/source identifiers. It does not show argument values by default and does not
+claim to expose hidden chain-of-thought. Missing finish events remain explicit; an `Answered`
+Knowledge outcome can establish successful retrieval even when `DynamicPlanStepFinished` was not
+retained. Raw DynamicPlan JSON remains available through progressive disclosure.
+
+User-facing error traces are retained as transcript turns even when general trace retention is
+disabled. The session stores a filterable count, primary code/message/topic, and a bounded category
+(`Authentication`, `Connector`, `Topic expression`, or `Topic runtime`). The code app reconstructs
+the ordered failure timeline from those retained turns and the active DynamicPlan step. Internal
+error traces and ordinary `DialogTracing` noise remain excluded unless trace retention is enabled.
+
+Knowledge retrieval is not a connector invocation and must not be inferred from `DialogTracing`
+`Invoke*` actions. `KnowledgeTraceData` supplies completion state, whether search ran, cited source
+identifiers, and failed source types. The parser pairs it with the active search plan step for
+start time and duration. Compact call JSON deliberately excludes query arguments and retrieved
+passages; those remain only in the existing access-controlled raw transcript.
 
 "Exactly one user per transcript" is asserted, not assumed — a violation sets
 `MultiUserAnomaly` rather than silently taking the first.

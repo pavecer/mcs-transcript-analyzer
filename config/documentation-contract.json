@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "productSourceDigest": "ce2b3243faffb163a8a634f8674a69af0e74853966335b1743f8c7460c287e85",
+  "productSourceDigest": "890a9fd515187472ab77057da5f8d91e12df44c3be3439ccdbcbd2d2a8a8f5d7",
   "productInputs": [
     "config/release-packages.json",
     "solution/pvConversationInsights/solution-definition.json",

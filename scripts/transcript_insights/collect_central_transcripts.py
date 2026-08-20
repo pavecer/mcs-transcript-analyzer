@@ -72,6 +72,7 @@ def build_session_payload(
     plan_json, _ = jdump(parsed["plan_events"])
     metadata_json, _ = jdump(parsed["metadata"])
     tools_json, _ = jdump(parsed["tool_calls"])
+    knowledge_json, _ = jdump(parsed["knowledge_calls"])
     display = (user or {}).get("fullname") or (parsed["user_aad"] or "unknown")[:8]
     name = f"{display} · {parsed['channel'] or '?'} · {iso(parsed['start']) or parsed['created_on']}"
     payload: dict[str, Any] = {
@@ -79,6 +80,8 @@ def build_session_payload(
         "pvci_transcriptid": s1000(composite_id),
         "pvci_botid": s1000(parsed["bot_id"]),
         "pvci_botname": s1000(parsed["bot_name"]),
+        "pvci_topicname": s1000(parsed["topic_name"]),
+        "pvci_topicid": s1000(parsed["topic_id"]),
         "pvci_tenantid": s1000(parsed["tenant_id"] or source_ctx["tenant_id"]),
         **environment_payload(source_ctx),
         "pvci_useraadobjectid": s1000(parsed["user_aad"]),
@@ -104,10 +107,19 @@ def build_session_payload(
         "pvci_tooltotalms": parsed["tool_total_ms"],
         "pvci_maxtoolms": parsed["max_tool_ms"],
         "pvci_toolcallsjson": tools_json,
+        "pvci_knowledgecallcount": parsed["knowledge_call_count"],
+        "pvci_knowledgesourcecount": parsed["knowledge_source_count"],
+        "pvci_knowledgefailurecount": parsed["knowledge_failure_count"],
+        "pvci_knowledgecallsjson": knowledge_json,
         "pvci_flowruncount": 0,
         "pvci_flowrunfailurecount": 0,
         "pvci_sessionoutcome": s1000(parsed["session_outcome"]),
         "pvci_outcomereason": s1000(parsed["outcome_reason"]),
+        "pvci_usererrorcount": parsed["user_error_count"],
+        "pvci_primaryerrorcode": s1000(parsed["primary_error_code"]),
+        "pvci_primaryerrormessage": parsed["primary_error_message"],
+        "pvci_primaryerrortopic": s1000(parsed["primary_error_topic"]),
+        "pvci_errorcategory": s1000(parsed["error_category"]),
         "pvci_isresolvedimplied": s1000(
             str(parsed["implied_success"]).lower() if parsed["implied_success"] is not None else None
         ),
@@ -138,7 +150,7 @@ def build_turn_payload(activity: dict[str, Any], index: int, session_id: str, co
         "pvci_speaker": s1000(speaker),
         "pvci_role": role if isinstance(role, int) else None,
         "pvci_aadobjectid": s1000(sender.get("aadObjectId")),
-        "pvci_eventname": s1000(activity.get("name")),
+        "pvci_eventname": s1000(activity.get("name") or activity.get("valueType")),
         "pvci_channelid": s1000(activity.get("channelId")),
         "pvci_timestamputc": iso(datetime.fromtimestamp(int(activity["timestamp"]), tz=timezone.utc))
         if str(activity.get("timestamp", "")).isdigit() else None,
@@ -183,7 +195,15 @@ def import_one(
 
     index = 0
     for activity in parsed["activities"]:
-        if not include_traces and (activity.get("type") in {"trace"} or activity.get("name") == "DialogTracing"):
+        value = activity.get("value")
+        is_user_error_trace = (
+            activity.get("valueType") == "ErrorTraceData"
+            and isinstance(value, dict)
+            and value.get("isUserError") is True
+        )
+        if not include_traces and not is_user_error_trace and (
+            activity.get("type") in {"trace"} or activity.get("name") == "DialogTracing"
+        ):
             continue
         collector.post(TURNS, build_turn_payload(activity, index, session_id, composite_id))
         index += 1

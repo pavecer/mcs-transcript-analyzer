@@ -56,6 +56,28 @@ The first five application keys are idempotency keys used by transcript sync and
 alternate-key metadata. Inventory and credit reporting tables use real Dataverse alternate keys
 provisioned by the solution.
 
+## Transcript runtime diagnostics
+
+`pvci_transcriptsession` stores filterable summaries for user-facing runtime failures:
+
+| Column | Meaning |
+| --- | --- |
+| `pvci_usererrorcount` | Count of `ErrorTraceData` activities explicitly marked `isUserError=true` |
+| `pvci_primaryerrorcode` | Code from the last user-facing error in transcript order |
+| `pvci_primaryerrormessage` | Full retained primary error message; loaded only for session detail |
+| `pvci_primaryerrortopic` | DynamicPlan topic active when the primary error occurred |
+| `pvci_errorcategory` | Bounded operational category for filtering and triage |
+| `pvci_topicname`, `pvci_topicid` | First triggered DynamicPlan topic fallback when Monitor values are unavailable |
+| `pvci_knowledgecallcount` | Number of retained `KnowledgeTraceData` retrieval outcomes |
+| `pvci_knowledgesourcecount` | Total cited source identifiers across retrievals |
+| `pvci_knowledgefailurecount` | Retrievals with failed source types or incomplete completion state |
+| `pvci_knowledgecallsjson` | Compact status/timing/source metadata without query or passage content |
+
+The corresponding `ErrorTraceData` activities remain in `pvci_transcriptturn` even when generic
+trace retention is disabled. Detailed timelines are reconstructed from ordered turns rather than
+duplicated into another memo column. Error messages can contain implementation details and remain
+subject to the same Dataverse access, retention, and privacy controls as the transcript payload.
+
 ## Credit reporting tables
 
 ### `pvci_environmentinventory`

@@ -65,7 +65,7 @@ export function FlowRuns({ json, loading }: { json?: string; loading?: boolean }
   const detailRequestRef = useRef(0);
 
   if (loading) return <div className="muted pad">Loading flow correlation…</div>;
-  if (!items.length) return <div className="muted pad">No flow actions were invoked in this session.</div>;
+  if (!items.length) return <div className="muted pad">No Power Automate invocation or flow-candidate plan step was detected in this session.</div>;
 
   const toggle = (i: number) => {
     const next = new Set(open);
@@ -119,10 +119,10 @@ export function FlowRuns({ json, loading }: { json?: string; loading?: boolean }
   return (
     <div className="tools">
       <div className="muted small pad-sm">
-        Flow runs are matched by time overlap — Power Automate does not stamp the conversation id on a run.
+        Candidate Power Automate runs are matched by time overlap because a run does not carry the conversation id.
         <br />
         <span className="conf flow_action">action</span> = exact invoke trace (test mode only) ·{" "}
-        <span className="conf plan_step">plan step</span> = orchestrator step window, not flow runtime (production channels)
+        <span className="conf plan_step">plan step</span> = flow-candidate orchestrator window, not flow runtime (production channels). Knowledge/search steps are excluded.
       </div>
 
       <div className="timing-help" tabIndex={0} aria-label="Timing explanation">
@@ -154,7 +154,7 @@ export function FlowRuns({ json, loading }: { json?: string; loading?: boolean }
               <span className={`conf ${fc.source ?? "flow_action"}`}>
                 {fc.source === "plan_step" ? "plan step" : "action"}
               </span>
-              <span className={`conf ${fc.confidence}`}>{fc.confidence === "none" ? "no run matched" : fc.confidence}</span>
+              <span className={`conf ${fc.confidence}`}>{fc.confidence === "none" ? "no candidate run" : fc.confidence}</span>
               <span className="ttopic">{(fc.started_utc ?? "").slice(11, 19)}</span>
               <span className="caret">{isOpen ? "▼" : "▶"}</span>
             </div>
@@ -177,7 +177,7 @@ export function FlowRuns({ json, loading }: { json?: string; loading?: boolean }
                       const ok = (r.status ?? "").toLowerCase() === "succeeded";
                       return (
                         <tr key={r.flow_run_id} className={r.best ? "best" : ""}>
-                          <td>{r.best ? <span className="badge">best</span> : ""}</td>
+                          <td>{r.best ? <span className="badge">closest start</span> : ""}</td>
                           <td className="mono">{(r.started_utc ?? "").replace("T", " ").replace("Z", "")}</td>
                           <td className={ok ? "ok" : "fail"}>{r.status}</td>
                           <td className="mono">{fmtMs(r.duration_ms)}</td>
@@ -205,7 +205,7 @@ export function FlowRuns({ json, loading }: { json?: string; loading?: boolean }
                 </table>
               ) : (
                 <div className="muted small pad-sm">
-                  No flow run found in the window. It may have aged out of Dataverse retention.
+                  No candidate Power Automate run was found in this window. The run may not exist, may be outside the timing window, may be inaccessible, or may have aged out of retention.
                 </div>
               )
             )}

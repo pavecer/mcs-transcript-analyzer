@@ -32,12 +32,18 @@ turn on the packaged flow. No tenant name, source ID, URL, or physical connectio
 
 ### Captured per session
 
+The session workspace opens on a plain-language **Overview**. Replay, exact tool traces, knowledge
+retrieval, candidate Power Automate runs, reasoning, and raw JSON remain available as progressively
+deeper evidence.
+
 - **End user** — resolved from `from.aadObjectId` to a real `systemuser`
 - **Latency** — first / average / slowest reply, in milliseconds, and per turn
 - **Agent reasoning** — the `DynamicPlan*` trace showing which topic or tool was chosen, and why
 - **Tool calls** — connector and AI Builder invocations with duration, output and exceptions
 - **Flow runs** — correlated Power Automate runs, enrichable with action and loop-iteration inputs and outputs
 - **Outcome** — resolved / abandoned, reason, implied success, turn count
+- **Runtime failures** — user-facing error count, category, code, message, active topic, and failure timeline
+- **Knowledge retrieval** — search completion, latency, cited source identifiers, and failed source types
 - **Test-mode flag** — so maker-portal testing does not pollute production metrics
 
 ### Captured for Copilot Credits

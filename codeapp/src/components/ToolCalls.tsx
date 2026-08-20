@@ -2,12 +2,16 @@ import { JsonTree } from "./JsonTree";
 import { fmtMs, latencyBand, safeParse, type ToolCall } from "../lib/model";
 import { useState } from "react";
 
-export function ToolCalls({ json, loading }: { json?: string; loading?: boolean }) {
+export function ToolCalls({ json, loading, exactTelemetryAvailable = true }: { json?: string; loading?: boolean; exactTelemetryAvailable?: boolean }) {
   const calls = (safeParse(json) as unknown as ToolCall[] | undefined) ?? [];
   const [open, setOpen] = useState<Set<number>>(new Set());
 
   if (loading) return <div className="muted pad">Loading tool calls…</div>;
-  if (!calls.length) return <div className="muted pad">No tool or connector calls in this session.</div>;
+  if (!calls.length) {
+    return exactTelemetryAvailable
+      ? <div className="muted pad">No exact tool or connector invocation was observed in this test transcript.</div>
+      : <div className="muted pad">Exact tool telemetry is unavailable in this production transcript. This does not prove that no tool was used.</div>;
+  }
 
   const toggle = (i: number) => {
     const next = new Set(open);

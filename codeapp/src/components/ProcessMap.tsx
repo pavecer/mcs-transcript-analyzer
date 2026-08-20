@@ -19,7 +19,7 @@ export interface FlowActionEntry {
   branch?: string;
 }
 
-type StatusKind = "success" | "failed" | "skipped" | "running";
+type StatusKind = "success" | "failed" | "skipped" | "running" | "unknown";
 
 const NODE_WIDTH = 216;
 const NODE_HEIGHT = 76;
@@ -32,7 +32,8 @@ function statusKind(status?: string): StatusKind {
   if (normalized === "succeeded") return "success";
   if (normalized === "skipped") return "skipped";
   if (normalized === "running" || normalized === "waiting") return "running";
-  return "failed";
+  if (normalized === "failed" || normalized === "timedout" || normalized === "cancelled") return "failed";
+  return "unknown";
 }
 
 function humanize(value?: string): string {
@@ -95,6 +96,7 @@ interface GraphLayout {
   nodes: LayoutNode[];
   width: number;
   height: number;
+  inferredChronology: boolean;
 }
 
 function compareByStart(
@@ -179,6 +181,7 @@ function buildLayout(actions: FlowActionEntry[], showSkipped: boolean): GraphLay
     nodes,
     width: MAP_PADDING * 2 + (maxLayer + 1) * NODE_WIDTH + maxLayer * COLUMN_GAP,
     height: MAP_PADDING * 2 + maxRows * NODE_HEIGHT + (maxRows - 1) * ROW_GAP,
+    inferredChronology: !hasDefinitionGraph && actions.length > 1,
   };
 }
 
@@ -222,14 +225,18 @@ export function ProcessMap({ actions }: { actions: FlowActionEntry[] }) {
       <div className={`process-summary ${rootFailures.length ? "failed" : failed.length ? "warning" : "success"}`}>
         <div>
           <strong>
-            {rootFailures.length
-              ? `Root failure: ${humanize(rootFailures[0].name)}`
+            {!actions.length
+              ? "Action history is unavailable"
+              : rootFailures.length
+              ? `First likely failure: ${humanize(rootFailures[0].name)}`
               : failed.length
                 ? `${failed.length} action${failed.length === 1 ? "" : "s"} failed`
                 : "Run completed successfully"}
           </strong>
           <span>
-            {rootFailures.length
+            {!actions.length
+              ? "No action entries were retained, so run success cannot be evaluated here."
+              : rootFailures.length
               ? errorText(rootFailures[0].error) ?? "Select the highlighted node for technical details."
               : `${actions.length - skipped.length} actions executed; ${skipped.length} branches were skipped.`}
           </span>
@@ -238,11 +245,16 @@ export function ProcessMap({ actions }: { actions: FlowActionEntry[] }) {
           <span><i className="legend-dot success" />Succeeded</span>
           <span><i className="legend-dot failed" />Failed</span>
           <span><i className="legend-dot skipped" />Skipped</span>
+          <span><i className="legend-dot unknown" />Unknown</span>
         </div>
       </div>
 
       <div className="process-toolbar">
-        <span className="muted small">Select an action to inspect its data.</span>
+        <span className="muted small">
+          {layout.inferredChronology
+            ? "Connections show chronological order because dependency metadata was unavailable. Select an action to inspect its data."
+            : "Connections follow recorded dependency metadata. Select an action to inspect its data."}
+        </span>
         <label className="checkline">
           <input type="checkbox" checked={showSkipped} onChange={(event) => setShowSkipped(event.target.checked)} />
           Show skipped branches ({skipped.length})
@@ -289,13 +301,13 @@ export function ProcessMap({ actions }: { actions: FlowActionEntry[] }) {
                   onClick={() => setSelectedName(node.action.name ?? null)}
                 >
                   <span className="process-node-status" aria-hidden="true">
-                    {kind === "success" ? "✓" : kind === "failed" ? "!" : kind === "running" ? "…" : "−"}
+                    {kind === "success" ? "✓" : kind === "failed" ? "!" : kind === "running" ? "…" : kind === "unknown" ? "?" : "−"}
                   </span>
                   <span className="process-node-copy">
                     <strong>{humanize(node.action.name)}</strong>
                     <small>{node.action.operation ?? node.action.type ?? "Action"} · {fmtMs(durationMs(node.action))}</small>
                   </span>
-                  {node.rootFailure && <span className="root-badge">root cause</span>}
+                  {node.rootFailure && <span className="root-badge">likely first failure</span>}
                 </button>
               );
             })}

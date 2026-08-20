@@ -19,6 +19,9 @@
           <cell name="pvci_maxresponsems" width="95" />
           <cell name="pvci_toolcallcount" width="70" />
           <cell name="pvci_toolerrorcount" width="75" />
+          <cell name="pvci_knowledgecallcount" width="85" />
+          <cell name="pvci_usererrorcount" width="75" />
+          <cell name="pvci_errorcategory" width="110" />
           <cell name="pvci_sessionoutcome" width="95" />
           <cell name="pvci_istestmode" width="70" />
         </row>
@@ -37,6 +40,9 @@
           <attribute name="pvci_maxresponsems" />
           <attribute name="pvci_toolcallcount" />
           <attribute name="pvci_toolerrorcount" />
+          <attribute name="pvci_knowledgecallcount" />
+          <attribute name="pvci_usererrorcount" />
+          <attribute name="pvci_errorcategory" />
           <attribute name="pvci_sessionoutcome" />
           <attribute name="pvci_istestmode" />
           <attribute name="pvci_transcriptsessionid" />

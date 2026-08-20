@@ -467,6 +467,74 @@
           "x-ms-schema-name": "pvci_OutcomeReason",
           "maxLength": 1000
         },
+        "pvci_knowledgecallcount": {
+          "type": "string",
+          "title": "Knowledge calls",
+          "x-ms-dataverse-attribute": "pvci_knowledgecallcount",
+          "x-ms-dataverse-type": "IntegerType",
+          "x-ms-schema-name": "pvci_KnowledgeCallCount"
+        },
+        "pvci_knowledgesourcecount": {
+          "type": "string",
+          "title": "Cited knowledge sources",
+          "x-ms-dataverse-attribute": "pvci_knowledgesourcecount",
+          "x-ms-dataverse-type": "IntegerType",
+          "x-ms-schema-name": "pvci_KnowledgeSourceCount"
+        },
+        "pvci_knowledgefailurecount": {
+          "type": "string",
+          "title": "Knowledge failures",
+          "x-ms-dataverse-attribute": "pvci_knowledgefailurecount",
+          "x-ms-dataverse-type": "IntegerType",
+          "x-ms-schema-name": "pvci_KnowledgeFailureCount"
+        },
+        "pvci_knowledgecallsjson": {
+          "type": "string",
+          "title": "Knowledge calls JSON",
+          "x-ms-dataverse-attribute": "pvci_knowledgecallsjson",
+          "x-ms-dataverse-type": "MemoType",
+          "x-ms-schema-name": "pvci_KnowledgeCallsJson",
+          "maxLength": 1048576
+        },
+        "pvci_errorcategory": {
+          "type": "string",
+          "title": "Error category",
+          "x-ms-dataverse-attribute": "pvci_errorcategory",
+          "x-ms-dataverse-type": "StringType",
+          "x-ms-schema-name": "pvci_ErrorCategory",
+          "maxLength": 1000
+        },
+        "pvci_primaryerrorcode": {
+          "type": "string",
+          "title": "Primary error code",
+          "x-ms-dataverse-attribute": "pvci_primaryerrorcode",
+          "x-ms-dataverse-type": "StringType",
+          "x-ms-schema-name": "pvci_PrimaryErrorCode",
+          "maxLength": 1000
+        },
+        "pvci_primaryerrormessage": {
+          "type": "string",
+          "title": "Primary error message",
+          "x-ms-dataverse-attribute": "pvci_primaryerrormessage",
+          "x-ms-dataverse-type": "MemoType",
+          "x-ms-schema-name": "pvci_PrimaryErrorMessage",
+          "maxLength": 1048576
+        },
+        "pvci_primaryerrortopic": {
+          "type": "string",
+          "title": "Primary error topic",
+          "x-ms-dataverse-attribute": "pvci_primaryerrortopic",
+          "x-ms-dataverse-type": "StringType",
+          "x-ms-schema-name": "pvci_PrimaryErrorTopic",
+          "maxLength": 1000
+        },
+        "pvci_usererrorcount": {
+          "type": "string",
+          "title": "User error count",
+          "x-ms-dataverse-attribute": "pvci_usererrorcount",
+          "x-ms-dataverse-type": "IntegerType",
+          "x-ms-schema-name": "pvci_UserErrorCount"
+        },
         "pvci_parsedturnsjson": {
           "type": "string",
           "title": "pvci_ParsedTurnsJson",
