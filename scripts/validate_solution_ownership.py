@@ -11,7 +11,8 @@ from xml.etree import ElementTree as ET
 
 ROOT = Path(__file__).resolve().parents[1]
 CORE = ROOT / "solution" / "pvConversationInsights" / "src"
-CODE_APP_CONFIG = ROOT / "codeapp" / "power.config.json"
+CODE_APP_CONFIG_SAMPLE = ROOT / "codeapp" / "power.config.sample.json"
+CODE_APP_SERVICES = ROOT / "codeapp" / "src" / "generated" / "services"
 RELEASE_CONFIG = ROOT / "config" / "release-packages.json"
 ALLOWED_PROGRAMMATIC_TENANT_ID = "1938ee32-a258-454c-b8db-3a928341bd69"
 
@@ -48,6 +49,11 @@ EXPECTED_CORE_REFERENCES = {
 def fail(message: str) -> None:
     print(f"ERROR: {message}", file=sys.stderr)
     raise SystemExit(1)
+
+
+def service_filename(table_name: str) -> str:
+    plural_name = f"{table_name[:-1]}ies" if table_name.endswith("y") else f"{table_name}s"
+    return f"{plural_name[0].upper()}{plural_name[1:]}Service.ts"
 
 
 def main() -> None:
@@ -107,19 +113,18 @@ def main() -> None:
     if len(app_modules) != 1:
         fail(f"Expected one core model-driven app, found {len(app_modules)}")
 
-    code_app = json.loads(CODE_APP_CONFIG.read_text(encoding="utf-8"))
+    code_app = json.loads(CODE_APP_CONFIG_SAMPLE.read_text(encoding="utf-8"))
     if code_app.get("appType") != "CodeApp":
         fail("Preview solution source is not a Power Apps code app")
-    required_tables = set(release["codeApp"]["requiredCoreTables"])
-    configured_tables = {
-        value["logicalName"]
-        for value in code_app["databaseReferences"]["default.cds"]["dataSources"].values()
+    expected_services = {
+        service_filename(table) for table in release["codeApp"]["requiredCoreTables"]
     }
-    if configured_tables != required_tables:
+    generated_services = {path.name for path in CODE_APP_SERVICES.glob("*.ts")}
+    if generated_services != expected_services:
         fail(
             "Code-app dependency ownership drift: "
-            f"missing={sorted(required_tables - configured_tables)}, "
-            f"unexpected={sorted(configured_tables - required_tables)}"
+            f"missing={sorted(expected_services - generated_services)}, "
+            f"unexpected={sorted(generated_services - expected_services)}"
         )
 
     candidate_workflow = (ROOT / ".github" / "workflows" / "candidate-release.yml").read_text(
