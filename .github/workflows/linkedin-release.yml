@@ -1,0 +1,102 @@
+name: publish LinkedIn release
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Stable GitHub Release tag, for example v1.4.0.15
+        required: true
+      dry_run:
+        description: Generate and validate without publishing to LinkedIn
+        required: true
+        type: boolean
+        default: true
+
+permissions:
+  contents: write
+
+concurrency:
+  group: linkedin-release-${{ github.event.release.tag_name || inputs.tag }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    if: github.event_name == 'workflow_dispatch' || !github.event.release.prerelease
+    environment: linkedin-production
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      LINKEDIN_ACCESS_TOKEN: ${{ secrets.LINKEDIN_ACCESS_TOKEN }}
+      LINKEDIN_AUTHOR_URN: ${{ vars.LINKEDIN_AUTHOR_URN }}
+      LINKEDIN_API_VERSION: ${{ vars.LINKEDIN_API_VERSION }}
+      RELEASE_TAG: ${{ github.event.release.tag_name || inputs.tag }}
+      DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run || false }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.RELEASE_TAG }}
+
+      - name: Validate stable release and publication state
+        id: release
+        shell: bash
+        run: |
+          set -euo pipefail
+          release_json=$(gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" \
+            --json isDraft,isPrerelease,body,url)
+          python3 - "$RELEASE_TAG" "$release_json" <<'PY'
+          import json
+          import sys
+          from pathlib import Path
+
+          tag = sys.argv[1]
+          release = json.loads(sys.argv[2])
+          manifest = json.loads(Path("site/downloads/release-manifest.json").read_text())
+          versions = {item["version"] for item in manifest["artifacts"].values()}
+          if release["isDraft"] or release["isPrerelease"]:
+              raise SystemExit("LinkedIn publishing requires a non-draft stable release")
+          if len(versions) != 1 or tag != f"v{versions.pop()}":
+              raise SystemExit("Release tag does not match the synchronized release manifest")
+          if f"<!-- linkedin-release:{tag}:published:" in release["body"]:
+              raise SystemExit(f"LinkedIn publication is already recorded for {tag}")
+          PY
+
+      - name: Generate release post
+        run: |
+          python3 scripts/generate_linkedin_post.py \
+            --version "${RELEASE_TAG#v}" \
+            --repository "$GITHUB_REPOSITORY" \
+            --pages-url "https://${GITHUB_REPOSITORY_OWNER}.github.io/${GITHUB_REPOSITORY#*/}" \
+            --output "$RUNNER_TEMP/linkedin-post.txt"
+          cat "$RUNNER_TEMP/linkedin-post.txt" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Verify public release page
+        if: env.DRY_RUN != 'true'
+        run: curl --fail --location --retry 3 "https://${GITHUB_REPOSITORY_OWNER}.github.io/${GITHUB_REPOSITORY#*/}/"
+
+      - name: Publish to LinkedIn
+        id: linkedin
+        shell: bash
+        run: |
+          set -euo pipefail
+          args=(--post-file "$RUNNER_TEMP/linkedin-post.txt")
+          if [[ "$DRY_RUN" == "true" ]]; then
+            args+=(--dry-run)
+          fi
+          post_urn=$(python3 scripts/publish_linkedin_post.py "${args[@]}")
+          if [[ "$DRY_RUN" != "true" ]]; then
+            echo "post_urn=$post_urn" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Record LinkedIn publication on GitHub Release
+        if: env.DRY_RUN != 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          marker="<!-- linkedin-release:${RELEASE_TAG}:published:${{ steps.linkedin.outputs.post_urn }} -->"
+          gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --json body --jq .body \
+            > "$RUNNER_TEMP/release-notes.md"
+          printf '\n%s\n' "$marker" >> "$RUNNER_TEMP/release-notes.md"
+          gh release edit "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" \
+            --notes-file "$RUNNER_TEMP/release-notes.md"

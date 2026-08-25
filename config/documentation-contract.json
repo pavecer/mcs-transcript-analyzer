@@ -29,8 +29,10 @@
     ".github/skills/release-documentation/SKILL.md",
     ".github/skills/release-tracking/SKILL.md",
     ".github/skills/central-transcript-collector/SKILL.md",
+    ".github/skills/linkedin-release/SKILL.md",
     ".github/workflows/build.yml",
     ".github/workflows/candidate-release.yml",
+    ".github/workflows/linkedin-release.yml",
     ".github/workflows/pages.yml",
     ".github/workflows/refresh-packages.yml",
     "CONTRIBUTING.md",
@@ -129,7 +131,10 @@
       ".github/skills/release-documentation/SKILL.md",
       "productSourceDigest",
       "candidate-release.yml",
-      "v1.3.1.0-rc.1"
+      "v1.3.1.0-rc.1",
+      "linkedin-release.yml",
+      "LINKEDIN_ACCESS_TOKEN",
+      "dry_run=true"
     ],
     "CONTRIBUTING.md": [
       "scripts/validate_documentation.py",
@@ -150,7 +155,15 @@
       "CHANGELOG.md",
       "ROADMAP.md",
       "site/index.html",
-      "python3 scripts/validate_documentation.py"
+      "python3 scripts/validate_documentation.py",
+      "publish LinkedIn release"
+    ],
+    ".github/skills/linkedin-release/SKILL.md": [
+      "generate_linkedin_post.py",
+      "linkedin-production",
+      "LINKEDIN_ACCESS_TOKEN",
+      "workflow_dispatch",
+      "3,000-character limit"
     ],
     ".github/skills/central-transcript-collector/SKILL.md": [
       "Public Package Invariant",
@@ -176,6 +189,13 @@
       "import it manually in the TPM upgrade-test tenant",
       "gh issue comment",
       "--prerelease"
+    ],
+    ".github/workflows/linkedin-release.yml": [
+      "types: [published]",
+      "LINKEDIN_ACCESS_TOKEN",
+      "generate_linkedin_post.py",
+      "linkedin-release:${RELEASE_TAG}:published",
+      "release-manifest.json"
     ],
     ".github/workflows/pages.yml": [
       "python3 scripts/validate_documentation.py"

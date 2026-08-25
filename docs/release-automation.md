@@ -66,6 +66,36 @@ Agents should load the checked-in `.github/skills/release-documentation/SKILL.md
 README, docs, release-package, or public Pages changes. The skill is guidance; the CI `site` job and
 Pages workflow run the deterministic gate and are the enforcement boundary.
 
+## LinkedIn release publication
+
+Stable GitHub Releases can publish a LinkedIn announcement through
+`.github/workflows/linkedin-release.yml`. The workflow does not use generative AI. It derives the
+copy from the exact version section in `CHANGELOG.md`, verifies that version against
+`site/downloads/release-manifest.json`, includes the public Pages and GitHub Release links, and
+enforces LinkedIn's 3,000-character limit. Prereleases are excluded.
+
+Create a GitHub environment named `linkedin-production` and configure:
+
+| Type | Name | Value |
+| --- | --- | --- |
+| Secret | `LINKEDIN_ACCESS_TOKEN` | LinkedIn OAuth token with permission to post for the author |
+| Variable | `LINKEDIN_AUTHOR_URN` | `urn:li:person:<id>` or `urn:li:organization:<id>` |
+| Variable | `LINKEDIN_API_VERSION` | Active LinkedIn API version in `YYYYMM` format |
+
+Person posts require the LinkedIn `w_member_social` permission. Organization posts require
+`w_organization_social` and an eligible LinkedIn Page role for the authenticated member. Confirm
+current headers, versions, roles, and permission requirements in the official
+[LinkedIn Posts API documentation](https://learn.microsoft.com/linkedin/marketing/community-management/shares/posts-api).
+
+Run **publish LinkedIn release** manually with `dry_run=true` before the first live post and after
+changing the author or API version. On a successful live post, the workflow stores the returned
+LinkedIn post URN in a hidden marker in the GitHub Release notes. Normal reruns then stop instead of
+posting a duplicate.
+
+The repository can automate publication after configuration, but it cannot grant LinkedIn API
+products or renew an expired OAuth authorization. Keep the token only in GitHub Secrets, rotate it
+before expiry, and use an environment approval rule if a human publication gate is preferred.
+
 ## Important deployment boundary
 
 Programmatic Power Platform and Dataverse writes are allowed only when the authenticated tenant ID

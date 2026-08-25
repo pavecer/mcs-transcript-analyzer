@@ -41,6 +41,9 @@ override the tenant-ID boundary.
 10. Generate the manifest with the implementation commit, commit release surfaces separately, and
     run `python3 scripts/validate_release_promotion.py --version <version>`.
 11. Open a PR, wait for every required check, merge, and verify Pages plus the public manifest.
+12. Publish the stable GitHub Release. The `publish LinkedIn release` workflow then generates the
+   announcement from the matching changelog section and publishes it when the
+   `linkedin-production` environment is configured. Verify its release marker and LinkedIn post.
 
 The Release Maintainer is the single mutation owner. Treat package validation, documentation/site
 validation, CI build jobs, target-tenant testing, and Pages verification as independent gates rather
