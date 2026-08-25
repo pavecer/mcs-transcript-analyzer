@@ -340,7 +340,7 @@
     .tracking-meta a { color: inherit; }
     .tracking-boundary { margin-top: 24px; padding: 20px 22px; border-left: 4px solid var(--cp-border-strong); background: var(--cp-surface-soft); color: var(--cp-text-muted); }
     .tracking-boundary strong { display: block; margin-bottom: 6px; color: var(--cp-text); }
-    .notice { margin-top: 38px; padding: 20px 22px; border-left: 4px solid var(--cp-warning); background: var(--cp-surface-soft); }
+    .notice { margin-top: 38px; padding: 20px 22px; border-left: 4px solid var(--cp-warning); background: var(--cp-surface-soft); overflow-wrap: anywhere; }
     .notice strong { display: block; margin-bottom: 4px; }
 
     footer { padding: 38px 0; border-top: 1px solid var(--cp-border); background: var(--cp-bg-elevated); }
@@ -619,7 +619,7 @@
           <div class="steps" data-reveal>
             <article class="step"><h3>Download the managed ZIP</h3><p>Keep the archive intact. Power Apps imports the ZIP directly; do not extract it.</p></article>
             <article class="step"><h3>Import in Power Apps</h3><p>Open <strong>Solutions</strong>, choose <strong>Import solution</strong>, upload the ZIP, and complete the import wizard.</p></article>
-            <article class="step"><h3>Configure connections and tenant</h3><p>Bind <code>pvci_dataversesync</code> and <code>pvci_centralcollector</code> to Dataverse, <code>pvci_licensinghttp</code> and <code>pvci_powerplatformapi</code> to the licensing API, and <code>pvci_powerplatformadminv2</code> to Power Platform for Admins V2. Then set <code>pvci_CreditReportingTenantId</code>.</p></article>
+            <article class="step"><h3>Configure connections and tenant</h3><p>Bind <code>pvci_dataversesync</code> and <code>pvci_centralcollector</code> to Dataverse, <code>pvci_licensinghttp</code> and <code>pvci_powerplatformapi</code> to the licensing API, and <code>pvci_powerplatformadminv2</code> to Power Platform for Admins V2. The two licensing references use the same endpoint and may share one valid physical connection. Then set <code>pvci_CreditReportingTenantId</code>.</p></article>
             <article class="step"><h3>Activate and run the flows</h3><p>Verify transcript, credit, inventory, governance collection, and the threshold processor with a no-op request before scheduling.</p></article>
             <article class="step"><h3>Assign and verify source access</h3><p>Grant app access, then follow the <a href="https://github.com/pavecer/mcs-transcript-analyzer/blob/main/docs/permissions-and-inventory.md">permissions and inventory checklist</a>. Each selected source must enable the collector identity and grant organization-level Read on Conversation Transcript before verification and collection can succeed.</p></article>
           </div>
@@ -643,6 +643,11 @@
             <button class="button primary" id="download-package" type="button" data-artifact="core" disabled><i data-lucide="download" aria-hidden="true"></i>Download solution ZIP</button>
             <p class="hash">SHA-256: <span id="package-hash">loading…</span></p>
           </aside>
+        </div>
+
+        <div class="notice" data-reveal>
+          <strong>First import shows &quot;Invalid connection&quot; for PVCI Licensing API or PVCI Power Platform API?</strong>
+          Do not select an existing entry whose <code>BaseResourceUrl</code> is blank. Open the row menu, choose <b>Add new connection</b>, and create <b>HTTP with Microsoft Entra ID (preauthorized)</b>. For commercial cloud, enter <code>https://licensing.powerplatform.microsoft.com/</code> for both <b>Base Resource URL</b> and <b>Microsoft Entra ID Resource URI</b>, then sign in with the intended licensing administrator. Return to the import wizard, refresh if needed, and select that valid connection for both <code>pvci_licensinghttp</code> and <code>pvci_powerplatformapi</code>. The &quot;Power Platform API&quot; row is the licensing-governance reference; it does not use <code>api.powerplatform.com</code>. See the <a href="https://github.com/pavecer/mcs-transcript-analyzer/blob/main/docs/permissions-and-inventory.md#first-import-connection-wizard">first-import connection checklist</a> for roles, DLP requirements, and recovery steps.
         </div>
 
         <div class="notice" data-reveal>

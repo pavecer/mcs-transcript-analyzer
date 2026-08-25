@@ -11,6 +11,10 @@ what it did.
 **[View the solution presentation and download the managed installer](https://pavecer.github.io/mcs-transcript-analyzer/)**
 
 Track shipped versions in [CHANGELOG.md](CHANGELOG.md) and planned work in [ROADMAP.md](ROADMAP.md).
+For a first managed import, follow the
+[connection-wizard checklist](docs/permissions-and-inventory.md#first-import-connection-wizard).
+Do not bind a licensing entry that shows `Invalid connection` or a blank `BaseResourceUrl`; create
+the preauthorized HTTP connection with both licensing-service URLs first.
 
 ---
 

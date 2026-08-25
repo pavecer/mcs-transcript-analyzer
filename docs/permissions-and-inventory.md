@@ -138,6 +138,44 @@ In the environment where PVCI is installed:
 9. Keep `PVCI Apply Credit Governance Requests (scheduled)` stopped until an empty-queue run and
    a no-op threshold request both succeed with identical before/after control values.
 
+### First-import connection wizard
+
+The managed solution cannot package physical connections or credentials. On a first import, Power
+Apps can display an automatically created **HTTP with Microsoft Entra ID (preauthorized)** entry as
+`Invalid connection` with a blank `BaseResourceUrl`. That entry is incomplete and must not be bound
+to either licensing reference.
+
+For commercial cloud, resolve the connection page as follows:
+
+1. In the import wizard, open the menu beside **PVCI Licensing API** and choose **Add new
+   connection**.
+2. Create **HTTP with Microsoft Entra ID (preauthorized)**. Enter this exact value in both fields:
+
+   ```text
+   Base Resource URL:                https://licensing.powerplatform.microsoft.com/
+   Microsoft Entra ID Resource URI:  https://licensing.powerplatform.microsoft.com/
+   ```
+
+3. Sign in with the dedicated identity that has the Power Platform licensing administration access
+   required by the licensing service and a premium Power Automate entitlement.
+4. Return to the import wizard. Refresh the connection list if the new connection is not visible.
+5. Select the new valid connection for **PVCI Licensing API** (`pvci_licensinghttp`).
+6. Select the same connection for **PVCI Power Platform API** (`pvci_powerplatformapi`) when the
+   same identity owns usage collection and governance. Both references call
+   `licensing.powerplatform.microsoft.com`; the second display name does not mean
+   `api.powerplatform.com`. Use two separately created physical connections only when ownership or
+   operational separation requires it, and configure both with the same two licensing URLs.
+7. Keep **PVCI Power Platform Admin V2** mapped to a separate **Power Platform for Admins V2**
+   connection. Map both Dataverse references to the intended Microsoft Dataverse connection.
+8. Continue the import only after all five rows show green checks.
+
+If **Add new connection** is blocked or the completed connection remains invalid, verify that the
+environment's DLP and Advanced Connector Policies allow **HTTP with Microsoft Entra ID
+(preauthorized)** and that the signing-in account has a premium Power Automate entitlement. Delete
+or ignore the incomplete blank-URL connection under **Power Automate > Data > Connections**; it
+cannot be repaired by selecting it again in the import wizard. For sovereign clouds, use the
+licensing-service audience documented for that cloud instead of the commercial-cloud URL.
+
 ## Understand the current inventory boundary
 
 The credit collector calls three licensing projections:
