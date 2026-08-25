@@ -71,12 +71,29 @@ jobs:
             --output "$RUNNER_TEMP/linkedin-post.txt"
           cat "$RUNNER_TEMP/linkedin-post.txt" >> "$GITHUB_STEP_SUMMARY"
 
+      - name: Check LinkedIn publication configuration
+        id: configuration
+        shell: bash
+        run: |
+          set -euo pipefail
+          configured=true
+          missing=()
+          [[ -n "$LINKEDIN_ACCESS_TOKEN" ]] || { configured=false; missing+=(LINKEDIN_ACCESS_TOKEN); }
+          [[ -n "$LINKEDIN_AUTHOR_URN" ]] || { configured=false; missing+=(LINKEDIN_AUTHOR_URN); }
+          [[ -n "$LINKEDIN_API_VERSION" ]] || { configured=false; missing+=(LINKEDIN_API_VERSION); }
+          echo "configured=$configured" >> "$GITHUB_OUTPUT"
+          if [[ "$DRY_RUN" != "true" && "$configured" != "true" ]]; then
+            missing_list=$(IFS=,; echo "${missing[*]}")
+            echo "::notice title=LinkedIn publication skipped::Missing linkedin-production settings: $missing_list. Generated copy was validated; no LinkedIn request or release marker was created."
+          fi
+
       - name: Verify public release page
-        if: env.DRY_RUN != 'true'
+        if: ${{ env.DRY_RUN != 'true' && steps.configuration.outputs.configured == 'true' }}
         run: curl --fail --location --retry 3 "https://${GITHUB_REPOSITORY_OWNER}.github.io/${GITHUB_REPOSITORY#*/}/"
 
       - name: Publish to LinkedIn
         id: linkedin
+        if: ${{ env.DRY_RUN == 'true' || steps.configuration.outputs.configured == 'true' }}
         shell: bash
         run: |
           set -euo pipefail
@@ -90,7 +107,7 @@ jobs:
           fi
 
       - name: Record LinkedIn publication on GitHub Release
-        if: env.DRY_RUN != 'true'
+        if: ${{ env.DRY_RUN != 'true' && steps.configuration.outputs.configured == 'true' }}
         shell: bash
         run: |
           set -euo pipefail
