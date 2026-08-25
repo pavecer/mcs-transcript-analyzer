@@ -1,15 +1,20 @@
-# Daily release package automation
+# Release package automation
 
-The public site publishes two independent managed Power Platform solutions:
+The `2.0.0.5` candidate contract contains exactly three managed Power Platform solutions:
 
 | Package | Solution | Support status | Import order |
 | --- | --- | --- | --- |
-| Core | `pvConversationInsights` | Supported model-driven experience | First |
-| Code app | `pvConversationInsightsCodeApp` | Power Apps code-app preview, unsupported | Second |
+| Core | `pvConversationInsights` | Required transcript/shared runtime and supported model-driven experience | First for clean install; second for `1.4.0.15` upgrade |
+| Credits | `pvConversationInsightsCredits` | Optional licensing runtime only | Second for clean install; first for `1.4.0.15` upgrade |
+| Code app | `pvConversationInsightsCodeApp` | Optional Power Apps code-app preview, unsupported | Last |
 
-The code app stays separate so environments can use the supported model-driven app without
-enabling preview technology. Its managed solution depends on the 14 core Dataverse tables used by
-the transcript, flow, inventory, governance, credit, capacity, privacy, and sync experiences.
+Core intentionally retains every table, plugin, Custom API, role, the model-driven app, four
+transcript/shared flows, and three non-licensing references. Credits owns only three credit flows,
+two licensing references, and the required credit tenant variable definition; managed candidates
+must contain no environment-variable current value. The code app stays separate so environments can use the supported
+model-driven app without preview technology. This candidate has passed PVE package and live-runtime
+validation, and the user-performed manual Contoso TPM upgrade passed. The public site must continue serving the
+immutable two-package `1.4.0.15` release until promotion.
 
 ## Automation design
 
@@ -22,12 +27,13 @@ manually. It uses the following sequence:
 3. Exit successfully without touching Power Platform when the commits match.
 4. Authenticate to Power Platform by GitHub OIDC. There is no client secret.
 5. Build the committed code app and deploy it to `pvConversationInsightsCodeApp`.
-6. Export both source solutions as managed ZIPs.
+6. Export all three source solutions as managed ZIPs.
 7. Verify solution identity, version, managed state, embedded JSON Viewer PCF, embedded code app,
    ZIP integrity, and SHA-256 hashes.
-8. Commit only `site/downloads/`. The existing Pages workflow publishes that commit.
+8. Upload the synchronized `output/candidate/` set as a retained workflow artifact. Do not modify
+   `site/downloads/` or deploy Pages from the candidate refresh.
 
-Failures stop before the artifact commit. The previously validated downloads remain live.
+Failures stop before candidate upload. The previously validated downloads remain live.
 
 ## Issue candidate releases
 
@@ -43,6 +49,11 @@ managed solution from a managed target environment. The GitHub prerelease asset 
 distributed to affected testers. The user imports and upgrades it manually in TPM; automation must
 not authenticate to or write to TPM. Never overwrite the stable `1.3.0.0` ZIP. After manual
 validation, promote the same fix through the normal versioned release process.
+
+This issue-fix workflow intentionally builds one patched core package from an immutable stable
+base. It is not the three-package feature-candidate pipeline and must not be used to publish or
+promote `2.0.0.5`. Three-package candidates are exported together to `output/candidate/`, validated
+with `scripts/validate_candidate_packages.py`, and handed to the user for manual TPM testing.
 
 ## Release documentation gate
 
@@ -103,6 +114,9 @@ is `1938ee32-a258-454c-b8db-3a928341bd69`. The TPM tenant is reserved for manual
 testing. Automation may build packages and perform read-only checks for TPM, but the user performs
 all imports, publishes, connection mappings, and other changes there. Tenant and environment names,
 URLs, account domains, and PAC profile aliases are not authorization boundaries.
+All Dataverse-mutating transcript utilities call `require_authorized_config` or
+`require_authorized_tenant` before their first write. `validate_solution_ownership.py` keeps the
+known write-entry-point inventory and fails if any listed script loses that guard.
 
 The workflow deploys the code app because `pac code push` supports deterministic solution
 targeting under the same PAC authentication used for export.
@@ -177,16 +191,24 @@ Configure these repository **Actions variables** (not secrets):
 | `POWER_PLATFORM_ENVIRONMENT_URL` | Dataverse organization URL |
 
 The workflow has `id-token: write` solely to request the short-lived federated token and
-`contents: write` solely to commit generated package files.
+`contents: read` because candidate exports are uploaded as artifacts rather than committed.
 
-## Normal release flow
+## Three-package candidate and promotion flow
 
-1. Deploy and verify core changes in PVE Dev when the core solution changed.
-2. Commit source changes to `main`.
-3. Wait for the next daily run, or start **refresh release packages** manually with `force=true`.
-4. Confirm the generated artifact commit and Pages deployment succeeded.
-5. Download both public ZIPs and verify their hashes against `release-manifest.json`.
-6. Before a versioned release, import core and then code app into a clean sandbox.
+1. Deploy and verify changed source solutions in PVE Dev.
+2. Export core, credits, and code app to `output/candidate/` with synchronized versions and unique
+  filenames; never place unapproved candidates in `site/downloads/`.
+3. Run `scripts/validate_solution_ownership.py` and
+  `scripts/validate_candidate_packages.py --version <version>`.
+4. For a clean install, test core, optional credits, then optional code app. For an upgrade from
+  `1.4.0.15`, manually test credits first, core managed upgrade second, and code app last.
+5. Record PVE and TPM evidence separately. PVE success does not imply TPM validation.
+6. After manual target approval, commit package inputs first. Copy the exact validated candidate
+  bytes into `site/downloads/`; do not rebuild them.
+7. Generate the stable manifest with the implementation commit, commit publication surfaces
+  separately, and run `scripts/validate_release_promotion.py --version <version>`.
+8. Merge only after required checks pass, then verify Pages, the public manifest, and all three
+  public downloads.
 
 For an identity/export smoke test that must not deploy code-app source, run manually with
 `force=true` and `export_only=true`. Scheduled runs always deploy the committed code app before
@@ -194,7 +216,7 @@ exporting.
 
 ## Version changes
 
-The core and code-app packages use one synchronized four-part release train:
+The core, credit add-on, and code-app packages use one synchronized four-part release train:
 
 | Change | Version example | Use |
 | --- | --- | --- |
@@ -209,19 +231,20 @@ trails depend on the version being immutable.
 
 For every version change:
 
-1. Update both live Dataverse solutions in PVE Dev with `pac solution online-version`.
+1. Update all three live Dataverse solutions in PVE Dev with `pac solution online-version`.
 2. Update the core source versions in `solution-definition.json` and `src/Other/Solution.xml`.
-3. Update both package versions, filenames, and the code-app core-table dependency contract in
+3. Update all three package versions, filenames, ownership contracts, and the code-app core-table dependency contract in
   `config/release-packages.json`.
 4. Update the public page's version and install content.
 5. Review all indexed documentation surfaces, update the documentation digest when product inputs
   changed, and run `scripts/validate_documentation.py`.
-6. Export both managed ZIPs, regenerate `release-manifest.json`, and run
-  `scripts/validate_site.py`.
-7. Import core first and code app second into a clean sandbox. For an existing installation,
-  confirm both imports are recognized as upgrades and retained data remains available.
+6. Export all three managed candidates to `output/candidate/` and run candidate validation. Do not
+   regenerate the stable manifest before target-tenant approval.
+7. Test clean install and previous-version upgrade in their documented orders. Confirm all imports
+   are recognized correctly, workflow identities are preserved, and retained data remains
+   available.
 8. Publish through a pull request. Confirm CI, the refresh workflow, Pages deployment, public
-  manifest versions and hashes, and both public downloads.
+  manifest versions and hashes, and all three public downloads.
 
 The release validator rejects filename/version drift, unsynchronized core source versions,
 unexpected code-app dependencies, stale manifests, and packages exported from a live solution

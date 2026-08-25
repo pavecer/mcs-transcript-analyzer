@@ -1,7 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
+import { getContext } from "@microsoft/power-apps/app";
 import { Pvci_transcriptsessionsService } from "./generated/services/Pvci_transcriptsessionsService";
 import { Pvci_transcriptturnsService } from "./generated/services/Pvci_transcriptturnsService";
 import { Pvci_environmentinventoriesService } from "./generated/services/Pvci_environmentinventoriesService";
+import { Pvci_creditsyncrunsService } from "./generated/services/Pvci_creditsyncrunsService";
+import { SolutionsService } from "./generated/services/SolutionsService";
 import { JsonTree } from "./components/JsonTree";
 import { Timeline } from "./components/Timeline";
 import { ToolCalls } from "./components/ToolCalls";
@@ -12,6 +15,8 @@ import { EssOps } from "./components/EssOps";
 import { Trends } from "./components/Trends";
 import { Credits } from "./components/Credits";
 import { InventoryManagement } from "./components/InventoryManagement";
+import { classifyCreditCapability, withTimeout, type CreditCapability } from "./lib/creditCapability";
+import { isCrossEnvironmentCollectionEnabled, scopeRowsToHost } from "./lib/transcriptScope";
 import {
   fmtDuration,
   fmtMs,
@@ -63,6 +68,7 @@ const TURN_FIELDS = [
 type Tab = "essops" | "replay" | "tools" | "knowledge" | "flows" | "conversation" | "reasoning" | "raw";
 type Theme = "light" | "dark";
 type View = "sessions" | "trends" | "inventory" | "credits";
+type CreditCapabilityState = "idle" | "checking" | "error" | CreditCapability;
 
 const THEME_STORAGE_KEY = "pvci-theme";
 
@@ -103,7 +109,22 @@ export default function App() {
   const [jsonFilter, setJsonFilter] = useState("");
   const [view, setView] = useState<View>("sessions");
   const [creditsSidebarTarget, setCreditsSidebarTarget] = useState<HTMLDivElement | null>(null);
+  const [creditCapability, setCreditCapability] = useState<CreditCapabilityState>("idle");
+  const [creditCheckVersion, setCreditCheckVersion] = useState(0);
   const [theme, setTheme] = useState<Theme>(initialTheme);
+  const [hostEnvironmentId, setHostEnvironmentId] = useState<string>();
+  const [enabledCollectorEnvironmentIds, setEnabledCollectorEnvironmentIds] = useState<string[]>([]);
+
+  const crossEnvironmentEnabled = useMemo(
+    () => isCrossEnvironmentCollectionEnabled(enabledCollectorEnvironmentIds, hostEnvironmentId),
+    [enabledCollectorEnvironmentIds, hostEnvironmentId],
+  );
+
+  useEffect(() => {
+    void getContext()
+      .then((context) => setHostEnvironmentId(context.app.environmentId))
+      .catch(() => undefined);
+  }, []);
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
@@ -113,6 +134,45 @@ export default function App() {
       // The selected theme remains active for this session.
     }
   }, [theme]);
+
+  useEffect(() => {
+    if (view !== "credits") return;
+    let cancelled = false;
+
+    void (async () => {
+      setCreditCapability("checking");
+      try {
+        const solutionResult = await withTimeout(
+          SolutionsService.getAll({
+            select: ["solutionid"],
+            filter: "uniquename eq 'pvConversationInsightsCredits'",
+            top: 1,
+          }),
+          15_000,
+        );
+        const addonInstalled = (solutionResult.data ?? []).length > 0;
+        let hasSyncRun = false;
+        if (addonInstalled) {
+          const syncResult = await withTimeout(
+            Pvci_creditsyncrunsService.getAll({
+              select: ["pvci_creditsyncrunid"],
+              filter: "pvci_status eq 'success'",
+              top: 1,
+            }),
+            15_000,
+          );
+          hasSyncRun = (syncResult.data ?? []).length > 0;
+        }
+        if (!cancelled) setCreditCapability(classifyCreditCapability(addonInstalled, hasSyncRun));
+      } catch {
+        if (!cancelled) setCreditCapability("error");
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [view, creditCheckVersion]);
 
   useEffect(() => {
     void (async () => {
@@ -126,18 +186,22 @@ export default function App() {
         const environmentNames = new Map<string, string>();
         try {
           const inventoryRes = await Pvci_environmentinventoriesService.getAll({
-            select: ["pvci_environmentid", "pvci_displayname"],
+            select: ["pvci_environmentid", "pvci_displayname", "pvci_transcriptcollectorenabled"],
             top: 500,
           });
           const inventoryRows = (inventoryRes.data ?? []) as unknown as Array<{
             pvci_environmentid?: string;
             pvci_displayname?: string;
+            pvci_transcriptcollectorenabled?: boolean;
           }>;
           inventoryRows.forEach((environment) => {
             if (environment.pvci_environmentid && environment.pvci_displayname) {
               environmentNames.set(environment.pvci_environmentid.toLowerCase(), environment.pvci_displayname);
             }
           });
+          setEnabledCollectorEnvironmentIds(inventoryRows
+            .filter((environment) => environment.pvci_transcriptcollectorenabled && environment.pvci_environmentid)
+            .map((environment) => environment.pvci_environmentid!));
         } catch {
           // Session lineage still provides a friendly-name fallback when inventory is unavailable.
         }
@@ -156,12 +220,19 @@ export default function App() {
     })();
   }, []);
 
+  const visibleSessions = useMemo(
+    () => scopeRowsToHost(sessions, hostEnvironmentId, crossEnvironmentEnabled),
+    [sessions, hostEnvironmentId, crossEnvironmentEnabled],
+  );
+
+  const activeEnvironmentFilter = crossEnvironmentEnabled ? environmentFilter : "*";
+
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    return sessions.filter((session) => {
+    return visibleSessions.filter((session) => {
       if (hideTest && session.pvci_istestmode) return false;
       if (essOnly && !isEssSession(session)) return false;
-      if (environmentFilter !== "*" && sourceEnvironmentKey(session) !== environmentFilter) return false;
+      if (activeEnvironmentFilter !== "*" && sourceEnvironmentKey(session) !== activeEnvironmentFilter) return false;
       if (!q) return true;
       return [
         session.pvci_userdisplayname, session.pvci_userupn, session.pvci_channel, session.pvci_initialusermessage,
@@ -169,7 +240,7 @@ export default function App() {
         session.pvci_errorcategory, session.pvci_knowledgecallcount ? "knowledge" : undefined,
       ].some((value) => (value ?? "").toLowerCase().includes(q));
     });
-  }, [sessions, search, hideTest, essOnly, environmentFilter]);
+  }, [visibleSessions, search, hideTest, essOnly, activeEnvironmentFilter]);
 
   const activeSession = selected && filtered.some((session) => session.pvci_transcriptsessionid === selected.pvci_transcriptsessionid)
     ? selected
@@ -218,11 +289,18 @@ export default function App() {
 
   const environmentOptions = useMemo(() => {
     const options = new Map<string, string>();
-    sessions.forEach((s) => {
+    visibleSessions.forEach((s) => {
       options.set(sourceEnvironmentKey(s), sourceEnvironmentLabel(s));
     });
     return [...options.entries()].sort((a, b) => a[1].localeCompare(b[1]));
-  }, [sessions]);
+  }, [visibleSessions]);
+
+  const handleCollectorStateChange = (environmentId: string, enabled: boolean) => {
+    if (!enabled) setEnvironmentFilter("*");
+    setEnabledCollectorEnvironmentIds((current) => enabled
+      ? [...new Set([...current, environmentId])]
+      : current.filter((id) => id.toLowerCase() !== environmentId.toLowerCase()));
+  };
 
   return (
     <div className={`app ${view}-view`}>
@@ -270,12 +348,12 @@ export default function App() {
               <input type="checkbox" checked={essOnly} onChange={(e) => setEssOnly(e.target.checked)} />
               ESS agents only
             </label>
-            <select className="search" value={environmentFilter} onChange={(e) => setEnvironmentFilter(e.target.value)}>
+            {crossEnvironmentEnabled && <select className="search" value={environmentFilter} onChange={(e) => setEnvironmentFilter(e.target.value)}>
               <option value="*">All environments</option>
               {environmentOptions.map(([id, label]) => (
                 <option key={id} value={id}>{label}</option>
               ))}
-            </select>
+            </select>}
 
             <div className="session-list">
               {loadingSessions && <div className="muted pad">Loading…</div>}
@@ -326,13 +404,44 @@ export default function App() {
 
         {view === "trends" && (
           <>
-            <Trends sessions={sessions} loading={loadingSessions} />
+            <Trends key={crossEnvironmentEnabled ? "cross" : "local"} sessions={visibleSessions} loading={loadingSessions} allowEnvironmentSelection={crossEnvironmentEnabled} />
           </>
         )}
 
-        {view === "credits" && <Credits sidebarTarget={creditsSidebarTarget} />}
+        {view === "credits" && creditCapability === "checking" && (
+          <div className="capability-state muted">Checking Copilot Credit availability…</div>
+        )}
 
-        {view === "inventory" && <InventoryManagement />}
+        {view === "credits" && creditCapability === "unavailable" && (
+          <div className="capability-state">
+            <span className="eyebrow">Optional add-on</span>
+            <h2>Copilot Credit reporting is not installed</h2>
+            <p>Transcript analysis remains fully available. Install the Credit runtime add-on to enable usage, capacity, and governance reporting.</p>
+            <a className="capability-action" href="https://github.com/pavecer/mcs-transcript-analyzer/releases/latest" target="_blank" rel="noreferrer">Get the Credit add-on</a>
+          </div>
+        )}
+
+        {view === "credits" && creditCapability === "setup-required" && (
+          <div className="capability-state">
+            <span className="eyebrow">Setup required</span>
+            <h2>Copilot Credit reporting is installed</h2>
+            <p>Map the two licensing connections and run the packaged credit collection flow to initialize this workspace.</p>
+            <button type="button" className="capability-action" onClick={() => setCreditCheckVersion((version) => version + 1)}>Check again</button>
+          </div>
+        )}
+
+        {view === "credits" && creditCapability === "error" && (
+          <div className="capability-state">
+            <span className="eyebrow">Availability check failed</span>
+            <h2>Copilot Credit status could not be verified</h2>
+            <p>Confirm that your security role can read installed solutions, then retry.</p>
+            <button type="button" className="capability-action" onClick={() => setCreditCheckVersion((version) => version + 1)}>Retry</button>
+          </div>
+        )}
+
+        {view === "credits" && creditCapability === "ready" && <Credits key={crossEnvironmentEnabled ? "cross" : "local"} sidebarTarget={creditsSidebarTarget} allowEnvironmentSelection={crossEnvironmentEnabled} hostEnvironmentId={hostEnvironmentId} />}
+
+        {view === "inventory" && <InventoryManagement hostEnvironmentId={hostEnvironmentId} onCollectorStateChange={handleCollectorStateChange} />}
 
         {view === "sessions" && !activeSession && !loadingSessions && <div className="muted pad">No sessions match the current filters.</div>}
 

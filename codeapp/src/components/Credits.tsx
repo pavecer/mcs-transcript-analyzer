@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
+import { resolveEnvironmentFilter } from "../lib/transcriptScope";
 import { CreditTrend, HBar } from "./Chart";
 import { Pvci_agentinventoriesService } from "../generated/services/Pvci_agentinventoriesService";
 import { Pvci_agentthresholdsnapshotsService } from "../generated/services/Pvci_agentthresholdsnapshotsService";
@@ -113,7 +114,11 @@ type ResourceSummary = {
   facts: number;
 };
 
-export function Credits({ sidebarTarget }: { sidebarTarget: HTMLElement | null }) {
+export function Credits({ sidebarTarget, allowEnvironmentSelection, hostEnvironmentId }: {
+  sidebarTarget: HTMLElement | null;
+  allowEnvironmentSelection: boolean;
+  hostEnvironmentId?: string;
+}) {
   const [usage, setUsage] = useState<Pvci_creditusages[]>([]);
   const [capacity, setCapacity] = useState<Pvci_creditcapacitysnapshots[]>([]);
   const [agents, setAgents] = useState<Pvci_agentinventories[]>([]);
@@ -144,6 +149,7 @@ export function Credits({ sidebarTarget }: { sidebarTarget: HTMLElement | null }
   const [periodGrain, setPeriodGrain] = useState<PeriodGrain>("week");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const activeEnvironment = resolveEnvironmentFilter(environment, hostEnvironmentId, allowEnvironmentSelection);
 
   useEffect(() => {
     let cancelled = false;
@@ -218,12 +224,12 @@ export function Credits({ sidebarTarget }: { sidebarTarget: HTMLElement | null }
   const revealUserNames = privacy?.pvci_revealusernames === true;
 
   const environmentScopedUsage = useMemo(
-    () => usage.filter((row) => environment === "*" || sameId(row.pvci_environmentid, environment)),
-    [usage, environment]
+    () => usage.filter((row) => activeEnvironment === "*" || sameId(row.pvci_environmentid, activeEnvironment)),
+    [usage, activeEnvironment]
   );
   const environmentScopedAgents = useMemo(
-    () => agents.filter((row) => environment === "*" || sameId(row.pvci_environmentid, environment)),
-    [agents, environment]
+    () => agents.filter((row) => activeEnvironment === "*" || sameId(row.pvci_environmentid, activeEnvironment)),
+    [agents, activeEnvironment]
   );
   const agentHarnessByKey = useMemo(() => {
     const values = new Map<string, Exclude<HarnessFilter, "*">>();
@@ -321,21 +327,21 @@ export function Credits({ sidebarTarget }: { sidebarTarget: HTMLElement | null }
   }, [agentHarnessByKey, environmentAgents, environmentUsage, latestThresholdByKey]);
   const scopedThresholds = useMemo(
     () => [...latestThresholdByKey.values()].filter((row) => {
-      if (environment !== "*" && !sameId(row.pvci_environmentid, environment)) return false;
+      if (activeEnvironment !== "*" && !sameId(row.pvci_environmentid, activeEnvironment)) return false;
       const key = resourceIdentityKey(row.pvci_environmentid, row.pvci_resourceid ?? "unknown");
       if (harness !== "*" && (agentHarnessByKey.get(key) ?? "unknown") !== harness) return false;
       return risk === "*" || thresholdRisk(row) === risk;
     }).sort((left, right) => riskRank(thresholdRisk(left)) - riskRank(thresholdRisk(right))
       || thresholdUtilization(right) - thresholdUtilization(left)),
-    [agentHarnessByKey, environment, harness, latestThresholdByKey, risk]
+    [activeEnvironment, agentHarnessByKey, harness, latestThresholdByKey, risk]
   );
   const scopedUsage = useMemo(
     () => environmentUsage.filter((row) => resource === "*" || resourceKey(row) === resource),
     [environmentUsage, resource]
   );
   const scopedCapacity = useMemo(
-    () => capacity.filter((row) => environment === "*" || sameId(row.pvci_environmentid, environment)),
-    [capacity, environment]
+    () => capacity.filter((row) => activeEnvironment === "*" || sameId(row.pvci_environmentid, activeEnvironment)),
+    [capacity, activeEnvironment]
   );
   const userSummaries = useMemo(() => {
     const summaries = new Map<string, { label: string; billed: number; nonbilled: number; facts: number; status: string }>();
@@ -383,8 +389,8 @@ export function Credits({ sidebarTarget }: { sidebarTarget: HTMLElement | null }
     ? null
     : userSummaries.find(([key]) => key === selectedUser)?.[1].label ?? selectedUser;
   const environmentSessions = useMemo(
-    () => correlationSessions.filter((session) => environment === "*" || sameId(session.pvci_environmentid, environment)),
-    [correlationSessions, environment]
+    () => correlationSessions.filter((session) => activeEnvironment === "*" || sameId(session.pvci_environmentid, activeEnvironment)),
+    [correlationSessions, activeEnvironment]
   );
   const agentSessions = useMemo(
     () => resource === "*"
@@ -500,9 +506,9 @@ export function Credits({ sidebarTarget }: { sidebarTarget: HTMLElement | null }
     (latest, row) => !latest || (row.pvci_usagedate ?? "") > latest ? row.pvci_usagedate : latest,
     undefined
   );
-  const globalScopeLabel = environment === "*"
+  const globalScopeLabel = activeEnvironment === "*"
     ? "All environments"
-    : environmentOptions.find(([id]) => id === environment)?.[1] ?? environment;
+    : environmentOptions.find(([id]) => id === activeEnvironment)?.[1] ?? activeEnvironment;
   const hasScopedSelection = resource !== "*" || selectedUser !== "*";
 
   const setUserNameDisclosure = async (reveal: boolean) => {
@@ -608,10 +614,10 @@ export function Credits({ sidebarTarget }: { sidebarTarget: HTMLElement | null }
         value={navigatorSearch}
         onChange={(event) => setNavigatorSearch(event.target.value)}
       />
-      <select className="search" value={environment} onChange={(event) => { setEnvironment(event.target.value); setResource("*"); }}>
+      {allowEnvironmentSelection && <select className="search" value={environment} onChange={(event) => { setEnvironment(event.target.value); setResource("*"); }}>
         <option value="*">All environments</option>
         {environmentOptions.map(([id, label]) => <option key={id} value={id}>{label}</option>)}
-      </select>
+      </select>}
       <select className="search" value={harness} onChange={(event) => { setHarness(event.target.value as HarnessFilter); setResource("*"); }}>
         <option value="*">All harness evidence</option>
         <option value="github_copilot">GitHub Copilot harness</option>

@@ -26,7 +26,7 @@ from urllib.parse import urlparse
 import requests
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from dv_token import get_token_from_config  # noqa: E402
+from dv_token import get_token_from_config, require_authorized_config  # noqa: E402
 
 SESSIONS = "pvci_transcriptsessions"
 TURNS = "pvci_transcriptturns"
@@ -1065,6 +1065,7 @@ def main() -> None:
                     help="Rewrite transcripts already ingested (default: skip them)")
     ap.add_argument("--limit", type=int, default=None)
     args = ap.parse_args()
+    require_authorized_config(args.config)
 
     token, dv_url = get_token_from_config(args.config)
     dv = Dv(f"{dv_url}/api/data/v9.1", token)

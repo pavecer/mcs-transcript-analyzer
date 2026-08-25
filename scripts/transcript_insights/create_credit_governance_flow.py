@@ -11,7 +11,7 @@ from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from create_sync_flow import Dv  # noqa: E402
-from dv_token import get_token_from_config  # noqa: E402
+from dv_token import get_token_from_config, require_authorized_config  # noqa: E402
 
 
 SOLUTION = "pvConversationInsights"
@@ -167,6 +167,7 @@ def main() -> None:
     parser.add_argument("--http-connection-id")
     parser.add_argument("--activate", action="store_true")
     args = parser.parse_args()
+    require_authorized_config(args.config)
 
     config = json.loads(Path(args.config).read_text(encoding="utf-8"))
     token, dv_url = get_token_from_config(args.config)

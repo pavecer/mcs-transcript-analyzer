@@ -1,12 +1,15 @@
 {
   "schemaVersion": 1,
-  "productSourceDigest": "052e90fae973544c680930233eaa3da98de5ea2c57b99f06de8df6882eb73677",
+  "productSourceDigest": "94499c56eb100c13e467ed02e4d66e8f3a6be0f68df5ccd9c7a5b8f1ce9c1b4b",
   "productInputs": [
     "config/release-packages.json",
     "solution/pvConversationInsights/solution-definition.json",
+    "codeapp/src/App.tsx",
     "codeapp/src/components/Credits.tsx",
     "codeapp/src/components/InventoryManagement.tsx",
+    "codeapp/src/lib/transcriptScope.ts",
     "codeapp/src/lib/thresholdRequestState.ts",
+    "codeapp/src/lib/creditCapability.ts",
     "plugin/ImportCreditUsageBatch.cs",
     "plugin/ThresholdChangeRequestGuard.cs",
     "plugin/ImportCentralTranscriptBatch.cs",
@@ -53,11 +56,16 @@
   ],
   "surfaceCoverage": {
     "CHANGELOG.md": [
+      "Unreleased - 2.0.0.5 candidate",
+      "pvConversationInsightsCredits-managed-2.0.0.5.zip",
+      "Credits resource reporting remain scoped",
       "1.3.0.0",
       "pvConversationInsights-managed-1.3.0.0.zip",
       "release-manifest.json"
     ],
     "ROADMAP.md": [
+      "Three-package 2.0 candidate promotion",
+      "manual Contoso TPM upgrade passed",
       "Replace pre-authorized collection with zero-touch onboarding",
       "Detailed cross-environment agent enrichment",
       "Explicitly out of scope for the current product boundary",
@@ -72,12 +80,19 @@
       "create_credit_governance_flow.py",
       "create_credit_governance_processor_flow.py",
       "pvci_thresholdchangerequest"
+      ,"pvConversationInsightsCredits"
+      ,"Setup required"
+      ,"discovery and verification do not enable collection"
+      ,"Credits resource reporting remain scoped"
     ],
     "docs/architecture.md": [
+      "Candidate solution boundaries",
+      "pvConversationInsightsCredits",
       "PVCI Collect Credit Governance",
       "PVCI Apply Credit Governance Requests",
       "PVCI Credit Administrator",
       "pvci_thresholdchangerequest"
+      ,"Credits resource reporting"
     ],
     "docs/api-reference.md": [
       "https://licensing.powerplatform.microsoft.com/",
@@ -86,6 +101,8 @@
       "AppliedUnverified"
     ],
     "docs/credit-reporting.md": [
+      "optional `pvConversationInsightsCredits` add-on",
+      "Setup required",
       "Critical",
       "High",
       "Watch",
@@ -96,6 +113,7 @@
       "Per-user Copilot Studio limits"
     ],
     "docs/data-model.md": [
+      "optional `pvConversationInsightsCredits` solution owns no schema",
       "{customTableCount} custom Dataverse tables",
       "per-resource threshold",
       "AppliedUnverified"
@@ -107,25 +125,40 @@
       "Environment allocation, TenantPool, and PayGo mutation remain out of scope"
     ],
     "docs/operations.md": [
+      "Managed 2.0.0.5 candidate installation and upgrade",
+      "pvConversationInsightsCredits-managed-2.0.0.5.zip",
       "PVCI Credit Administrator",
       "pvci_powerplatformapi",
       "create_credit_governance_flow.py",
       "create_credit_governance_processor_flow.py",
       "AppliedUnverified"
+      ,"status never imply this consent"
+      ,"Credits resource reporting to the host environment"
     ],
     "docs/permissions-and-inventory.md": [
+      "Optional `pvConversationInsightsCredits`",
+      "transcript-only operation",
       "PVCI Credit Administrator",
       "pvci_powerplatformapi",
       "PVCI Apply Credit Governance Requests",
       "all three collectors"
+      ,"data-movement consent"
+      ,"Credits resource reporting stay scoped to the host environment"
     ],
     "scripts/transcript_insights/README.md": [
+      "exactly three managed candidates",
       "{customTableCount} custom tables",
       "PVCI Credit Administrator",
       "create_credit_governance_flow.py",
       "create_credit_governance_processor_flow.py"
+      ,"discovery and a readable verification probe are not consent"
+      ,"Credits resource reporting are scoped"
+      ,"require_authorized_tenant"
     ],
     "docs/release-automation.md": [
+      "exactly three managed Power Platform solutions",
+      "validate_candidate_packages.py",
+      "validate_release_promotion.py",
       "config/documentation-contract.json",
       "scripts/validate_documentation.py",
       ".github/skills/release-documentation/SKILL.md",
@@ -134,7 +167,8 @@
       "v1.3.1.0-rc.1",
       "linkedin-release.yml",
       "LINKEDIN_ACCESS_TOKEN",
-      "dry_run=true"
+      "dry_run=true",
+      "require_authorized_config"
     ],
     "CONTRIBUTING.md": [
       "scripts/validate_documentation.py",
@@ -152,6 +186,7 @@
       "python3 scripts/validate_site.py"
     ],
     ".github/skills/release-tracking/SKILL.md": [
+      "all three package artifacts",
       "CHANGELOG.md",
       "ROADMAP.md",
       "site/index.html",
@@ -167,15 +202,16 @@
     ],
     ".github/skills/central-transcript-collector/SKILL.md": [
       "Public Package Invariant",
-      "exactly two managed product solutions",
+      "three-solution ownership",
       "ListRecordsWithOrganization",
       "pvci_centralcollector",
       "validate_site.py",
       "must not package hardcoded source"
     ],
     ".github/instructions/solution-boundaries.instructions.md": [
-      "exactly two managed product solutions",
+      "exactly three managed product solutions",
       "pvConversationInsights",
+      "pvConversationInsightsCredits",
       "pvConversationInsightsCodeApp",
       "generally available selected-environment actions",
       "1938ee32-a258-454c-b8db-3a928341bd69",
@@ -203,10 +239,13 @@
     "site/README.md": [
       "scripts/validate_documentation.py --list-surfaces",
       "scripts/validate_documentation.py --print-digest",
-      "smoke-test all {workflowCount} flows",
+      "smoke-test all 7 flows",
       ".github/skills/release-documentation/SKILL.md"
     ],
     "site/index.html": [
+      "2.0.0.5 candidate architecture",
+      "pvConversationInsightsCredits",
+      "Candidate, not shipped",
       "id=\"credits\"",
       "Actual billed and non-billed",
       "Spend-risk bands",
@@ -220,6 +259,9 @@
       "Replace pre-authorized collection with zero-touch onboarding",
       "Detailed cross-environment agent enrichment",
       "CHANGELOG.md"
+      ,"Discovery and verification are not consent"
+      ,"disabling it stops future imports but does not delete records already copied"
+      ,"Credits resource reporting stay host-scoped"
     ]
   }
 }

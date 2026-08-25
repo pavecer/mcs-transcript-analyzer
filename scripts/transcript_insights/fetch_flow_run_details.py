@@ -19,7 +19,7 @@ from urllib.parse import quote
 import requests
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from dv_token import get_token_from_config  # noqa: E402
+from dv_token import get_token_from_config, require_authorized_config  # noqa: E402
 
 FLOW_API = "https://api.flow.microsoft.com"
 FLOW_RESOURCE = "https://service.flow.microsoft.com/"
@@ -149,6 +149,7 @@ def main() -> None:
     ap.add_argument("--run-name", default=None, help="Fetch only this correlated run name")
     ap.add_argument("--refresh", action="store_true", help="Re-fetch runs already stored")
     args = ap.parse_args()
+    require_authorized_config(args.config)
 
     cfg = json.loads(Path(args.config).read_text(encoding="utf-8"))
     env_id = cfg["environmentId"]

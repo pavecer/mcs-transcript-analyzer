@@ -8,12 +8,23 @@ Last reviewed: 2026-08-25
 
 ## Now
 
+### Three-package 2.0 candidate promotion
+
+- **Status:** All three `2.0.0.5` solutions are deployed; their tenant-neutral managed exports, hosted PVE UI smoke, and user-performed manual Contoso TPM upgrade passed; stable promotion remains pending
+- **Goal:** Separate optional licensing runtime from required transcript/shared core without moving schema, APIs, roles, or data ownership and without breaking existing credit workflow identities.
+- **Exit criteria:** A manual TPM upgrade from public `1.4.0.15` succeeds in the required order (credits add-on, core managed upgrade, code app); existing data and credit workflow identities remain intact; credit capability states reach unavailable, setup-required, and ready under the documented conditions; candidate and promoted public ZIP bytes match; release-promotion, documentation, and site validators pass.
+- **Tracking:** [Unreleased changelog](CHANGELOG.md), [release automation](docs/release-automation.md), [operations](docs/operations.md), and `output/candidate/`
+
 ### Central transcript source discovery
 
 - **Status:** Implemented and tenant-probed in PVE Dev and TPM
 - **Goal:** Build a read-only tenant-wide source registry that uses the Power Platform admin inventory to test Dataverse transcript access per environment, without installing the solution into source environments.
 - **Exit criteria:** Met. PVE and TPM probes distinguish readable-with-data, readable-empty, access-denied, and unavailable environments without copying transcript content. Both apps expose the persisted status.
 - **Tracking:** [Operations guide](docs/operations.md), [architecture](docs/architecture.md), and `scripts/transcript_insights/probe_transcript_sources.py`
+
+The preview code app remains local-only until an administrator enables a verified remote source and
+accepts the remote-to-collector data transfer. Reporting environment controls follow that persisted
+consent state; discovery and verification alone never reveal or activate cross-environment scope.
 
 ### Replace pre-authorized collection with zero-touch onboarding
 
@@ -104,6 +115,8 @@ These are not silently forgotten backlog items:
 - Exact credit allocation to a transcript, evaluation, tool call, or user-agent pair.
 - Environment allocation, `TenantPool`, or PayGo mutation.
 - Treating unavailable cross-environment metadata as evidence that an agent does not exist.
+- Claiming the `2.0.0.5` candidates are shipped or TPM-validated before the manual upgrade gate
+  completes.
 
 Changes to this boundary require product evidence, documentation review, versioned managed-package
 upgrades, and a new release entry in [CHANGELOG.md](CHANGELOG.md).

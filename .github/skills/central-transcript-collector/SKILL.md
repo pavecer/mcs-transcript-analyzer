@@ -58,8 +58,10 @@ tenant. The user performs TPM solution imports and upgrades manually.
 
 ## Public Package Invariant
 
-The repository has exactly two managed product solutions. `pvConversationInsights` owns every
-supported backend runtime component, including `PVCI Collect Central Transcripts (scheduled)`.
+The repository has exactly three managed product solutions. `pvConversationInsights` owns the
+required transcript and shared inventory runtime, including
+`PVCI Collect Central Transcripts (scheduled)`. `pvConversationInsightsCredits` is optional and
+owns only the licensing HTTP references and three credit runtime flows.
 `pvConversationInsightsCodeApp` contains only the separate preview code app and its dependencies.
 
 The core flow must be tenant-neutral and must package:
@@ -173,22 +175,24 @@ Required before completion:
 ## Cross-Tenant Candidate Packages
 
 When another tenant must validate this feature, never overwrite an existing published package
-version. Treat the collector as a backward-compatible feature and advance both core and code-app
-solutions on one synchronized four-part version, for example `1.4.0.0`.
+version. Advance core, optional credit add-on, and code app on one synchronized four-part version,
+for example `2.0.0.0`.
 
 Before exporting:
 
 1. Verify the generic central flow and `pvci_centralcollector` reference are members of
    `pvConversationInsights` and no supported runtime is outside both product solutions.
-2. Run the two-solution ownership and tenant-neutrality guards against core source.
-3. Set both live PVE Dev source solutions to the candidate version with
+2. Run the three-solution ownership and tenant-neutrality guards against source.
+3. Set all live PVE Dev product solutions to the candidate version with
    `pac solution online-version`.
-4. Export fresh managed core and code-app ZIPs into `output/candidate/`, not `site/downloads/`.
+4. Export fresh managed core, credit add-on, and code-app ZIPs into `output/candidate/`, not
+   `site/downloads/`.
 5. Validate solution name, version, managed state, required tables/APIs/apps, code-app dependencies,
    absence of tenant runtime markers, ZIP integrity, and SHA-256 hashes.
-6. Provide the validated core and code-app artifacts for manual target-tenant testing. The user
-   imports core first and code app second, maps packaged references, populates inventory, enables
-   reviewed sources, and turns on the packaged collector. Do not perform those writes in TPM.
+6. Provide the validated artifacts for manual target-tenant testing. For a clean install the user
+   imports core, optional credit add-on, then code app. For an upgrade from `1.4.0.15`, import the
+   add-on first, apply the core managed upgrade second, and upgrade the code app last. Do not
+   perform those writes in TPM.
 
 Release `1.4.0.15` supports source-managed verification and collection only after the mapped
 identity receives organization-level Conversation Transcript Read in each selected source.

@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ImportExportXml version="9.2.26072.144" SolutionPackageVersion="9.2" languagecode="1033" generatedBy="CrmLive" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" OrganizationVersion="9.2.26072.144" OrganizationSchemaType="Standard" CRMServerServiceabilityVersion="9.2.26072.00144">
+  <SolutionManifest>
+    <UniqueName>pvConversationInsightsCredits</UniqueName>
+    <LocalizedNames>
+      <LocalizedName description="PV Conversation Insights Credits" languagecode="1033" />
+    </LocalizedNames>
+    <Descriptions>
+      <Description description="Optional Copilot Credit collection and governance runtime for PV Conversation Insights." languagecode="1033" />
+    </Descriptions>
+    <Version>2.0.0.5</Version>
+    <Managed>0</Managed>
+    <Publisher>
+      <UniqueName>pvConversationInsightsPublisher</UniqueName>
+      <LocalizedNames>
+        <LocalizedName description="PV Conversation Insights Publisher" languagecode="1033" />
+      </LocalizedNames>
+      <Descriptions>
+        <Description description="Publisher for transcript analytics" languagecode="1033" />
+      </Descriptions>
+      <EMailAddress xsi:nil="true"></EMailAddress>
+      <SupportingWebsiteUrl xsi:nil="true"></SupportingWebsiteUrl>
+      <CustomizationPrefix>pvci</CustomizationPrefix>
+      <CustomizationOptionValuePrefix>95000</CustomizationOptionValuePrefix>
+      <Addresses>
+        <Address>
+          <AddressNumber>1</AddressNumber>
+          <AddressTypeCode>1</AddressTypeCode>
+          <ShippingMethodCode>1</ShippingMethodCode>
+        </Address>
+      </Addresses>
+    </Publisher>
+    <RootComponents>
+      <RootComponent type="29" id="{0bfaa799-f094-f111-8076-7ced8d95b46e}" behavior="0" />
+      <RootComponent type="29" id="{1afedf5c-1396-f111-8076-7ced8d95b46e}" behavior="0" />
+      <RootComponent type="29" id="{c8d754c8-1896-f111-8076-7ced8d95b46e}" behavior="0" />
+    </RootComponents>
+    <MissingDependencies>
+      <MissingDependency>
+        <Required type="1" schemaName="pvci_thresholdchangerequest" displayName="Agent Threshold Change Request" solution="Active" />
+        <Dependent type="29" displayName="PVCI Apply Credit Governance Requests (scheduled)" id="{c8d754c8-1896-f111-8076-7ced8d95b46e}" />
+      </MissingDependency>
+      <MissingDependency>
+        <Required type="connectionreference" displayName="pvci_dataversesync" solution="Active" id.connectionreferencelogicalname="pvci_dataversesync" />
+        <Dependent type="29" displayName="PVCI Collect Copilot Credit Usage (scheduled)" id="{0bfaa799-f094-f111-8076-7ced8d95b46e}" />
+      </MissingDependency>
+      <MissingDependency>
+        <Required type="connectionreference" displayName="pvci_dataversesync" solution="Active" id.connectionreferencelogicalname="pvci_dataversesync" />
+        <Dependent type="29" displayName="PVCI Collect Credit Governance (scheduled)" id="{1afedf5c-1396-f111-8076-7ced8d95b46e}" />
+      </MissingDependency>
+      <MissingDependency>
+        <Required type="connectionreference" displayName="pvci_dataversesync" solution="Active" id.connectionreferencelogicalname="pvci_dataversesync" />
+        <Dependent type="29" displayName="PVCI Apply Credit Governance Requests (scheduled)" id="{c8d754c8-1896-f111-8076-7ced8d95b46e}" />
+      </MissingDependency>
+      <MissingDependency>
+        <Required type="EnvironmentVariableDefinition" displayName="pvci_CreditReportingTenantId" solution="Active" id.schemaname="pvci_CreditReportingTenantId" />
+        <Dependent type="29" displayName="PVCI Collect Copilot Credit Usage (scheduled)" id="{0bfaa799-f094-f111-8076-7ced8d95b46e}" />
+      </MissingDependency>
+      <MissingDependency>
+        <Required type="EnvironmentVariableDefinition" displayName="pvci_CreditReportingTenantId" solution="Active" id.schemaname="pvci_CreditReportingTenantId" />
+        <Dependent type="29" displayName="PVCI Collect Credit Governance (scheduled)" id="{1afedf5c-1396-f111-8076-7ced8d95b46e}" />
+      </MissingDependency>
+      <MissingDependency>
+        <Required type="EnvironmentVariableDefinition" displayName="pvci_CreditReportingTenantId" solution="Active" id.schemaname="pvci_CreditReportingTenantId" />
+        <Dependent type="29" displayName="PVCI Apply Credit Governance Requests (scheduled)" id="{c8d754c8-1896-f111-8076-7ced8d95b46e}" />
+      </MissingDependency>
+    </MissingDependencies>
+  </SolutionManifest>
+</ImportExportXml>

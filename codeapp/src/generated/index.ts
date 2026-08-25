@@ -20,6 +20,7 @@ export * as Pvci_thresholdchangerequestsModel from './models/Pvci_thresholdchang
 export * as Pvci_transcriptaccessrequestsModel from './models/Pvci_transcriptaccessrequestsModel';
 export * as Pvci_transcriptsessionsModel from './models/Pvci_transcriptsessionsModel';
 export * as Pvci_transcriptturnsModel from './models/Pvci_transcriptturnsModel';
+export * as SolutionsModel from './models/SolutionsModel';
 
 // Services
 export * from './services/Pvci_agentinventoriesService';
@@ -37,3 +38,4 @@ export * from './services/Pvci_thresholdchangerequestsService';
 export * from './services/Pvci_transcriptaccessrequestsService';
 export * from './services/Pvci_transcriptsessionsService';
 export * from './services/Pvci_transcriptturnsService';
+export * from './services/SolutionsService';

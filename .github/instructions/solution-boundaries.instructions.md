@@ -6,17 +6,19 @@ applyTo: "{solution/**,scripts/**,plugin/**,codeapp/**,config/**,docs/**,README.
 
 # Product Solution Boundaries
 
-This repository has exactly two managed product solutions:
+This repository has exactly three managed product solutions:
 
-1. `pvConversationInsights` is the supported core solution. It owns every Dataverse table, plugin,
-   Custom API, security role, model-driven app, connection reference, and supported cloud-flow
-   runtime, including `PVCI Collect Central Transcripts (scheduled)`.
-2. `pvConversationInsightsCodeApp` contains only the separate preview code app and its dependencies.
+1. `pvConversationInsights` is the required transcript core. It owns every Dataverse table, plugin,
+   Custom API, security role, model-driven app, shared inventory runtime, transcript connection
+   reference, and transcript cloud flow, including `PVCI Collect Central Transcripts (scheduled)`.
+2. `pvConversationInsightsCredits` is the optional credit runtime add-on. It owns only the two
+   licensing HTTP connection references and the three credit collection/governance cloud flows.
+3. `pvConversationInsightsCodeApp` contains only the separate preview code app and its dependencies.
    It is separate because Power Apps code apps are preview, not because runtime components are
    optional or tenant-local.
 
-Never create a third product solution. Never leave a supported product flow only in the default
-solution or generate it outside the core solution after import.
+Never create a fourth product solution. Never duplicate a supported flow or connection reference
+across product solutions, leave it only in the default solution, or generate it after import.
 
 The core package must remain tenant-neutral. The central collector must use one packaged Microsoft
 Dataverse connection reference and the generally available selected-environment actions. Source
@@ -46,7 +48,9 @@ Release validation must fail when:
 
 - `PVCI Collect Central Transcripts (scheduled)` is absent from the core package;
 - the flow appears outside `pvConversationInsights` as the supported deployment path;
+- a licensing HTTP reference or credit runtime flow appears in core;
+- the credit add-on contains schema, plugins, APIs, roles, or apps;
 - source tenant/environment names, IDs, URLs, or physical connection IDs are hardcoded in core;
 - `pvci_transcript_http_*` or `pvci_transcript_source_*` per-source references appear;
-- backend runtime is added to `pvConversationInsightsCodeApp`.
+- backend runtime is added to `pvConversationInsightsCodeApp`;
 - automation can import or publish a candidate to an arbitrary target tenant.

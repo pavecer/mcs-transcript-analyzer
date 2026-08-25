@@ -11,7 +11,7 @@ from pathlib import Path
 import requests
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from dv_token import get_token_from_config  # noqa: E402
+from dv_token import get_token_from_config, require_authorized_config  # noqa: E402
 
 
 def main() -> None:
@@ -20,6 +20,7 @@ def main() -> None:
     parser.add_argument("--config", default="config/transcript_solution_config.dev.json")
     parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args()
+    require_authorized_config(args.config)
 
     payload_text = Path(args.payload_file).read_text(encoding="utf-8")
     payload = json.loads(payload_text)

@@ -17,7 +17,7 @@ from typing import Any
 import requests
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from dv_token import get_token_from_config  # noqa: E402
+from dv_token import get_token_from_config, require_authorized_config  # noqa: E402
 
 SOLUTION = "pvConversationInsights"
 ASSEMBLY_NAME = "plugin"
@@ -88,6 +88,7 @@ def main() -> None:
     ap.add_argument("--config", default="config/transcript_solution_config.dev.json")
     ap.add_argument("--assembly", default="plugin/bin/Release/net462/plugin.dll")
     args = ap.parse_args()
+    require_authorized_config(args.config)
 
     token, dv_url = get_token_from_config(args.config)
     dv = Dv(f"{dv_url}/api/data/v9.1", token)

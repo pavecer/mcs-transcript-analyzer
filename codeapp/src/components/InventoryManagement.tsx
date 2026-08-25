@@ -45,7 +45,10 @@ function createTranscriptVerificationRequestKey() {
   return `transcript-verify-${crypto.randomUUID()}`;
 }
 
-export function InventoryManagement() {
+export function InventoryManagement({ hostEnvironmentId, onCollectorStateChange }: {
+  hostEnvironmentId?: string;
+  onCollectorStateChange: (environmentId: string, enabled: boolean) => void;
+}) {
   const [environments, setEnvironments] = useState<Pvci_environmentinventories[]>([]);
   const [latestSync, setLatestSync] = useState<Pvci_inventorysyncruns | null>(null);
   const [accessRequests, setAccessRequests] = useState<Pvci_transcriptaccessrequests[]>([]);
@@ -213,7 +216,7 @@ export function InventoryManagement() {
       return;
     }
     if (enabled && !window.confirm(
-      `Enable transcript collection for ${environmentLabel(row)}? The next collector run will import transcripts using the verified source access.`
+      `Enable cross-environment transcript collection for ${environmentLabel(row)}? Transcript data will be copied from this remote environment and stored in the Dataverse environment where Conversation Insights is installed. Confirm that you are authorized to move and retain this data. Disabling collection later stops future imports but does not delete data already copied.`
     )) return;
 
     setCollectorBusyId(id);
@@ -228,6 +231,7 @@ export function InventoryManagement() {
           ? { ...environmentRow, pvci_transcriptcollectorenabled: enabled }
           : environmentRow
       ));
+      if (row.pvci_environmentid) onCollectorStateChange(row.pvci_environmentid, enabled);
       setNotice(`${environmentLabel(row)} collection ${enabled ? "enabled" : "disabled"}.`);
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : String(reason));
@@ -344,7 +348,9 @@ export function InventoryManagement() {
                   <span className="inventory-row-id">{onboardingModeLabel(row.pvci_transcriptonboardingmode)}</span>
                 </td>
                 <td>
-                  <label className="collector-toggle" title={!canEnableTranscriptCollector(row.pvci_transcriptonboardingstatus, row.pvci_transcriptaccessstatus) ? "Complete transcript source verification before enabling collection." : undefined}>
+                  {row.pvci_environmentid?.toLowerCase() === hostEnvironmentId?.toLowerCase() ? (
+                    <span className="conf high">Local automatic</span>
+                  ) : <label className="collector-toggle" title={!canEnableTranscriptCollector(row.pvci_transcriptonboardingstatus, row.pvci_transcriptaccessstatus) ? "Complete transcript source verification before enabling collection." : undefined}>
                     <input
                       type="checkbox"
                       checked={row.pvci_transcriptcollectorenabled ?? false}
@@ -353,7 +359,7 @@ export function InventoryManagement() {
                       aria-label={`${row.pvci_transcriptcollectorenabled ? "Disable" : "Enable"} transcript collection for ${environmentLabel(row)}`}
                     />
                     <span>{collectorBusyId === row.pvci_environmentinventoryid ? "Saving" : row.pvci_transcriptcollectorenabled ? "Enabled" : "Off"}</span>
-                  </label>
+                  </label>}
                 </td>
                 <td>{fmtDateTime(row.pvci_transcriptprobeon)}</td>
                 <td>{fmtDateTime(row.pvci_transcriptlastcollectedon)}</td>

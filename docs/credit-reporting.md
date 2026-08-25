@@ -1,10 +1,23 @@
 # Copilot Credit reporting
 
-## Current implementation
+## Current implementation and optional runtime
 
-The existing `pvConversationInsights` solution collects read-only Copilot Credit usage and capacity
-from the Power Platform licensing service. It covers Copilot Studio standard and GitHub Copilot
-harness runtimes; it does not use the separate GitHub Copilot product billing APIs.
+The public `1.4.0.15` core solution collects Copilot Credit data directly. The `2.0.0.5` candidate
+moves only the three licensing-backed flows and two licensing HTTP connection references into the
+optional `pvConversationInsightsCredits` add-on. All credit schema, plugins, APIs, roles, forms,
+views, and model-driven navigation intentionally remain in required core to avoid destructive data
+migration. The candidate is PVE-validated and passed the user-performed manual Contoso TPM upgrade.
+
+Without the add-on, transcript analysis, tenant inventory, and central transcript collection
+remain available and do not require licensing-administrator access. Credits navigation stays
+visible but shows **Unavailable**, and the code app does not mount credit data services. After the
+add-on is installed it shows **Setup required** until a successful `pvci_creditsyncrun` proves the
+licensing connections and collector have run; only then does it become **Ready** and load credit
+data. Add-on setup still requires the documented licensing HTTP connections, permissions, and
+premium Power Automate entitlement.
+
+The runtime covers Copilot Studio standard and GitHub Copilot harness runtimes; it does not use the
+separate GitHub Copilot product billing APIs.
 
 | Component | Current behavior |
 | --- | --- |
@@ -54,9 +67,10 @@ The licensing connection uses **HTTP with Microsoft Entra ID (preauthorized)**. 
 cloud, both its Base Resource URL and Microsoft Entra ID Resource URI are
 `https://licensing.powerplatform.microsoft.com/`. The flow is solution-aware and binds through
 `pvci_licensinghttp`. Its tenant path comes from the required
-`pvci_CreditReportingTenantId` environment variable. The solution exports an empty default and no
-current value, credentials, or physical connection ID; each target supplies those deployment
-bindings during import.
+`pvci_CreditReportingTenantId` environment variable. Its definition is owned only by the optional
+credit add-on; transcript-only core neither contains it nor prompts for it. The add-on exports no
+default or current value, credentials, or physical connection ID, so each target supplies those
+deployment bindings during credit add-on import.
 
 The governance collector uses a dedicated **HTTP with Microsoft Entra ID (preauthorized)**
 connection whose Base Resource URL and Microsoft Entra ID Resource URI are both

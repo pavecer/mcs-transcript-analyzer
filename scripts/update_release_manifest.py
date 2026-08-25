@@ -23,6 +23,7 @@ SOLUTION_XML_PATH = ROOT / "solution" / "pvConversationInsights" / "src" / "Othe
 GENERATED_SERVICES_PATH = ROOT / "codeapp" / "src" / "generated" / "services"
 CORE_SOLUTION_SOURCE_PATH = ROOT / "solution" / "pvConversationInsights" / "src"
 FULL_COMMIT_PATTERN = re.compile(r"^[0-9a-f]{40}$")
+ARTIFACT_KEYS = ("core", "credits", "codeApp")
 
 
 def service_filename(table_name: str) -> str:
@@ -31,7 +32,9 @@ def service_filename(table_name: str) -> str:
 
 
 def validate_release_config(config: dict[str, Any]) -> None:
-    for key in ("core", "codeApp"):
+    if set(config) != set(ARTIFACT_KEYS):
+        raise RuntimeError(f"Expected release artifacts {ARTIFACT_KEYS}, got {sorted(config)}")
+    for key in ARTIFACT_KEYS:
         artifact = config[key]
         expected_filename = (
             f'{artifact["solutionUniqueName"]}-managed-{artifact["version"]}.zip'
@@ -53,7 +56,11 @@ def validate_release_config(config: dict[str, Any]) -> None:
         )
 
     expected_services = {
-        service_filename(table) for table in config["codeApp"]["requiredCoreTables"]
+        service_filename(table)
+        for table in (
+            config["codeApp"]["requiredCoreTables"]
+            + config["codeApp"].get("requiredSystemTables", [])
+        )
     }
     generated_services = {path.name for path in GENERATED_SERVICES_PATH.glob("*.ts")}
     if generated_services != expected_services:
@@ -120,6 +127,7 @@ def inspect_package(key: str, config: dict[str, Any]) -> dict[str, Any]:
         corrupt = bundle.testzip()
         if corrupt:
             raise RuntimeError(f"Corrupt file in {package.name}: {corrupt}")
+        package_names = bundle.namelist()
         root = ET.fromstring(bundle.read("solution.xml"))
         customizations = ET.fromstring(bundle.read("customizations.xml"))
 
@@ -143,6 +151,13 @@ def inspect_package(key: str, config: dict[str, Any]) -> dict[str, Any]:
         if item.find("Required") is not None
     ]
     if key == "core":
+        if any(
+            name.lower().endswith(
+                "/pvci_creditreportingtenantid/environmentvariabledefinition.xml"
+            )
+            for name in package_names
+        ):
+            raise RuntimeError("Core package contains the credit reporting tenant variable")
         if not any(
             item.get("type") == "66"
             and item.get("schemaName") == "pvci_PvciControls.JsonViewer"
@@ -200,6 +215,54 @@ def inspect_package(key: str, config: dict[str, Any]) -> dict[str, Any]:
         }
         if drift:
             raise RuntimeError(f"Core package components changed: {drift}")
+    if key == "credits":
+        packaged_values = [
+            name
+            for name in package_names
+            if name.lower().endswith("/environmentvariablevalues.json")
+        ]
+        if packaged_values:
+            raise RuntimeError(
+                f"Credit add-on contains tenant-specific environment variable values: {packaged_values}"
+            )
+        unexpected_roots = [item for item in root_components if item.get("type") != "29"]
+        if unexpected_roots:
+            raise RuntimeError(f"Credit add-on contains non-workflow root components: {unexpected_roots}")
+        actual_workflows = {
+            item.get("Name")
+            for item in customizations.findall(".//Workflows/Workflow")
+            if item.get("Name")
+        }
+        expected_workflows = set(config["requiredWorkflows"])
+        if actual_workflows != expected_workflows:
+            raise RuntimeError(
+                "Credit add-on workflows changed: "
+                f"missing={sorted(expected_workflows - actual_workflows)}, "
+                f"unexpected={sorted(actual_workflows - expected_workflows)}"
+            )
+        actual_references = {
+            item.get("connectionreferencelogicalname")
+            for item in customizations.findall(".//connectionreference")
+        }
+        expected_references = set(config["requiredConnectionReferences"])
+        if actual_references != expected_references:
+            raise RuntimeError(
+                "Credit add-on connection references changed: "
+                f"missing={sorted(expected_references - actual_references)}, "
+                f"unexpected={sorted(actual_references - expected_references)}"
+            )
+        actual_variables = {
+            Path(name).parent.name
+            for name in package_names
+            if name.lower().endswith("/environmentvariabledefinition.xml")
+        }
+        expected_variables = set(config["requiredEnvironmentVariables"])
+        if actual_variables != expected_variables:
+            raise RuntimeError(
+                "Credit add-on environment variables changed: "
+                f"missing={sorted(expected_variables - actual_variables)}, "
+                f"unexpected={sorted(actual_variables - expected_variables)}"
+            )
     if key == "codeApp":
         if not any(
             item.get("type") == "300"
@@ -242,8 +305,7 @@ def main() -> None:
         "sourceCommit": args.source_commit,
         "generatedAtUtc": datetime.now(timezone.utc).replace(microsecond=0).isoformat(),
         "artifacts": {
-            "core": inspect_package("core", config["core"]),
-            "codeApp": inspect_package("codeApp", config["codeApp"]),
+            key: inspect_package(key, config[key]) for key in ARTIFACT_KEYS
         },
     }
     MANIFEST_PATH.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")

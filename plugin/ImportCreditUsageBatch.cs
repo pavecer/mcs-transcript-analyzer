@@ -5,7 +5,9 @@ using System.Linq;
 using System.Security.Cryptography;
 using System.ServiceModel;
 using System.Text;
+using Microsoft.Crm.Sdk.Messages;
 using Microsoft.Xrm.Sdk;
+using Microsoft.Xrm.Sdk.Organization;
 using Microsoft.Xrm.Sdk.Query;
 
 namespace PvciTranscripts
@@ -50,8 +52,7 @@ namespace PvciTranscripts
             Dictionary<string, object> root = Json.Obj(parsed);
             if (root == null) throw new InvalidPluginExecutionException("PayloadJson must contain a JSON object.");
 
-            string tenantId = Json.Str(root, "tenantId");
-            ValidateTenant(service, context.OrganizationId, tenantId);
+            string tenantId = ResolveTenantId(service, Json.Str(root, "tenantId"));
 
             var errors = new List<string>();
             var result = new ImportResult();
@@ -1071,24 +1072,29 @@ namespace PvciTranscripts
             return service.RetrieveMultiple(query).Entities.FirstOrDefault();
         }
 
-        private static void ValidateTenant(IOrganizationService service, Guid organizationId, string payloadTenantId)
+        private static string ResolveTenantId(IOrganizationService service, string payloadTenantId)
         {
-            if (string.IsNullOrWhiteSpace(payloadTenantId))
-                throw new InvalidPluginExecutionException("tenantId is required.");
             try
             {
-                Entity organization = service.Retrieve(
-                    "organization", organizationId, new ColumnSet("azureactivedirectorytenantid"));
-                object tenantValue = organization.GetAttributeValue<object>("azureactivedirectorytenantid");
-                string actualTenantId = tenantValue != null ? tenantValue.ToString() : null;
+                var request = new RetrieveCurrentOrganizationRequest { AccessType = EndpointAccessType.Default };
+                var response = (RetrieveCurrentOrganizationResponse)service.Execute(request);
+                string actualTenantId = response.Detail != null ? response.Detail.TenantId : null;
+                if (string.IsNullOrWhiteSpace(payloadTenantId))
+                {
+                    if (string.IsNullOrWhiteSpace(actualTenantId))
+                        throw new InvalidPluginExecutionException("tenantId is required because the Dataverse tenant could not be resolved.");
+                    return actualTenantId;
+                }
                 if (!string.IsNullOrWhiteSpace(actualTenantId)
                     && !string.Equals(actualTenantId, payloadTenantId, StringComparison.OrdinalIgnoreCase))
                     throw new InvalidPluginExecutionException("Payload tenantId does not match the Dataverse tenant.");
             }
             catch (FaultException<OrganizationServiceFault>)
             {
-                // The import API still requires a tenant ID even if this environment doesn't expose the comparison field.
+                if (string.IsNullOrWhiteSpace(payloadTenantId))
+                    throw new InvalidPluginExecutionException("tenantId is required because the Dataverse tenant could not be resolved.");
             }
+            return payloadTenantId;
         }
 
         private static void ValidateRecordCount(List<object> records, string name)

@@ -57,7 +57,8 @@ def main() -> None:
     stable_manifest = load_json(STABLE_MANIFEST_PATH)
     errors: list[str] = []
 
-    configured_versions = {release_config[key]["version"] for key in ("core", "codeApp")}
+    artifact_keys = ("core", "credits", "codeApp")
+    configured_versions = {release_config[key]["version"] for key in artifact_keys}
     if configured_versions != {args.version}:
         errors.append(f"release config versions do not equal {args.version}: {sorted(configured_versions)}")
     if candidate_manifest.get("version") != args.version:
@@ -66,7 +67,7 @@ def main() -> None:
         errors.append("candidate manifest does not assert tenant neutrality")
 
     promoted: dict[str, Any] = {}
-    for key in ("core", "codeApp"):
+    for key in artifact_keys:
         configured = release_config[key]
         candidate = candidate_manifest.get("artifacts", {}).get(key, {})
         stable = stable_manifest.get("artifacts", {}).get(key, {})
@@ -94,6 +95,11 @@ def main() -> None:
         promoted[key] = {"filename": filename, "sha256": stable_hash}
 
     source_commit = package_source_commit()
+    if candidate_manifest.get("sourceCommit") != source_commit:
+        errors.append(
+            "candidate manifest sourceCommit does not match the latest package-input commit: "
+            f"manifest={candidate_manifest.get('sourceCommit')}, source={source_commit}"
+        )
     if stable_manifest.get("sourceCommit") != source_commit:
         errors.append(
             "stable manifest sourceCommit does not match the latest package-input commit: "

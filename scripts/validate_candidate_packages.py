@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 from pathlib import Path
 from zipfile import ZipFile
 
@@ -13,6 +14,7 @@ import update_release_manifest as release
 
 ROOT = Path(__file__).resolve().parents[1]
 CONFIG_PATH = ROOT / "config" / "release-packages.json"
+FULL_COMMIT_PATTERN = re.compile(r"^[0-9a-f]{40}$")
 
 FORBIDDEN_MARKERS = (
     "pvci_transcript_http_",
@@ -39,12 +41,15 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--version", required=True)
     parser.add_argument("--directory", type=Path, default=Path("output/candidate"))
+    parser.add_argument("--source-commit")
     args = parser.parse_args()
+    if args.source_commit and not FULL_COMMIT_PATTERN.fullmatch(args.source_commit):
+        raise SystemExit("--source-commit must be a full 40-character lowercase Git commit SHA")
 
     directory = args.directory.resolve()
     base_config = json.loads(CONFIG_PATH.read_text(encoding="utf-8"))
     config = json.loads(json.dumps(base_config))
-    for key in ("core", "codeApp"):
+    for key in release.ARTIFACT_KEYS:
         solution_name = config[key]["solutionUniqueName"]
         config[key]["version"] = args.version
         config[key]["filename"] = f"{solution_name}-managed-{args.version}.zip"
@@ -56,8 +61,7 @@ def main() -> None:
     release.DOWNLOADS = directory
     try:
         artifacts = {
-            "core": release.inspect_package("core", config["core"]),
-            "codeApp": release.inspect_package("codeApp", config["codeApp"]),
+            key: release.inspect_package(key, config[key]) for key in release.ARTIFACT_KEYS
         }
     finally:
         release.DOWNLOADS = previous_downloads
@@ -81,13 +85,19 @@ def main() -> None:
         if marker not in core_text:
             raise RuntimeError(f"Core candidate does not contain packaged collector marker: {marker}")
 
-    print(json.dumps({
+    manifest = {
         "status": "ok",
         "version": args.version,
         "directory": str(directory),
         "tenantNeutral": True,
         "artifacts": artifacts,
-    }, indent=2))
+    }
+    if args.source_commit:
+        manifest["sourceCommit"] = args.source_commit
+    manifest_path = directory / f"candidate-manifest-{args.version}.json"
+    manifest_path.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
+    print(json.dumps(manifest, indent=2))
+    print(f"Wrote {manifest_path}")
 
 
 if __name__ == "__main__":
