@@ -9,6 +9,11 @@ ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_CHANGELOG = ROOT / "CHANGELOG.md"
 DEFAULT_MANIFEST = ROOT / "site" / "downloads" / "release-manifest.json"
 LINKEDIN_CHARACTER_LIMIT = 3000
+BOUNDARY_PHRASES = (
+    "explicit administrator consent",
+    "scoped to the host environment",
+    "remain tenant-wide",
+)
 
 
 def release_version(manifest_path: Path) -> str:
@@ -29,18 +34,53 @@ def changelog_release(changelog_path: Path, version: str) -> tuple[str, list[str
     if not match:
         raise ValueError(f"CHANGELOG.md has no release section for {version}")
 
-    lines = [line.strip() for line in match.group("body").splitlines()]
-    summary = next((line for line in lines if line and not line.startswith("- ")), "")
-    bullets = []
+    lines = match.group("body").splitlines()
+    summary_parts = []
     for line in lines:
-        if line == "Artifacts:":
+        stripped = line.strip()
+        if summary_parts and not stripped:
             break
-        if line.startswith("- "):
-            bullets.append(line)
+        if stripped:
+            summary_parts.append(stripped)
+    summary = " ".join(summary_parts)
+
+    bullets = []
+    current_bullet = ""
+    for line in lines:
+        stripped = line.strip()
+        if stripped in {"Artifacts:", "Published downloads:"}:
+            break
+        if stripped.startswith("- "):
+            if current_bullet:
+                bullets.append(current_bullet)
+            current_bullet = stripped
+        elif current_bullet and stripped:
+            current_bullet = f"{current_bullet} {stripped}"
+        elif current_bullet:
+            bullets.append(current_bullet)
+            current_bullet = ""
+    if current_bullet:
+        bullets.append(current_bullet)
 
     if not summary or not bullets:
         raise ValueError(f"Release section for {version} needs a summary and shipped bullets")
     return summary, bullets
+
+
+def release_highlights(bullets: list[str]) -> list[str]:
+    highlights = []
+    for bullet in bullets:
+        if bullet.startswith("- Validated in "):
+            continue
+        sentences = re.split(r"(?<=[.!?])\s+", bullet)
+        selected = [sentences[0]]
+        selected.extend(
+            sentence
+            for sentence in sentences[1:]
+            if any(phrase in sentence for phrase in BOUNDARY_PHRASES)
+        )
+        highlights.append(" ".join(selected))
+    return highlights
 
 
 def build_post(
@@ -51,6 +91,7 @@ def build_post(
     pages_url: str,
 ) -> str:
     release_url = f"https://github.com/{repository}/releases/tag/v{version}"
+    highlights = release_highlights(bullets)
     post = "\n".join(
         [
             f"MCS Transcript Analyzer {version} is now available.",
@@ -58,7 +99,7 @@ def build_post(
             summary,
             "",
             "What's included:",
-            *bullets,
+            *highlights,
             "",
             f"Explore the solution and download the managed packages: {pages_url.rstrip('/')}/",
             f"Release notes and checksums: {release_url}",

@@ -15,10 +15,16 @@ class GenerateLinkedInPostTests(unittest.TestCase):
         self.changelog.write_text(
             "# Changelog\n\n"
             "## 1.4.0.15 - 2026-08-25\n\n"
-            "Cross-environment transcript operations release.\n\n"
-            "- Added central transcript collection.\n"
+            "Cross-environment transcript\n"
+            "operations release.\n\n"
+            "- Added central transcript\n"
+            "  collection. Additional implementation detail.\n"
             "- Kept administrator bootstrap unavailable.\n\n"
-            "Artifacts:\n\n"
+            "- Made reporting local-only by default. Remote copying requires explicit administrator "
+            "consent. Resource reporting is scoped to the host environment. User usage and request "
+            "history remain tenant-wide.\n"
+            "- Validated in the development environment.\n\n"
+            "Published downloads:\n\n"
             "- Core: `core.zip`\n\n"
             "## 1.3.1.0 - 2026-08-12\n",
             encoding="utf-8",
@@ -48,8 +54,14 @@ class GenerateLinkedInPostTests(unittest.TestCase):
         )
 
         self.assertIn("MCS Transcript Analyzer 1.4.0.15 is now available.", post)
+        self.assertIn("Cross-environment transcript operations release.", post)
         self.assertIn("- Added central transcript collection.", post)
+        self.assertNotIn("Additional implementation detail", post)
         self.assertIn("- Kept administrator bootstrap unavailable.", post)
+        self.assertIn("Remote copying requires explicit administrator consent.", post)
+        self.assertIn("Resource reporting is scoped to the host environment.", post)
+        self.assertIn("User usage and request history remain tenant-wide.", post)
+        self.assertNotIn("Validated in the development environment", post)
         self.assertNotIn("core.zip", post)
         self.assertIn("https://pavecer.github.io/mcs-transcript-analyzer/", post)
         self.assertIn(
