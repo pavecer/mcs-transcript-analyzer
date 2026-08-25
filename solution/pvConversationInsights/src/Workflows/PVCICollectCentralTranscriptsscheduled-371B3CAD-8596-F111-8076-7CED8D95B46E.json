@@ -1,0 +1,225 @@
+{
+  "properties": {
+    "connectionReferences": {
+      "pvci_centralcollector": {
+        "runtimeSource": "embedded",
+        "connection": {
+          "connectionReferenceLogicalName": "pvci_centralcollector"
+        },
+        "api": {
+          "name": "shared_commondataserviceforapps"
+        }
+      }
+    },
+    "definition": {
+      "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+      "contentVersion": "1.0.0.0",
+      "parameters": {
+        "$connections": {
+          "defaultValue": {},
+          "type": "Object"
+        },
+        "$authentication": {
+          "defaultValue": {},
+          "type": "SecureObject"
+        }
+      },
+      "triggers": {
+        "Recurrence": {
+          "type": "Recurrence",
+          "recurrence": {
+            "frequency": "Hour",
+            "interval": 1
+          }
+        }
+      },
+      "actions": {
+        "List_transcript_sources": {
+          "type": "OpenApiConnection",
+          "runAfter": {},
+          "inputs": {
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+              "connectionName": "pvci_centralcollector",
+              "operationId": "ListRecords"
+            },
+            "parameters": {
+              "entityName": "pvci_environmentinventories",
+              "$select": "pvci_environmentinventoryid,pvci_tenantid,pvci_environmentid,pvci_displayname,pvci_environmenturl,pvci_transcriptcollectorenabled,pvci_transcriptlastcollectedon",
+              "$filter": "pvci_hasdataverse eq true and pvci_environmenturl ne null and pvci_transcriptcollectorenabled eq true",
+              "$orderby": "pvci_displayname asc",
+              "$top": 500
+            }
+          }
+        },
+        "Process_transcript_sources": {
+          "type": "Foreach",
+          "runAfter": {
+            "List_transcript_sources": [
+              "Succeeded"
+            ]
+          },
+          "foreach": "@body('List_transcript_sources')?['value']",
+          "runtimeConfiguration": {
+            "concurrency": {
+              "repetitions": 1
+            }
+          },
+          "actions": {
+            "Probe_source_access": {
+              "type": "Scope",
+              "runAfter": {},
+              "actions": {
+                "Probe_source_transcript_access": {
+                  "type": "OpenApiConnection",
+                  "runAfter": {},
+                  "inputs": {
+                    "host": {
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+                      "connectionName": "pvci_centralcollector",
+                      "operationId": "ListRecordsWithOrganization"
+                    },
+                    "parameters": {
+                      "organization": "@items('Process_transcript_sources')?['pvci_environmenturl']",
+                      "entityName": "conversationtranscripts",
+                      "$select": "conversationtranscriptid",
+                      "$top": 1
+                    }
+                  }
+                }
+              }
+            },
+            "Collect_source_transcripts": {
+              "type": "Scope",
+              "runAfter": {
+                "Probe_source_access": [
+                  "Succeeded"
+                ]
+              },
+              "actions": {
+                "Read_source_transcripts": {
+                  "type": "OpenApiConnection",
+                  "runAfter": {},
+                  "inputs": {
+                    "host": {
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+                      "connectionName": "pvci_centralcollector",
+                      "operationId": "ListRecordsWithOrganization"
+                    },
+                    "parameters": {
+                      "organization": "@items('Process_transcript_sources')?['pvci_environmenturl']",
+                      "entityName": "conversationtranscripts",
+                      "$select": "conversationtranscriptid,metadata,content,createdon",
+                      "$filter": "@concat('createdon ge ',coalesce(items('Process_transcript_sources')?['pvci_transcriptlastcollectedon'],'1900-01-01T00:00:00Z'))",
+                      "$orderby": "createdon asc",
+                      "$top": 25
+                    }
+                  }
+                },
+                "Mark_source_readable": {
+                  "type": "OpenApiConnection",
+                  "runAfter": {
+                    "Read_source_transcripts": [
+                      "Succeeded"
+                    ]
+                  },
+                  "inputs": {
+                    "host": {
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+                      "connectionName": "pvci_centralcollector",
+                      "operationId": "UpdateOnlyRecord"
+                    },
+                    "parameters": {
+                      "entityName": "pvci_environmentinventories",
+                      "recordId": "@items('Process_transcript_sources')?['pvci_environmentinventoryid']",
+                      "item/pvci_transcriptaccessstatus": "@if(empty(body('Read_source_transcripts')?['value']),'readable_empty','readable_with_rows')",
+                      "item/pvci_transcriptaccessreason": "",
+                      "item/pvci_transcriptprobeon": "@utcNow()",
+                      "item/pvci_transcriptsamplecount": "@length(body('Read_source_transcripts')?['value'])"
+                    }
+                  }
+                },
+                "Import_source_batch": {
+                  "type": "OpenApiConnection",
+                  "runAfter": {
+                    "Mark_source_readable": [
+                      "Succeeded"
+                    ]
+                  },
+                  "inputs": {
+                    "host": {
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+                      "connectionName": "pvci_centralcollector",
+                      "operationId": "PerformUnboundAction"
+                    },
+                    "parameters": {
+                      "actionName": "pvci_ImportCentralTranscriptBatch",
+                      "item/PayloadJson": "@string(body('Read_source_transcripts'))",
+                      "item/SourceTenantId": "@items('Process_transcript_sources')?['pvci_tenantid']",
+                      "item/SourceEnvironmentId": "@items('Process_transcript_sources')?['pvci_environmentid']",
+                      "item/SourceEnvironmentName": "@items('Process_transcript_sources')?['pvci_displayname']",
+                      "item/SourceDataverseUrl": "@items('Process_transcript_sources')?['pvci_environmenturl']",
+                      "item/SourceSchemaVersion": "central-transcript-v1",
+                      "item/DryRun": false,
+                      "item/IncludeTraces": false,
+                      "item/Reprocess": false
+                    }
+                  }
+                }
+              }
+            },
+            "Handle_source_access_failure": {
+              "type": "Scope",
+              "runAfter": {
+                "Probe_source_access": [
+                  "Failed",
+                  "TimedOut"
+                ]
+              },
+              "actions": {
+                "Mark_source_unavailable": {
+                  "type": "OpenApiConnection",
+                  "runAfter": {},
+                  "inputs": {
+                    "host": {
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+                      "connectionName": "pvci_centralcollector",
+                      "operationId": "UpdateOnlyRecord"
+                    },
+                    "parameters": {
+                      "entityName": "pvci_environmentinventories",
+                      "recordId": "@items('Process_transcript_sources')?['pvci_environmentinventoryid']",
+                      "item/pvci_transcriptaccessstatus": "access_denied",
+                      "item/pvci_transcriptaccessreason": "dataverse_read_not_available",
+                      "item/pvci_transcriptprobeon": "@utcNow()",
+                      "item/pvci_transcriptsamplecount": 0,
+                      "item/pvci_transcriptcollectorenabled": false,
+                      "item/pvci_transcriptlastcollectionstatus": "skipped_access_denied",
+                      "item/pvci_transcriptlastcollectionerror": "Source access probe failed or timed out. Collection was disabled. Verify source access, tenant isolation, DLP, and connection state, then re-enable the source."
+                    }
+                  }
+                }
+              }
+            },
+            "Complete_source_iteration": {
+              "type": "Compose",
+              "runAfter": {
+                "Collect_source_transcripts": [
+                  "Succeeded",
+                  "Skipped"
+                ],
+                "Handle_source_access_failure": [
+                  "Succeeded",
+                  "Skipped"
+                ]
+              },
+              "inputs": "@items('Process_transcript_sources')?['pvci_environmentid']"
+            }
+          }
+        }
+      }
+    },
+    "templateName": null
+  },
+  "schemaVersion": "1.0.0.0"
+}

@@ -62,6 +62,7 @@
     <RolePrivilege name="prvReadpvci_InventorySyncRun" level="Global" />
     <RolePrivilege name="prvReadpvci_SyncState" level="Global" />
     <RolePrivilege name="prvReadpvci_ThresholdChangeRequest" level="Global" />
+    <RolePrivilege name="prvReadpvci_TranscriptAccessRequest" level="Global" />
     <RolePrivilege name="prvReadpvci_TranscriptIdentityMap" level="Global" />
     <RolePrivilege name="prvReadpvci_TranscriptSession" level="Global" />
     <RolePrivilege name="prvReadpvci_TranscriptTurn" level="Global" />

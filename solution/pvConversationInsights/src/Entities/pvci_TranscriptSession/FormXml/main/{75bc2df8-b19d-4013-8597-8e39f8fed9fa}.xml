@@ -160,6 +160,42 @@
                       </cell>
                     </row>
                     <row>
+                      <cell id="{4b05627f-45bd-4c77-902f-ad3ffdbeb872}" showlabel="true">
+                        <labels>
+                          <label description="User errors" languagecode="1033" />
+                        </labels>
+                        <control id="pvci_usererrorcount" uniqueid="{8487d155-5831-49c9-90f0-8efdb42439b8}" classid="{C6D124CA-7EDA-4a60-AEA9-7FB8D318B68F}" datafieldname="pvci_usererrorcount" disabled="false" />
+                      </cell>
+                      <cell id="{0d412dc3-60aa-4d9b-b7d4-ab50c07691c2}" showlabel="true">
+                        <labels>
+                          <label description="Error category" languagecode="1033" />
+                        </labels>
+                        <control id="pvci_errorcategory" uniqueid="{7359e833-8c86-40ea-a449-493b42dfda50}" classid="{4273EDBD-AC1D-40d3-9FB2-095C621B552D}" datafieldname="pvci_errorcategory" disabled="false" />
+                      </cell>
+                    </row>
+                    <row>
+                      <cell id="{90b8f636-1f28-4673-a31f-bbb93035cfbc}" showlabel="true">
+                        <labels>
+                          <label description="Primary error code" languagecode="1033" />
+                        </labels>
+                        <control id="pvci_primaryerrorcode" uniqueid="{7c86a252-6ef4-48b9-a7e8-fc4b1d840e1e}" classid="{4273EDBD-AC1D-40d3-9FB2-095C621B552D}" datafieldname="pvci_primaryerrorcode" disabled="false" />
+                      </cell>
+                      <cell id="{c5267145-417f-448c-948a-063a91d360b1}" showlabel="true">
+                        <labels>
+                          <label description="Primary error topic" languagecode="1033" />
+                        </labels>
+                        <control id="pvci_primaryerrortopic" uniqueid="{0d2103ea-aa43-4c91-b827-117109490752}" classid="{4273EDBD-AC1D-40d3-9FB2-095C621B552D}" datafieldname="pvci_primaryerrortopic" disabled="false" />
+                      </cell>
+                    </row>
+                    <row>
+                      <cell id="{61f74f9f-23dd-4d8c-bb35-ae89214f2c41}" showlabel="true" colspan="2">
+                        <labels>
+                          <label description="Primary error message" languagecode="1033" />
+                        </labels>
+                        <control id="pvci_primaryerrormessage" uniqueid="{fa466664-700e-4861-9837-5e820fe5dbdb}" classid="{E0DECE4B-6FC8-4a8f-A065-082708572369}" datafieldname="pvci_primaryerrormessage" disabled="false" />
+                      </cell>
+                    </row>
+                    <row>
                       <cell id="{d1f09ed0-0c75-5627-a1c6-07e1aaa0226d}" showlabel="true">
                         <labels>
                           <label description="Implied success" languagecode="1033" />
@@ -214,6 +250,23 @@
                         </labels>
                         <control id="pvci_maxtoolms" uniqueid="{7cdb78e8-7cf5-5ab6-84cd-4ecbc9536ccd}" classid="{C6D124CA-7EDA-4a60-AEA9-7FB8D318B68F}" datafieldname="pvci_maxtoolms" disabled="false" />
                       </cell>
+                    </row>
+                    <row>
+                      <cell id="{d460464f-4500-4a43-92c9-b5bbc031a2db}" showlabel="true">
+                        <labels><label description="Knowledge calls" languagecode="1033" /></labels>
+                        <control id="pvci_knowledgecallcount" uniqueid="{e946644b-b8e8-44bf-bd32-df6d34eb8891}" classid="{C6D124CA-7EDA-4a60-AEA9-7FB8D318B68F}" datafieldname="pvci_knowledgecallcount" disabled="false" />
+                      </cell>
+                      <cell id="{ef8af1bc-7609-49db-ad83-9e8416fa9876}" showlabel="true">
+                        <labels><label description="Cited knowledge sources" languagecode="1033" /></labels>
+                        <control id="pvci_knowledgesourcecount" uniqueid="{f52a219b-9af5-474f-bcbd-dc088216bd7c}" classid="{C6D124CA-7EDA-4a60-AEA9-7FB8D318B68F}" datafieldname="pvci_knowledgesourcecount" disabled="false" />
+                      </cell>
+                    </row>
+                    <row>
+                      <cell id="{a4319b58-ad73-4720-b532-640990081ea8}" showlabel="true">
+                        <labels><label description="Knowledge failures" languagecode="1033" /></labels>
+                        <control id="pvci_knowledgefailurecount" uniqueid="{d98b468a-8708-4632-9677-c59604e73745}" classid="{C6D124CA-7EDA-4a60-AEA9-7FB8D318B68F}" datafieldname="pvci_knowledgefailurecount" disabled="false" />
+                      </cell>
+                      <cell id="{fbd76f1f-cb5a-4543-b996-12ca96ca2e4a}" showlabel="false" />
                     </row>
                     <row>
                       <cell id="{940dffa3-46ec-542d-a8ff-82e93635c02c}" showlabel="true">

@@ -1,7 +1,7 @@
 # Dataverse data model
 
 PV Conversation Insights stores derived transcript analytics, tenant inventory, and Copilot Credit
-reporting facts in 16 custom Dataverse tables. It reads native Dataverse, Power Platform
+reporting facts in 17 custom Dataverse tables. It reads native Dataverse, Power Platform
 inventory, and licensing data but does
 not modify transcript, usage, capacity-allocation, tenant-pool, or PAYG source records. Its only
 platform mutation is an explicitly requested, audited per-resource threshold change. Logical names are used throughout this
@@ -40,7 +40,8 @@ map rows cache resolution results; each session also retains a direct `systemuse
 | Identity map | `pvci_transcriptidentitymap` | One row per observed Entra object ID | `pvci_aadobjectid` |
 | Flow run detail | `pvci_flowrundetail` | One row per correlated Power Automate run | `pvci_runname` |
 | Sync state | `pvci_syncstate` | One row per sync scope | `pvci_name` (`default`) |
-| Environment inventory | `pvci_environmentinventory` | One row per tenant environment | `pvci_sourcekey` alternate key |
+| Environment inventory | `pvci_environmentinventory` | One row per tenant environment, including operator-managed transcript enablement, access-probe state, and collection health | `pvci_sourcekey` alternate key |
+| Transcript access request | `pvci_transcriptaccessrequest` | One user-owned audited onboarding command and processor result | `pvci_requestkey` alternate key |
 | Inventory sync run | `pvci_inventorysyncrun` | One row per inventory invocation | `pvci_runkey` alternate key |
 | Agent inventory | `pvci_agentinventory` | One row per tenant, environment, and observed resource | `pvci_sourcekey` alternate key |
 | Agent threshold snapshot | `pvci_agentthresholdsnapshot` | One row per tenant, environment, resource, entitlement, and source day | `pvci_sourcekey` alternate key |
@@ -56,13 +57,49 @@ The first five application keys are idempotency keys used by transcript sync and
 alternate-key metadata. Inventory and credit reporting tables use real Dataverse alternate keys
 provisioned by the solution.
 
+## Transcript runtime diagnostics
+
+`pvci_transcriptsession` stores filterable summaries for user-facing runtime failures:
+
+| Column | Meaning |
+| --- | --- |
+| `pvci_usererrorcount` | Count of `ErrorTraceData` activities explicitly marked `isUserError=true` |
+| `pvci_primaryerrorcode` | Code from the last user-facing error in transcript order |
+| `pvci_primaryerrormessage` | Full retained primary error message; loaded only for session detail |
+| `pvci_primaryerrortopic` | DynamicPlan topic active when the primary error occurred |
+| `pvci_errorcategory` | Bounded operational category for filtering and triage |
+| `pvci_topicname`, `pvci_topicid` | First triggered DynamicPlan topic fallback when Monitor values are unavailable |
+| `pvci_knowledgecallcount` | Number of retained `KnowledgeTraceData` retrieval outcomes |
+| `pvci_knowledgesourcecount` | Total cited source identifiers across retrievals |
+| `pvci_knowledgefailurecount` | Retrievals with failed source types or incomplete completion state |
+| `pvci_knowledgecallsjson` | Compact status/timing/source metadata without query or passage content |
+
+The corresponding `ErrorTraceData` activities remain in `pvci_transcriptturn` even when generic
+trace retention is disabled. Detailed timelines are reconstructed from ordered turns rather than
+duplicated into another memo column. Error messages can contain implementation details and remain
+subject to the same Dataverse access, retention, and privacy controls as the transcript payload.
+
 ## Credit reporting tables
 
 ### `pvci_environmentinventory`
 
 Stores every environment returned by Power Platform for Admins V2 independently of capacity or
 credit activity: tenant/environment identity, display name, URL, type, geography, state, managed
-and Dataverse signals, detailed-access status, source schema, bounded raw JSON, and freshness.
+and Dataverse signals, detailed-access status, source schema, bounded raw JSON, and freshness. It
+also stores central transcript access status/reason, probe timestamp/sample count, collector
+enablement, per-source watermark, last batch size, collection status, and bounded collection error.
+Onboarding fields separately store `SourceManaged`, `AdministratorBootstrap`, or `Excluded` mode;
+lifecycle status; last verification; role and elevation-cleanup evidence; collector application ID;
+and the last bounded onboarding error. A readable probe does not set role or cleanup proof flags.
+
+### `pvci_transcriptaccessrequest`
+
+Stores the immutable requested source, action, mode, request key, and request timestamp together
+with processor-owned status, access result, evidence, error, processing timestamp, and role/cleanup
+proof flags. Credit Administrators can create and read requests but cannot mark them successful.
+`PVCI Source Access Processor` can read and update outcomes. The packaged verifier consumes only
+`Pending` requests whose action is `Verify`; bootstrap actions remain reserved for the external
+reconciler.
 
 ### `pvci_inventorysyncrun`
 

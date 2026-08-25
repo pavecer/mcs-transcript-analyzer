@@ -14,38 +14,44 @@ export function Trends({ sessions, loading }: { sessions: SessionRow[]; loading:
 
   const environmentOptions = useMemo(() => {
     const options = new Map<string, string>();
-    sessions.forEach((s) => {
-      options.set(sourceEnvironmentKey(s), sourceEnvironmentLabel(s));
+    sessions.forEach((session) => {
+      if (essOnly && !isEssSession(session)) return;
+      options.set(sourceEnvironmentKey(session), sourceEnvironmentLabel(session));
     });
     return [...options.entries()].sort((a, b) => a[1].localeCompare(b[1]));
-  }, [sessions]);
+  }, [sessions, essOnly]);
 
   const agents = useMemo(
     () => {
       const options = new Map<string, AgentOption>();
       sessions.forEach((session) => {
+        if (essOnly && !isEssSession(session)) return;
+        if (environment !== "*" && sourceEnvironmentKey(session) !== environment) return;
+        if (hideTest && session.pvci_istestmode) return;
         const id = session.pvci_botid ?? session.pvci_botname;
         if (!id) return;
         options.set(id, { id, name: session.pvci_botname ?? "Unnamed agent" });
       });
       return [...options.values()].sort((left, right) => left.name.localeCompare(right.name));
     },
-    [sessions]
+    [sessions, environment, essOnly, hideTest]
   );
+
+  const activeAgent = agent === "*" || agents.some((option) => option.id === agent) ? agent : "*";
 
   const scoped = useMemo(
     () =>
       sessions.filter((s) => {
         if (hideTest && s.pvci_istestmode) return false;
         if (essOnly && !isEssSession(s)) return false;
-        if (agent !== "*" && (s.pvci_botid ?? s.pvci_botname) !== agent) return false;
+        if (activeAgent !== "*" && (s.pvci_botid ?? s.pvci_botname) !== activeAgent) return false;
 
         if (environment !== "*") {
           if (sourceEnvironmentKey(s) !== environment) return false;
         }
         return Boolean(s.pvci_startdatetimeutc);
       }),
-    [sessions, agent, hideTest, essOnly, environment]
+    [sessions, activeAgent, hideTest, essOnly, environment]
   );
 
   const effectiveGrain: Grain = useMemo(() => {
@@ -92,6 +98,7 @@ export function Trends({ sessions, loading }: { sessions: SessionRow[]; loading:
     const toolCalls = scoped.reduce((a, s) => a + (s.pvci_toolcallcount ?? 0), 0);
     const toolErrors = scoped.reduce((a, s) => a + (s.pvci_toolerrorcount ?? 0), 0);
     const resolved = scoped.filter((s) => s.pvci_sessionoutcome === "Resolved").length;
+    const knownOutcomes = scoped.filter((s) => Boolean(s.pvci_sessionoutcome) && s.pvci_sessionoutcome !== "None").length;
     return {
       sessions: scoped.length,
       answered,
@@ -101,7 +108,9 @@ export function Trends({ sessions, loading }: { sessions: SessionRow[]; loading:
       worst: lat.length ? lat[lat.length - 1] : null,
       toolCalls,
       toolErrors,
-      resolvedPct: scoped.length ? Math.round((resolved / scoped.length) * 100) : 0,
+      knownOutcomes,
+      unknownOutcomes: scoped.length - knownOutcomes,
+      resolvedPct: knownOutcomes ? Math.round((resolved / knownOutcomes) * 100) : 0,
     };
   }, [scoped]);
 
@@ -117,42 +126,83 @@ export function Trends({ sessions, loading }: { sessions: SessionRow[]; loading:
     [scoped]
   );
 
+  const sampleRange = useMemo(() => {
+    const stamps = scoped
+      .map((session) => session.pvci_startdatetimeutc)
+      .filter((value): value is string => Boolean(value))
+      .sort();
+    return stamps.length ? `${stamps[0].slice(0, 10)} to ${stamps[stamps.length - 1].slice(0, 10)} UTC` : "no dated sessions";
+  }, [scoped]);
+
   if (loading) return <div className="muted pad">Loading…</div>;
 
   return (
     <div className="trends">
-      <div className="trend-bar">
-        <select value={agent} onChange={(e) => setAgent(e.target.value)} className="search">
-          <option value="*">All agents ({agents.length})</option>
-          {agents.map((option) => (
-            <option key={option.id} value={option.id}>{option.name}</option>
-          ))}
-        </select>
-        <button className={hideTest ? "on" : ""} onClick={() => setHideTest(!hideTest)}>Hide test mode</button>
-        <button className={essOnly ? "on" : ""} onClick={() => setEssOnly(!essOnly)}>ESS only</button>
-        <select value={environment} onChange={(e) => setEnvironment(e.target.value)} className="search">
-          <option value="*">All environments</option>
-          {environmentOptions.map(([id, label]) => (
-            <option key={id} value={id}>{label}</option>
-          ))}
-        </select>
-        {(["auto", "hour", "day"] as const).map((g) => (
-          <button key={g} className={grain === g ? "on" : ""} onClick={() => setGrain(g)}>{g}</button>
-        ))}
-        <span className="muted small">grain: {effectiveGrain}</span>
+      <div className="trend-intro">
+        <div>
+          <h2>Conversation trends</h2>
+          <p>Compare recent conversation outcomes and response latency across an environment or agent.</p>
+        </div>
+      </div>
+
+      <div className="trend-filterbar" aria-label="Trend filters">
+        <label className="trend-filter">
+          <span>Environment</span>
+          <select
+            value={environment}
+            onChange={(event) => { setEnvironment(event.target.value); setAgent("*"); }}
+          >
+            <option value="*">All environments ({environmentOptions.length})</option>
+            {environmentOptions.map(([id, label]) => <option key={id} value={id}>{label}</option>)}
+          </select>
+        </label>
+        <label className="trend-filter">
+          <span>Agent</span>
+          <select value={activeAgent} onChange={(event) => setAgent(event.target.value)}>
+            <option value="*">All matching agents ({agents.length})</option>
+            {agents.map((option) => <option key={option.id} value={option.id}>{option.name}</option>)}
+          </select>
+        </label>
+        <div className="trend-filter trend-scope">
+          <span>Scope</span>
+          <div className="segmented">
+            <button
+              className={essOnly ? "on" : ""}
+              onClick={() => { setEssOnly(!essOnly); setEnvironment("*"); setAgent("*"); }}
+              title="Name-based Employee Self-Service agent preset"
+            >ESS agents</button>
+            <button className={hideTest ? "on" : ""} onClick={() => { setHideTest(!hideTest); setAgent("*"); }}>
+              Exclude test chats
+            </button>
+          </div>
+        </div>
+        <div className="trend-filter trend-grain">
+          <span>Time grain</span>
+          <div className="segmented">
+            {(["auto", "hour", "day"] as const).map((option) => (
+              <button key={option} className={grain === option ? "on" : ""} onClick={() => setGrain(option)}>{option}</button>
+            ))}
+          </div>
+          <small>Showing {effectiveGrain}</small>
+        </div>
+      </div>
+
+      <div className="muted small pad-sm">
+        Recent diagnostic sample loaded by the app: {scoped.length} sessions · {sampleRange}. This is not a complete operational population.
       </div>
 
       <div className="kpis">
         <Kpi label="Sessions" value={String(kpi.sessions)} />
-        <Kpi label="Answered" value={`${kpi.answered} / ${kpi.sessions}`}
-             hint={kpi.unanswered ? `${kpi.unanswered} never got a reply` : undefined} />
+        <Kpi label="Reply latency available" value={`${kpi.answered} / ${kpi.sessions}`}
+             hint={kpi.unanswered ? `${kpi.unanswered} without a stored latency value` : undefined} />
         <Kpi label="p50 slowest reply" value={fmtMs(kpi.p50)} band={latencyBand(kpi.p50)} />
         <Kpi label="p95 slowest reply" value={fmtMs(kpi.p95)} band={latencyBand(kpi.p95)} />
         <Kpi label="Worst reply" value={fmtMs(kpi.worst)} band={latencyBand(kpi.worst)} />
-        <Kpi label="Tool calls" value={String(kpi.toolCalls)}
-             hint={kpi.toolErrors ? `${kpi.toolErrors} failed` : undefined}
+           <Kpi label="Exact tool traces" value={String(kpi.toolCalls)}
+             hint={kpi.toolErrors ? `${kpi.toolErrors} failed · captured traces only` : "Captured test traces only"}
              band={kpi.toolErrors ? "bad" : "none"} />
-        <Kpi label="Resolved" value={`${kpi.resolvedPct}%`} />
+           <Kpi label="Resolved · known outcomes" value={`${kpi.resolvedPct}%`}
+             hint={kpi.unknownOutcomes ? `${kpi.unknownOutcomes} unknown outcome(s) excluded` : undefined} />
       </div>
 
       <h3 className="sub">Sessions and latency over time</h3>

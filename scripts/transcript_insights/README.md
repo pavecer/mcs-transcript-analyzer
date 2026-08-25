@@ -8,7 +8,7 @@ and carries end-user identity. See `docs/api-reference.md`.
 Run in this order against a fresh environment:
 
 ```bash
-# 1. Schema: solution, publisher, 16 custom tables, lookups
+# 1. Schema: solution, publisher, 17 custom tables, lookups
 python3 scripts/transcript_insights/provision_dataverse_solution_webapi.py \
   --config config/transcript_solution_config.dev.json \
   --definition solution/pvConversationInsights/solution-definition.json
@@ -91,7 +91,7 @@ If tokens expire: `az login --tenant <tenantId>`.
   connection and a tenant-scoped `v1.0` route.
 - `create_credit_governance_processor_flow.py` — creates the stopped privileged processor for
   validated threshold requests with stale-state detection and before/after audit.
-- `create_security_roles.py` — creates PVCI Analyst, PVCI Privacy Approver, and PVCI Credit Administrator
+- `create_security_roles.py` — creates PVCI Analyst, PVCI Privacy Approver, PVCI Credit Administrator, and PVCI Source Access Processor
   from the App Opener baseline, adds least-privilege table access, and maps all three
   roles to the model-driven app.
 - `ingest_monitor_transcripts.py` — Monitor CSV ingestion (**blocked**: gateway returns
@@ -173,3 +173,88 @@ stored in `pvci_environmentid`. The optional label override below is otherwise r
   "environmentName": "PVE Dev"
 }
 ```
+
+### Central transcript source discovery (phase 1)
+
+Classify which tenant environments can be read without a
+source-environment solution install:
+
+```bash
+pac admin list --json > output/test-tenant-admin-environments.json
+python3 scripts/transcript_insights/probe_transcript_sources.py \
+  --config config/transcript_solution_config.dev.json \
+  --inventory output/test-tenant-admin-environments.json \
+  --output output/transcript-source-registry.json
+```
+
+The probe requests a separate Dataverse audience token for each source organization and performs
+a one-row `conversationtranscripts` query. Its output is safe registry metadata only: source
+identity, access status, and a sample count. It distinguishes `readable_empty` from
+`access_denied`; it does not copy transcript payloads. The resulting registry is the input
+contract for the central collector.
+
+Validate least-privilege application-user onboarding only in a newly created disposable sandbox:
+
+```bash
+python3 scripts/transcript_insights/validate_source_access_onboarding.py \
+  --tenant-id 1938ee32-a258-454c-b8db-3a928341bd69 \
+  --environment-id <disposable-environment-id> \
+  --environment-url https://<disposable-org>.crm4.dynamics.com \
+  --public-client-id aebc6443-996d-45c2-90f0-388ff96faa56
+```
+
+The utility refuses other tenants and requires the ID and URL to resolve to a Sandbox named
+`PVCI Onboarding E2E ...`. It creates an empty baseline role, proves the application user receives
+HTTP 403, assigns organization-level `prvReadconversationtranscript`, proves HTTP 200, verifies
+that System Administrator was never assigned, and unregisters the disposable Entra application.
+Delete the disposable environment afterward to remove its test roles and application-user rows.
+
+The central worker proof of concept can read and parse the registry-approved sources without
+writing by using `--dry-run`:
+
+```bash
+python3 scripts/transcript_insights/collect_central_transcripts.py \
+  --config config/transcript_solution_config.dev.json \
+  --registry output/transcript-source-registry.json \
+  --limit 1 --dry-run
+```
+
+The flow definition generator emits the tenant-neutral review definition and the packaged core
+workflow artifact:
+
+```bash
+python3 scripts/transcript_insights/create_central_transcript_flow.py \
+  --output output/central-transcript-flow.json \
+  --solution-output solution/pvConversationInsights/src/Workflows/PVCICollectCentralTranscriptsscheduled-371B3CAD-8596-F111-8076-7CED8D95B46E.json
+```
+
+Register the collector-side `pvci_ImportCentralTranscriptBatch`, import the registry, and perform a
+one-row source smoke test before deploying the stopped solution flow. Each source connection must
+be created in the collector environment; a connection created in the source environment cannot be
+bound across environments. The Custom API caps batches at 25 and uses a composite tenant,
+environment, and source transcript key.
+
+The generic flow is packaged in `pvConversationInsights`. It reads Environment Inventory with the
+packaged `pvci_centralcollector` Dataverse reference and uses
+`ListRecordsWithOrganization` with each row's dynamic `pvci_environmenturl`. Environment names,
+IDs, URLs, and enablement remain runtime data; per-source connection references are forbidden.
+Operators enable reviewed rows from the code app. The flow performs a one-row ID-only access probe
+before each bounded content read. Probe failures record denial, disable that source, and complete
+the iteration; downstream collection/import failures remain visible as run failures.
+
+Source-managed onboarding uses an audited request before collector enablement:
+
+```bash
+python3 scripts/transcript_insights/create_transcript_access_verification_flow.py \
+  --output output/transcript-access-verification-flow.json \
+  --solution-output solution/pvConversationInsights/src/Workflows/PVCIVerifyTranscriptSourceAccessscheduled-F324DBAA-6E9D-F111-B8DE-7CED8D95B46E.json
+
+python3 scripts/transcript_insights/smoke_test_transcript_access_verification.py
+python3 scripts/transcript_insights/smoke_test_transcript_access_verification.py \
+  --request-key <request-key>
+```
+
+The packaged verifier processes only `Pending` + `Verify` requests, performs one ID-only read with
+`pvci_centralcollector`, and projects verified or denied access. It intentionally leaves role and
+elevation-cleanup verification false. `Provision`, `Repair`, and `Remove` remain reserved for the
+external administrator-bootstrap reconciler, so the code app keeps that mode unavailable.

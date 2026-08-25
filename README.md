@@ -18,13 +18,28 @@ Track shipped versions in [CHANGELOG.md](CHANGELOG.md) and planned work in [ROAD
 
 | Surface | What it is |
 | --- | --- |
-| **Dataverse solution** | 16 custom tables, views, forms, 3 application roles, a model-driven app, 2 Custom APIs, and 5 scheduled flows |
-| **Model-driven app** | GA, standard-licensed. Transcript operations plus Credits and Capacity grids and evidence forms |
-| **Code app** (preview) | React/Vite triage UI: replay, trends, flow failure map, and Copilot Credit reporting |
-| **Custom APIs + plugin** | Incremental transcript sync and validated, idempotent credit import |
+| **Dataverse solution** | 17 custom tables, views, forms, 4 application roles, a model-driven app, 3 Custom APIs, and 7 packaged scheduled flows |
+| **Model-driven app** | GA, standard-licensed. Transcript operations, environment collection coverage, Credits and Capacity grids, and evidence forms |
+| **Code app** (preview) | React/Vite workspaces for transcript triage, trends, Copilot Credit reporting, and dedicated tenant inventory/transcript-source management |
+| **Custom APIs + plugin** | Local incremental transcript sync, bounded cross-environment transcript import, and validated idempotent credit import |
 | **Python toolkit** | Bulk backfill, plugin registration, flow-run detail fetch |
 
+`PVCI Collect Central Transcripts (scheduled)` is packaged in the core solution. It uses one
+solution-aware Microsoft Dataverse connection reference and the supported selected-environment
+action to read source URLs dynamically from Environment Inventory. After import, map that one
+connection and run tenant inventory. In the code app, choose **Source-managed**, grant the collector
+identity a least-privilege role with organization-level Read on **Conversation Transcript** in each
+selected source environment, and submit **Verify access**. The packaged request processor records
+the one-row ID-only probe result; only a readable `Verified` source can then be enabled for collection.
+Failed probes remain visible and keep collection off. Administrator bootstrap is shown as
+unavailable until its external reconciler is deployed. No tenant name, source ID, URL, or physical
+connection is hardcoded.
+
 ### Captured per session
+
+The session workspace opens on a plain-language **Overview**. Replay, exact tool traces, knowledge
+retrieval, candidate Power Automate runs, reasoning, and raw JSON remain available as progressively
+deeper evidence.
 
 - **End user** — resolved from `from.aadObjectId` to a real `systemuser`
 - **Latency** — first / average / slowest reply, in milliseconds, and per turn
@@ -32,6 +47,8 @@ Track shipped versions in [CHANGELOG.md](CHANGELOG.md) and planned work in [ROAD
 - **Tool calls** — connector and AI Builder invocations with duration, output and exceptions
 - **Flow runs** — correlated Power Automate runs, enrichable with action and loop-iteration inputs and outputs
 - **Outcome** — resolved / abandoned, reason, implied success, turn count
+- **Runtime failures** — user-facing error count, category, code, message, active topic, and failure timeline
+- **Knowledge retrieval** — search completion, latency, cited source identifiers, and failed source types
 - **Test-mode flag** — so maker-portal testing does not pollute production metrics
 
 ### Captured for Copilot Credits
@@ -86,10 +103,12 @@ Power Apps under **Solutions > Import solution**. The source deployment below is
 contributors and environments where you want to rebuild every component.
 
 Before enabling collection, review [permissions and tenant inventory](docs/permissions-and-inventory.md).
-Version `1.3.0.0` includes **PVCI Analyst**, **PVCI Privacy Approver**, and **PVCI Credit Administrator**
-roles, separate inventory/governance collectors, exact GitHub harness filtering,
-spend-risk grouping, threshold snapshots, and an audited privileged processor. Tenant roles and
-target-local connections remain installation steps that a managed solution cannot grant.
+Version `1.3.0.0` includes **PVCI Analyst**, **PVCI Privacy Approver**, and **PVCI Credit Administrator**.
+The current source also defines **PVCI Source Access Processor** for audited verification outcomes.
+The solutions provide separate inventory/governance collectors, exact GitHub harness filtering,
+spend-risk grouping, threshold snapshots, code-app collector enablement for administrators, and an
+audited privileged processor. Tenant roles and target-local connections remain installation steps
+that a managed solution cannot grant.
 
 **Prerequisites:** Python 3.10+, Node 22+, .NET SDK 8+, [Power Platform CLI](https://aka.ms/PowerPlatformCLI),
 Azure CLI, and a Dataverse environment where you hold System Customizer.
@@ -165,6 +184,7 @@ npx power-apps add-data-source --api-id dataverse --resource-name pvci_creditsyn
 npx power-apps add-data-source --api-id dataverse --resource-name pvci_credituserusage  --org-url <org-url>
 npx power-apps add-data-source --api-id dataverse --resource-name pvci_creditprivacysetting --org-url <org-url>
 npx power-apps add-data-source --api-id dataverse --resource-name pvci_environmentinventory --org-url <org-url>
+npx power-apps add-data-source --api-id dataverse --resource-name pvci_transcriptaccessrequest --org-url <org-url>
 npx power-apps add-data-source --api-id dataverse --resource-name pvci_inventorysyncrun --org-url <org-url>
 npx power-apps add-data-source --api-id dataverse --resource-name pvci_agentthresholdsnapshot --org-url <org-url>
 npx power-apps add-data-source --api-id dataverse --resource-name pvci_governancesyncrun --org-url <org-url>

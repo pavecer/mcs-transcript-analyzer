@@ -299,12 +299,183 @@ incremental flow then labels new sessions automatically.
 Use `--reprocess` after changing parser logic. It rewrites sessions and replaces their turns,
 which issues new turn GUIDs.
 
+## Central transcript source discovery
+
+Phase 1 can classify all tenant environments without installing PVCI into each source environment.
+The probe consumes the read-only environment inventory returned by the Power Platform admin
+connection, requests a Dataverse-scoped token for each organization, and performs a one-row
+`conversationtranscripts` read. It writes only source metadata and access status; it never stores
+transcript content or identifiers.
+
+```powershell
+pac admin list --json > output/test-tenant-admin-environments.json
+python scripts/transcript_insights/probe_transcript_sources.py `
+    --config config/transcript_solution_config.dev.json `
+    --inventory output/test-tenant-admin-environments.json `
+    --output output/transcript-source-registry.json
+```
+
+The registry reports `readable_with_rows`, `readable_empty`, `access_denied`, `unavailable`, and
+authentication or transport errors separately. Only readable sources are candidates for the
+central collector. A `readable_empty` result means the identity can query the table but
+the one-row sample returned no records; it does not prove transcript capture is enabled.
+
+The source-local `pvci_SyncConversationTranscripts` plugin remains unchanged. The first central
+worker implementation is available as a bounded local/CI proof of concept:
+
+```powershell
+python scripts/transcript_insights/collect_central_transcripts.py `
+    --config config/transcript_solution_config.dev.json `
+    --registry output/transcript-source-registry.json `
+    --limit 1 --dry-run
+```
+
+It reads each enabled source with that organization's Dataverse audience, parses the transcript,
+and writes only to the configured collector Dataverse when `--dry-run` is omitted. It uses one
+watermark name per source (`central:<environmentId>`) and a composite transcript key containing
+tenant, environment, and source transcript ID.
+
+The packaged Power Automate flow is created in the core solution by the source generator. The
+generator is for core development and package maintenance, not post-import tenant setup:
+
+```powershell
+python scripts/transcript_insights/create_central_transcript_flow.py `
+    --output output/central-transcript-flow.json `
+    --deploy
+```
+
+`pvci_ImportCentralTranscriptBatch` is registered in the collector solution and enforces a
+25-row maximum. A PVE Preview to PVE Dev smoke import created one session and two turns; replaying
+the same source row skipped it through the composite key. During import, map the packaged
+`pvci_centralcollector` connection reference to one Microsoft Dataverse connection whose identity
+has read access in supported sources. The packaged flow dynamically supplies each inventory row's
+`pvci_environmenturl` to `ListRecordsWithOrganization`; no per-source connection is required.
+Keep `pvci_transcriptcollectorenabled` false until a source is reviewed. Run **Tenant Agent
+Inventory** first. In the code app's **Inventory Management** page, open the source, select
+**Source-managed**, assign the least-privilege source role to the `pvci_centralcollector` identity,
+and choose **Verify access**. Use the readiness summary buttons or the synchronized filter menu to
+limit the environment list to ready, enabled, readable, denied, or not-ready sources. `PVCI Verify Transcript Source Access (scheduled)` processes only
+pending `Verify` requests and writes the ID-only probe result to the request and Environment
+Inventory. It does not claim that a successful data read proves the exact assigned role. Only a
+source with onboarding `Verified` and readable access can be enabled. The central collector still
+probes before each content read; a later failed or timed-out probe records `access_denied`, disables
+that source, and continues with other sources. After repairing source access, submit a new
+verification request before enabling collection again.
+
+Create or update the verification processor during core development, initially stopped:
+
+```powershell
+python scripts/transcript_insights/create_transcript_access_verification_flow.py `
+    --output output/transcript-access-verification-flow.json `
+    --deploy
+```
+
+Map `pvci_centralcollector`, assign **PVCI Source Access Processor** to the flow owner, activate the
+flow, and use the smoke utility to queue and inspect one audited request:
+
+```powershell
+python scripts/transcript_insights/smoke_test_transcript_access_verification.py
+python scripts/transcript_insights/smoke_test_transcript_access_verification.py `
+    --request-key <request-key>
+```
+
+Expected success is request and inventory status `Verified`, access `readable_with_rows` or
+`readable_empty`, collector still disabled, and role/cleanup flags false unless an external
+reconciler supplied independent evidence. Administrator bootstrap remains unavailable until that
+reconciler can provision access and prove removal of temporary elevation.
+
+If **Read source transcripts** fails with `ThrowCrmSecurityException` and
+`prvReadconversationtranscript`, the user behind `pvci_centralcollector` has no applicable security
+role in that source environment. In TPM, correct this manually: identify the connection owner, add
+that user to the source environment, and assign a least-privilege role with organization-level Read
+on **Conversation Transcript** (or System Administrator for a temporary test). Reauthenticate the
+connection if its token predates the assignment, then re-enable the source. Import or
+collector-side failures after a successful probe remain visible as failed runs; they are not
+classified as source permission denials.
+
 Or invoke the Custom API directly:
 
 ```http
 POST {dataverseUrl}/api/data/v9.1/pvci_SyncConversationTranscripts
 { "FullSync": false, "MaxRecords": 50, "Reprocess": false, "IncludeTraces": false }
 ```
+
+After installing the structured runtime-diagnostics update, reprocess existing sessions to derive
+topic and error summaries and to retain user-facing `ErrorTraceData` turns. Incremental sync applies
+the contract automatically only to newly encountered transcripts. Use a bounded maintenance run
+with `Reprocess: true`; verify `pvci_usererrorcount`, `pvci_primaryerrorcode`, and the model-driven
+session form before expanding the batch. Generic trace retention can remain disabled.
+
+Candidate `1.4.0.3` was backend-smoke-tested in PVE Dev against transcript
+`cc605963-e8f2-47cf-bcb6-0eb3b65846b0`. Exact-row reprocessing produced one
+`ContentValidationError`, category `Topic expression`, the full
+`ESS_UserContext_TimeZoneOffset`/`DateAdd` message, and a retained `ErrorTraceData` turn. The source
+contained no `DynamicPlanStepTriggered`, so the error topic correctly remained unknown. During
+this smoke, the Custom API did not honor `SinceOverride`; exact-row maintenance used the local
+sync parser directly without changing `pvci_syncstate`. Treat `SinceOverride` as unverified until
+its Custom API binding is corrected, and do not use it as the only safety boundary for a bulk
+reprocess.
+
+The candidate code-app artifact rendered directly with no viewport overflow in the shared VS Code
+browser. The normal `apps.powerapps.com` wrapper returned a successful launch response but aborted
+the generated app `index.html` navigation and failed inside Microsoft `webplayer-host-ui.js` before
+the app iframe mounted. Complete a hosted signed-in smoke in another supported browser/session
+before promoting the candidate; direct artifact navigation does not provide the Power Apps host
+context needed for Dataverse data loading.
+
+Knowledge retrieval diagnostics require reprocessing because older sessions have no
+`pvci_knowledge*` summaries. A successful knowledge smoke should show a nonzero Knowledge call
+count, completion state, duration, and cited source identifier even when Tool calls is zero. This
+is expected: Universal Search emits `KnowledgeTraceData`, not a `DialogTracing` `Invoke*` action.
+The compact summary must not contain search query arguments or retrieved document passages.
+Candidate `1.4.0.4` was backend-smoke-tested against central session
+`1938ee32-a258-454c-b8db-3a928341bd69:67203dc9-8a11-e6ef-9970-81e05021161c:5cb848eb-378c-4b2b-81ea-96a4e9b80649`.
+It reported one 13.3-second Universal Search retrieval, completion state `Answered`, one cited
+ServiceNow KB source, and zero failures. `Answered` is a successful completion state. The summary
+JSON contained neither `search_query` nor `search_keywords`.
+
+## Reading conversation telemetry
+
+Use these interpretation rules when investigating a session:
+
+- `0` means the relevant telemetry was available and no event was observed. **Unavailable** means
+    the transcript cannot prove zero; exact `DialogTracing` tool telemetry is normally test-only.
+- Reply wait, plan-step elapsed, knowledge-step elapsed, exact invoke span, and Power Automate run
+    duration are separate clocks. Do not add them together.
+- Flow matches are time-based **candidates**, not proven attribution. **Closest start** identifies
+    ranking by start-time proximity only.
+- Knowledge/search plan steps are not Power Automate flow candidates and appear only under
+    Knowledge and routing evidence.
+- Largest retained-event gap describes stored transcript events, not guaranteed user-visible
+    silence.
+- Unknown flow-action status remains unknown. **First likely failure** is a triage starting point,
+    not a proven root cause. Chronological map connections are labeled when dependency metadata is
+    unavailable.
+- Source outcome, implied resolution, user-visible runtime errors, exact tool failures, knowledge
+    failures, and candidate flow failures are independent signals and can disagree.
+
+The Overview is the first-stop session view. Use Replay to inspect user/agent turns, then open
+Knowledge, Tool Calls, or Flow Runs only when the overview indicates participation or when capture
+availability permits it. Raw JSON is supporting evidence, not the primary operating surface.
+
+Agent Reasoning presents the recorded orchestration lifecycle as plan sequences. Read each plan as
+request → selected step → prepared input names → observable result. **Step finish not retained** is
+an evidence limitation, not automatically a failure. **Recorded routing rationale** is product
+telemetry supplied in the transcript and must not be described as hidden model chain-of-thought.
+Use **Show raw evidence** only when the summarized lifecycle is insufficient.
+
+Trends is a separate full-width aggregate workspace and does not show the per-session navigator.
+Its filter order is **Environment → Agent → Scope → Time grain**. The agent list is constrained by
+the selected environment, ESS preset, and test-mode scope; changing an upstream filter resets an
+incompatible agent selection. Use Sessions when investigating one conversation. Use Trends only
+for the bounded recent sample disclosed at the top of that page.
+
+Environment names shown in Sessions and Trends come from Environment Inventory by exact Power
+Platform environment ID. The transcript session keeps the ID as the authoritative key; technical
+Dataverse organization names such as `unq...` or `org...` are lineage values, not user-facing
+labels. Local sync prefers `pvci_environmentinventory.pvci_displayname`, and the code app enriches
+legacy session rows from the same inventory before rendering. Candidate `1.4.0.9` backfilled all
+35 PVE Dev session rows with zero unmatched environment IDs.
 
 ## Health checks
 
@@ -343,9 +514,9 @@ Afterwards, in the target environment:
 5. Bind `pvci_powerplatformapi` to a target-local HTTP with Microsoft Entra ID connection whose
     Base Resource URL and resource audience are `https://licensing.powerplatform.microsoft.com/`.
 6. Assign **PVCI Analyst** to readers, **PVCI Privacy Approver** only to approved disclosure
-    operators, and **PVCI Credit Administrator** only to threshold-change operators. Share the code
-    app separately with the same users/groups.
-7. Save and smoke-test all five flows, including a no-op governance request, then activate the
+    operators, and **PVCI Credit Administrator** only to transcript-collection and threshold-change
+    operators. Share the code app separately with the same users/groups.
+7. Save and smoke-test all 7 flows, including a no-op governance request, then activate the
     intended schedules and processor.
 8. Run the initial `--full` transcript load.
 9. Redeploy the code app (`npx power-apps init` + `push`) — it lives outside the core solution.

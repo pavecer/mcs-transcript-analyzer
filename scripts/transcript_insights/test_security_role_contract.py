@@ -13,7 +13,15 @@ class SecurityRoleContractTests(unittest.TestCase):
         cls.roles = {role["name"]: role for role in definition["securityRoles"]}
 
     def test_reader_and_approver_roles_are_declared(self) -> None:
-        self.assertEqual({"PVCI Analyst", "PVCI Privacy Approver", "PVCI Credit Administrator"}, set(self.roles))
+        self.assertEqual(
+            {
+                "PVCI Analyst",
+                "PVCI Privacy Approver",
+                "PVCI Credit Administrator",
+                "PVCI Source Access Processor",
+            },
+            set(self.roles),
+        )
         self.assertTrue(all(role["baseRole"] == "App Opener" for role in self.roles.values()))
 
     def test_analyst_cannot_change_disclosure_or_user_facts(self) -> None:
@@ -36,6 +44,7 @@ class SecurityRoleContractTests(unittest.TestCase):
             "pvci_flowrundetail",
             "pvci_syncstate",
             "pvci_environmentinventory",
+            "pvci_transcriptaccessrequest",
             "pvci_inventorysyncrun",
             "pvci_agentthresholdsnapshot",
             "pvci_governancesyncrun",
@@ -47,7 +56,8 @@ class SecurityRoleContractTests(unittest.TestCase):
             "pvci_credituserusage",
             "pvci_creditprivacysetting",
         }
-        for role in self.roles.values():
+        for role_name in ("PVCI Analyst", "PVCI Privacy Approver", "PVCI Credit Administrator"):
+            role = self.roles[role_name]
             readable = {
                 table for table, privileges in role["tablePrivileges"].items() if "Read" in privileges
             }
@@ -58,6 +68,26 @@ class SecurityRoleContractTests(unittest.TestCase):
         self.assertEqual(["Create", "Read", "Append"], privileges["pvci_thresholdchangerequest"])
         self.assertEqual(["Read", "AppendTo"], privileges["pvci_agentinventory"])
         self.assertNotIn("Write", privileges["pvci_thresholdchangerequest"])
+
+    def test_credit_administrator_can_manage_collector_enablement(self) -> None:
+        privileges = self.roles["PVCI Credit Administrator"]["tablePrivileges"]
+        self.assertEqual(["Read", "Write", "AppendTo"], privileges["pvci_environmentinventory"])
+        self.assertEqual(
+            ["Read"],
+            self.roles["PVCI Analyst"]["tablePrivileges"]["pvci_environmentinventory"],
+        )
+        self.assertEqual(
+            ["Read"],
+            self.roles["PVCI Privacy Approver"]["tablePrivileges"]["pvci_environmentinventory"],
+        )
+
+    def test_source_access_request_separates_requester_and_processor(self) -> None:
+        administrator = self.roles["PVCI Credit Administrator"]["tablePrivileges"]
+        processor = self.roles["PVCI Source Access Processor"]["tablePrivileges"]
+        self.assertEqual(["Create", "Read", "Append"], administrator["pvci_transcriptaccessrequest"])
+        self.assertNotIn("Write", administrator["pvci_transcriptaccessrequest"])
+        self.assertEqual(["Read", "Write", "Append"], processor["pvci_transcriptaccessrequest"])
+        self.assertEqual(["Read", "Write", "AppendTo"], processor["pvci_environmentinventory"])
 
 
 if __name__ == "__main__":

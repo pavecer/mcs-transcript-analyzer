@@ -6,7 +6,7 @@
       <LocalizedName description="PV Conversation Insights" languagecode="1033" />
     </LocalizedNames>
     <Descriptions />
-    <Version>1.3.1.0</Version>
+    <Version>1.4.0.15</Version>
     <Managed>0</Managed>
     <Publisher>
       <UniqueName>pvConversationInsightsPublisher</UniqueName>
@@ -93,26 +93,36 @@
       <RootComponent type="1" schemaName="pvci_inventorysyncrun" behavior="0" />
       <RootComponent type="1" schemaName="pvci_syncstate" behavior="0" />
       <RootComponent type="1" schemaName="pvci_thresholdchangerequest" behavior="0" />
+      <RootComponent type="1" schemaName="pvci_transcriptaccessrequest" behavior="0" />
       <RootComponent type="1" schemaName="pvci_transcriptidentitymap" behavior="0" />
       <RootComponent type="1" schemaName="pvci_transcriptsession" behavior="0" />
       <RootComponent type="1" schemaName="pvci_transcriptturn" behavior="0" />
       <RootComponent type="1" schemaName="systemuser" behavior="1" />
       <RootComponent type="20" id="{19f4168c-b795-f111-8076-7ced8d95b46e}" behavior="0" />
       <RootComponent type="20" id="{365de980-1896-f111-8076-7ced8d95b46e}" behavior="0" />
+      <RootComponent type="20" id="{464f169f-6e9d-f111-b8de-7ced8d95b46e}" behavior="0" />
       <RootComponent type="20" id="{735f0f92-b795-f111-8076-7ced8d95b46e}" behavior="0" />
       <RootComponent type="29" id="{0bfaa799-f094-f111-8076-7ced8d95b46e}" behavior="0" />
       <RootComponent type="29" id="{1afedf5c-1396-f111-8076-7ced8d95b46e}" behavior="0" />
       <RootComponent type="29" id="{320f4f61-b895-f111-8076-7ced8d95b46e}" behavior="0" />
+      <RootComponent type="29" id="{371b3cad-8596-f111-8076-7ced8d95b46e}" behavior="0" />
       <RootComponent type="29" id="{c8d754c8-1896-f111-8076-7ced8d95b46e}" behavior="0" />
       <RootComponent type="29" id="{eee71534-988d-f111-8077-7ced8d95b46e}" behavior="0" />
+      <RootComponent type="29" id="{f324dbaa-6e9d-f111-b8de-7ced8d95b46e}" behavior="0" />
       <RootComponent type="62" schemaName="pvci_conversationinsights_sitemap" behavior="0" />
       <RootComponent type="66" schemaName="pvci_PvciControls.JsonViewer" behavior="0" />
       <RootComponent type="80" schemaName="pvci_conversationinsights" behavior="0" />
-      <RootComponent type="91" id="{76199349-228d-f111-8077-7ced8d95b46e}" schemaName="plugin, Version=1.0.0.0, Culture=neutral, PublicKeyToken=a944d352ade9edd8" behavior="0" />
+      <RootComponent type="91" id="{76199349-228d-f111-8077-7ced8d95b46e}" schemaName="plugin, Version=1.0.0.6, Culture=neutral, PublicKeyToken=a944d352ade9edd8" behavior="0" />
       <RootComponent type="92" id="{076d7df8-1d96-f111-8076-7ced8d95b46e}" behavior="0" />
       <RootComponent type="92" id="{d29166a8-fc94-f111-8076-7ced8d95b46e}" behavior="0" />
     </RootComponents>
     <MissingDependencies>
+      <MissingDependency>
+        <Required type="1" schemaName="conversationtranscript" displayName="ConversationTranscript" solution="PowerVirtualAgentsCommon (2026.5.4.21205268)">
+          <package appName="CCI Bots" version="2026.5.4.21205268">msdynce_CustomerCareIntelligenceBots_Anchor (2026.5.4.21205268)</package>
+        </Required>
+        <Dependent type="29" displayName="PVCI Collect Central Transcripts (scheduled)" id="{371b3cad-8596-f111-8076-7ced8d95b46e}" />
+      </MissingDependency>
       <MissingDependency>
         <Required type="1" schemaName="systemuser" displayName="SystemUser" parentSchemaName="" solution="msdyn_UserShareSecuredFields (1.0.0.0)" />
         <Dependent type="1" schemaName="systemuser" displayName="SystemUser" />

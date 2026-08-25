@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import atexit
 import json
+import shutil
 import subprocess
 from pathlib import Path
 
@@ -18,10 +19,27 @@ import msal
 CACHE_FILE = Path(__file__).resolve().parents[2] / ".msal_token_cache.json"
 
 
-def _az_token(resource: str) -> str | None:
+def _az_command(resource: str, tenant_id: str | None = None) -> list[str]:
+    executable = shutil.which("az") or "az"
+    arguments = [
+        "account",
+        "get-access-token",
+        "--resource",
+        resource,
+        "-o",
+        "json",
+    ]
+    if tenant_id:
+        arguments.extend(["--tenant", tenant_id])
+    if Path(executable).suffix.lower() in {".cmd", ".bat"}:
+        return ["cmd.exe", "/d", "/c", executable, *arguments]
+    return [executable, *arguments]
+
+
+def _az_token(resource: str, tenant_id: str | None = None) -> str | None:
     try:
         proc = subprocess.run(
-            ["az", "account", "get-access-token", "--resource", resource, "-o", "json"],
+            _az_command(resource, tenant_id),
             capture_output=True,
             text=True,
             timeout=60,
@@ -53,7 +71,7 @@ def _cache() -> msal.SerializableTokenCache:
 def get_token(tenant_id: str, client_id: str, scope: str, allow_interactive: bool = True) -> str:
     resource = scope[: -len("/.default")] if scope.endswith("/.default") else scope
 
-    token = _az_token(resource)
+    token = _az_token(resource, tenant_id)
     if token:
         return token
 

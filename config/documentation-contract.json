@@ -1,17 +1,22 @@
 {
   "schemaVersion": 1,
-  "productSourceDigest": "b53f837ad45c31a5dceec7780af5bc3ddd1ffdf1ec839065b07e3447130fe5b2",
+  "productSourceDigest": "052e90fae973544c680930233eaa3da98de5ea2c57b99f06de8df6882eb73677",
   "productInputs": [
     "config/release-packages.json",
     "solution/pvConversationInsights/solution-definition.json",
     "codeapp/src/components/Credits.tsx",
+    "codeapp/src/components/InventoryManagement.tsx",
     "codeapp/src/lib/thresholdRequestState.ts",
     "plugin/ImportCreditUsageBatch.cs",
     "plugin/ThresholdChangeRequestGuard.cs",
+    "plugin/ImportCentralTranscriptBatch.cs",
     "scripts/transcript_insights/create_credit_sync_flow.py",
     "scripts/transcript_insights/create_inventory_sync_flow.py",
     "scripts/transcript_insights/create_credit_governance_flow.py",
-    "scripts/transcript_insights/create_credit_governance_processor_flow.py"
+    "scripts/transcript_insights/create_credit_governance_processor_flow.py",
+    "scripts/transcript_insights/create_central_transcript_flow.py",
+    "scripts/transcript_insights/create_transcript_access_verification_flow.py",
+    "codeapp/src/lib/transcriptAccessState.ts"
   ],
   "indexedSurfaces": [
     "CHANGELOG.md",
@@ -19,9 +24,11 @@
     ".github/ISSUE_TEMPLATE/bug_report.yml",
     ".github/ISSUE_TEMPLATE/feature_request.yml",
     ".github/instructions/browser-use.instructions.md",
+    ".github/instructions/solution-boundaries.instructions.md",
     ".github/pull_request_template.md",
     ".github/skills/release-documentation/SKILL.md",
     ".github/skills/release-tracking/SKILL.md",
+    ".github/skills/central-transcript-collector/SKILL.md",
     ".github/workflows/build.yml",
     ".github/workflows/candidate-release.yml",
     ".github/workflows/pages.yml",
@@ -49,7 +56,7 @@
       "release-manifest.json"
     ],
     "ROADMAP.md": [
-      "Validate the 1.3.1.0 tenant rollout",
+      "Replace pre-authorized collection with zero-touch onboarding",
       "Detailed cross-environment agent enrichment",
       "Explicitly out of scope for the current product boundary",
       "CHANGELOG.md"
@@ -57,8 +64,9 @@
     "README.md": [
       "{customTableCount} custom tables",
       "{roleCount} application roles",
-      "{workflowCount} scheduled flows",
+      "7 packaged scheduled flows",
       "PVCI Credit Administrator",
+      "PVCI Source Access Processor",
       "create_credit_governance_flow.py",
       "create_credit_governance_processor_flow.py",
       "pvci_thresholdchangerequest"
@@ -144,12 +152,28 @@
       "site/index.html",
       "python3 scripts/validate_documentation.py"
     ],
+    ".github/skills/central-transcript-collector/SKILL.md": [
+      "Public Package Invariant",
+      "exactly two managed product solutions",
+      "ListRecordsWithOrganization",
+      "pvci_centralcollector",
+      "validate_site.py",
+      "must not package hardcoded source"
+    ],
+    ".github/instructions/solution-boundaries.instructions.md": [
+      "exactly two managed product solutions",
+      "pvConversationInsights",
+      "pvConversationInsightsCodeApp",
+      "generally available selected-environment actions",
+      "1938ee32-a258-454c-b8db-3a928341bd69",
+      "TPM manual-upgrade tenant"
+    ],
     ".github/workflows/build.yml": [
       "python3 scripts/validate_documentation.py"
     ],
     ".github/workflows/candidate-release.yml": [
       "build_candidate_package.py",
-      "test_environment_url",
+      "import it manually in the TPM upgrade-test tenant",
       "gh issue comment",
       "--prerelease"
     ],
@@ -159,7 +183,7 @@
     "site/README.md": [
       "scripts/validate_documentation.py --list-surfaces",
       "scripts/validate_documentation.py --print-digest",
-      "smoke-test all five flows",
+      "smoke-test all {workflowCount} flows",
       ".github/skills/release-documentation/SKILL.md"
     ],
     "site/index.html": [
@@ -173,6 +197,7 @@
       "id=\"release-history\"",
       "id=\"roadmap\"",
       "1.3.0.0",
+      "Replace pre-authorized collection with zero-touch onboarding",
       "Detailed cross-environment agent enrichment",
       "CHANGELOG.md"
     ]

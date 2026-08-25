@@ -7,7 +7,7 @@
       "uniqueName": "pvConversationInsightsPublisher",
       "prefix": "pvci"
     },
-    "version": "1.3.1.0"
+    "version": "1.4.0.15"
   },
   "securityRoles": [
     {
@@ -21,6 +21,7 @@
         "pvci_flowrundetail": ["Read"],
         "pvci_syncstate": ["Read"],
         "pvci_environmentinventory": ["Read"],
+        "pvci_transcriptaccessrequest": ["Read"],
         "pvci_inventorysyncrun": ["Read"],
         "pvci_agentthresholdsnapshot": ["Read"],
         "pvci_governancesyncrun": ["Read"],
@@ -44,6 +45,7 @@
         "pvci_flowrundetail": ["Read"],
         "pvci_syncstate": ["Read"],
         "pvci_environmentinventory": ["Read"],
+        "pvci_transcriptaccessrequest": ["Read"],
         "pvci_inventorysyncrun": ["Read"],
         "pvci_agentthresholdsnapshot": ["Read"],
         "pvci_governancesyncrun": ["Read"],
@@ -59,7 +61,7 @@
     },
     {
       "name": "PVCI Credit Administrator",
-      "description": "PVCI Analyst access plus permission to submit audited Copilot Credit threshold change requests.",
+      "description": "PVCI Analyst access plus permission to manage transcript collection and submit audited Copilot Credit threshold change requests.",
       "baseRole": "App Opener",
       "tablePrivileges": {
         "pvci_transcriptsession": ["Read"],
@@ -67,7 +69,8 @@
         "pvci_transcriptidentitymap": ["Read"],
         "pvci_flowrundetail": ["Read"],
         "pvci_syncstate": ["Read"],
-        "pvci_environmentinventory": ["Read"],
+        "pvci_environmentinventory": ["Read", "Write", "AppendTo"],
+        "pvci_transcriptaccessrequest": ["Create", "Read", "Append"],
         "pvci_inventorysyncrun": ["Read"],
         "pvci_agentthresholdsnapshot": ["Read"],
         "pvci_governancesyncrun": ["Read"],
@@ -78,6 +81,15 @@
         "pvci_creditsyncrun": ["Read"],
         "pvci_credituserusage": ["Read"],
         "pvci_creditprivacysetting": ["Read"]
+      }
+    },
+    {
+      "name": "PVCI Source Access Processor",
+      "description": "Process audited transcript source access requests and project verified onboarding state into Environment Inventory.",
+      "baseRole": "App Opener",
+      "tablePrivileges": {
+        "pvci_environmentinventory": ["Read", "Write", "AppendTo"],
+        "pvci_transcriptaccessrequest": ["Read", "Write", "Append"]
       }
     }
   ],
@@ -98,6 +110,8 @@
         "pvci_TranscriptId": "string",
         "pvci_BotId": "string",
         "pvci_BotName": "string",
+        "pvci_TopicName": "string",
+        "pvci_TopicId": "string",
         "pvci_TenantId": "string",
         "pvci_EnvironmentId": "string",
         "pvci_EnvironmentName": "string",
@@ -130,6 +144,15 @@
         "pvci_FlowRunMaxMs": "int",
         "pvci_SessionOutcome": "string",
         "pvci_OutcomeReason": "string",
+        "pvci_UserErrorCount": "int",
+        "pvci_PrimaryErrorCode": "string",
+        "pvci_PrimaryErrorMessage": "text",
+        "pvci_PrimaryErrorTopic": "string",
+        "pvci_ErrorCategory": "string",
+        "pvci_KnowledgeCallCount": "int",
+        "pvci_KnowledgeSourceCount": "int",
+        "pvci_KnowledgeFailureCount": "int",
+        "pvci_KnowledgeCallsJson": "text",
         "pvci_IsResolvedImplied": "string",
         "pvci_TurnCount": "int",
         "pvci_PlanEventsJson": "text",
@@ -235,6 +258,22 @@
         "pvci_IsManaged": { "type": "bool", "displayName": "Managed Environment" },
         "pvci_HasDataverse": { "type": "bool", "displayName": "Has Dataverse" },
         "pvci_HasDetailedAccess": { "type": "bool", "displayName": "Has Detailed Access" },
+        "pvci_TranscriptAccessStatus": { "type": "string", "displayName": "Transcript Access Status" },
+        "pvci_TranscriptAccessReason": { "type": "string", "displayName": "Transcript Access Reason" },
+        "pvci_TranscriptProbeOn": { "type": "datetime", "displayName": "Transcript Probe On" },
+        "pvci_TranscriptSampleCount": { "type": "int", "displayName": "Transcript Sample Count" },
+        "pvci_TranscriptOnboardingMode": { "type": "string", "displayName": "Transcript Onboarding Mode" },
+        "pvci_TranscriptOnboardingStatus": { "type": "string", "displayName": "Transcript Onboarding Status" },
+        "pvci_TranscriptCollectorApplicationId": { "type": "string", "displayName": "Transcript Collector Application ID" },
+        "pvci_TranscriptAccessLastVerifiedOn": { "type": "datetime", "displayName": "Transcript Access Last Verified On" },
+        "pvci_TranscriptAccessRoleVerified": { "type": "bool", "displayName": "Transcript Access Role Verified" },
+        "pvci_TranscriptElevationCleanupVerified": { "type": "bool", "displayName": "Transcript Elevation Cleanup Verified" },
+        "pvci_TranscriptOnboardingLastError": { "type": "text", "displayName": "Transcript Onboarding Last Error" },
+        "pvci_TranscriptCollectorEnabled": { "type": "bool", "displayName": "Transcript Collector Enabled" },
+        "pvci_TranscriptLastCollectedOn": { "type": "datetime", "displayName": "Transcript Last Collected On" },
+        "pvci_TranscriptLastCollectionStatus": { "type": "string", "displayName": "Transcript Last Collection Status" },
+        "pvci_TranscriptLastCollectionError": { "type": "text", "displayName": "Transcript Last Collection Error" },
+        "pvci_TranscriptLastBatchCount": { "type": "int", "displayName": "Transcript Last Batch Count" },
         "pvci_InventorySource": { "type": "string", "displayName": "Inventory Source" },
         "pvci_SourceSchemaVersion": { "type": "string", "displayName": "Source Schema Version" },
         "pvci_RawJson": { "type": "text", "displayName": "Raw Source JSON" },
@@ -245,6 +284,45 @@
           "schemaName": "pvci_EnvironmentInventory_SourceKey",
           "displayName": "Environment Inventory Source Key",
           "columns": ["pvci_sourcekey"]
+        }
+      ]
+    },
+    {
+      "schemaName": "pvci_TranscriptAccessRequest",
+      "displayName": "Transcript Access Request",
+      "displayCollectionName": "Transcript Access Requests",
+      "ownershipType": "UserOwned",
+      "primaryColumn": "pvci_Name",
+      "columns": {
+        "pvci_RequestKey": { "type": "string", "maxLength": 200, "displayName": "Request Key" },
+        "pvci_EnvironmentId": { "type": "string", "displayName": "Environment ID" },
+        "pvci_EnvironmentUrl": { "type": "string", "displayName": "Environment URL" },
+        "pvci_Action": { "type": "string", "displayName": "Requested Action" },
+        "pvci_RequestedMode": { "type": "string", "displayName": "Requested Onboarding Mode" },
+        "pvci_Status": { "type": "string", "displayName": "Request Status" },
+        "pvci_RequestedOn": { "type": "datetime", "displayName": "Requested On" },
+        "pvci_ProcessedOn": { "type": "datetime", "displayName": "Processed On" },
+        "pvci_Processor": { "type": "string", "displayName": "Processor" },
+        "pvci_CorrelationId": { "type": "string", "displayName": "Correlation ID" },
+        "pvci_AccessStatus": { "type": "string", "displayName": "Verified Access Status" },
+        "pvci_RoleVerified": { "type": "bool", "displayName": "Role Verified" },
+        "pvci_ElevationCleanupVerified": { "type": "bool", "displayName": "Elevation Cleanup Verified" },
+        "pvci_Evidence": { "type": "text", "displayName": "Bounded Verification Evidence" },
+        "pvci_Error": { "type": "text", "displayName": "Processing Error" }
+      },
+      "alternateKeys": [
+        {
+          "schemaName": "pvci_TranscriptAccessRequest_RequestKey",
+          "displayName": "Transcript Access Request Key",
+          "columns": ["pvci_requestkey"]
+        }
+      ],
+      "lookups": [
+        {
+          "schemaName": "pvci_EnvironmentInventoryId",
+          "displayName": "Environment Inventory",
+          "referencedTable": "pvci_environmentinventory",
+          "relationshipName": "pvci_environmentinventory_transcriptaccessrequest"
         }
       ]
     },

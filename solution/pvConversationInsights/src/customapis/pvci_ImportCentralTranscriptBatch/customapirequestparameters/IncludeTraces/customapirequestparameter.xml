@@ -1,0 +1,9 @@
+<customapirequestparameter uniquename="IncludeTraces">
+  <displayname default="Include trace activities">
+    <label description="Include trace activities" languagecode="1033" />
+  </displayname>
+  <iscustomizable>1</iscustomizable>
+  <isoptional>1</isoptional>
+  <name>IncludeTraces</name>
+  <type>0</type>
+</customapirequestparameter>

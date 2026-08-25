@@ -7,9 +7,6 @@ on:
         description: Candidate solution version, for example 1.3.1.0
         required: true
         default: 1.3.1.0
-      test_environment_url:
-        description: Test Dataverse environment URL that receives the candidate
-        required: true
       issue_number:
         description: GitHub issue number receiving the candidate link
         required: true
@@ -21,16 +18,10 @@ on:
 
 permissions:
   contents: write
-  id-token: write
 
 concurrency:
   group: issue-candidate-release
   cancel-in-progress: false
-
-env:
-  POWER_PLATFORM_CLIENT_ID: ${{ vars.POWER_PLATFORM_CLIENT_ID }}
-  POWER_PLATFORM_TENANT_ID: ${{ vars.POWER_PLATFORM_TENANT_ID }}
-  POWER_PLATFORM_ENVIRONMENT_URL: ${{ vars.POWER_PLATFORM_ENVIRONMENT_URL }}
 
 jobs:
   candidate:
@@ -48,9 +39,6 @@ jobs:
         with:
           dotnet-version: "10.0.x"
 
-      - name: Install Power Platform CLI
-        run: dotnet tool install --global Microsoft.PowerApps.CLI.Tool
-
       - name: Validate source fix
         run: |
           pip install -r scripts/transcript_insights/requirements.txt
@@ -65,28 +53,6 @@ jobs:
             --output "output/candidate/pvConversationInsights-managed-${{ inputs.version }}.zip" \
             --version "${{ inputs.version }}"
 
-      - name: Authenticate to test tenant
-        run: |
-          test -n "$POWER_PLATFORM_CLIENT_ID"
-          test -n "$POWER_PLATFORM_TENANT_ID"
-          pac auth create \
-            --name issue-candidate-test \
-            --applicationId "$POWER_PLATFORM_CLIENT_ID" \
-            --tenant "$POWER_PLATFORM_TENANT_ID" \
-            --githubFederated \
-            --environment "${{ inputs.test_environment_url }}"
-
-      - name: Import candidate into test tenant
-        run: |
-          pac solution import \
-            --environment "${{ inputs.test_environment_url }}" \
-            --path "output/candidate/pvConversationInsights-managed-${{ inputs.version }}.zip" \
-            --activate-plugins \
-            --publish-changes \
-            --async \
-            --max-async-wait-time 60
-          pac solution list --environment "${{ inputs.test_environment_url }}" | grep -F "pvConversationInsights"
-
       - name: Create GitHub prerelease and attach candidate
         env:
           GH_TOKEN: ${{ github.token }}
@@ -95,7 +61,7 @@ jobs:
             "output/candidate/pvConversationInsights-managed-${{ inputs.version }}.zip#Affected-tenant governance fix candidate" \
             --repo "${{ github.repository }}" \
             --title "MCS Transcript Analyzer ${{ inputs.version }} RC" \
-            --notes "Automated issue candidate for #${{ inputs.issue_number }}. Imported and published in the supplied test tenant. Validate the governance collector before broader release." \
+            --notes "Automated issue candidate for #${{ inputs.issue_number }}. Download and import it manually in the TPM upgrade-test tenant, then validate the governance collector before broader release." \
             --prerelease
           gh issue comment "${{ inputs.issue_number }}" \
             --repo "${{ github.repository }}" \

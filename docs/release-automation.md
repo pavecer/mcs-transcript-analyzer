@@ -32,18 +32,17 @@ Failures stop before the artifact commit. The previously validated downloads rem
 ## Issue candidate releases
 
 Backward-compatible fixes can be tested by affected tenants before the next public release. Run
-the **publish issue candidate** workflow manually with a candidate version such as `1.3.1.0`, the
-target test-tenant URL, and the issue number. `.github/workflows/candidate-release.yml` runs the
-focused governance tests, builds the managed candidate through
-`scripts/build_candidate_package.py`, imports and publishes it in the supplied test tenant, then
-creates the prerelease `v1.3.1.0-rc.1` and comments the direct ZIP URL on the issue.
+the **publish issue candidate** workflow manually with a candidate version such as `1.3.1.0` and
+the issue number. `.github/workflows/candidate-release.yml` runs the focused governance tests,
+builds the managed candidate through `scripts/build_candidate_package.py`, then creates the
+prerelease `v1.3.1.0-rc.1` and comments the direct ZIP URL on the issue.
 
 The candidate builder starts from the immutable public managed package and overlays only the
 reviewed source workflow definitions. This is intentional: Dataverse does not allow exporting a
-managed solution from a managed target environment. The test-tenant import is the deployment
-verification; the GitHub prerelease asset is the package distributed to affected testers. Never
-overwrite the stable `1.3.0.0` ZIP. After validation, promote the same fix through the normal
-versioned release process.
+managed solution from a managed target environment. The GitHub prerelease asset is the package
+distributed to affected testers. The user imports and upgrades it manually in TPM; automation must
+not authenticate to or write to TPM. Never overwrite the stable `1.3.0.0` ZIP. After manual
+validation, promote the same fix through the normal versioned release process.
 
 ## Release documentation gate
 
@@ -68,6 +67,12 @@ README, docs, release-package, or public Pages changes. The skill is guidance; t
 Pages workflow run the deterministic gate and are the enforcement boundary.
 
 ## Important deployment boundary
+
+Programmatic Power Platform and Dataverse writes are allowed only when the authenticated tenant ID
+is `1938ee32-a258-454c-b8db-3a928341bd69`. The TPM tenant is reserved for manual solution upgrade
+testing. Automation may build packages and perform read-only checks for TPM, but the user performs
+all imports, publishes, connection mappings, and other changes there. Tenant and environment names,
+URLs, account domains, and PAC profile aliases are not authorization boundaries.
 
 The workflow deploys the code app because `pac code push` supports deterministic solution
 targeting under the same PAC authentication used for export.

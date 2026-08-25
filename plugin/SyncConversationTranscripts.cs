@@ -122,7 +122,7 @@ namespace PvciTranscripts
             SetOutput(context, "Errors", string.Join("\n", errors.ToArray()));
         }
 
-        private class SyncResult
+        internal class SyncResult
         {
             public bool Created;
             public bool Skipped;
@@ -130,11 +130,60 @@ namespace PvciTranscripts
             public bool MultiUser;
         }
 
-        private class SourceEnvironment
+        internal class SourceEnvironment
         {
+            public string TenantId;
             public string Id;
             public string Name;
             public string OrganizationName;
+        }
+
+        internal class TranscriptDiagnostics
+        {
+            public string TopicId;
+            public string TopicName;
+            public int UserErrorCount;
+            public string PrimaryErrorCode;
+            public string PrimaryErrorMessage;
+            public string PrimaryErrorTopic;
+            public string ErrorCategory;
+        }
+
+        internal static SyncResult ImportCentralRow(
+            IOrganizationService service,
+            ITracingService tracing,
+            Entity transcript,
+            string tenantId,
+            string environmentId,
+            string environmentName,
+            string organizationName,
+            bool includeTraces,
+            bool reprocess)
+        {
+            var source = new SourceEnvironment
+            {
+                TenantId = tenantId,
+                Id = environmentId,
+                Name = environmentName,
+                OrganizationName = organizationName,
+            };
+            string compositeId = CompositeTranscriptId(tenantId, environmentId, transcript.Id.ToString());
+            return new SyncConversationTranscripts().SyncOne(
+                service,
+                tracing,
+                transcript,
+                new Dictionary<string, Entity>(StringComparer.OrdinalIgnoreCase),
+                new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase),
+                includeTraces,
+                reprocess,
+                new List<Entity>(),
+                source,
+                compositeId);
+        }
+
+        internal static string CompositeTranscriptId(string tenantId, string environmentId, string transcriptId)
+        {
+            return string.Join(":", new[] { tenantId, environmentId, transcriptId }).ToLowerInvariant();
         }
 
         // --- query -----------------------------------------------------------
@@ -157,7 +206,7 @@ namespace PvciTranscripts
 
         // --- per transcript --------------------------------------------------
 
-        private SyncResult SyncOne(
+        internal SyncResult SyncOne(
             IOrganizationService service,
             ITracingService tracing,
             Entity transcript,
@@ -166,9 +215,10 @@ namespace PvciTranscripts
             bool includeTraces,
             bool reprocess,
             List<Entity> flowRuns,
-            SourceEnvironment sourceEnvironment)
+            SourceEnvironment sourceEnvironment,
+            string transcriptIdOverride = null)
         {
-            string transcriptId = transcript.Id.ToString();
+            string transcriptId = transcriptIdOverride ?? transcript.Id.ToString();
 
             // Transcripts are immutable once Copilot Studio writes them, so an already-ingested
             // one is skipped entirely: no re-parse, no rewrite, no turn churn.
@@ -264,6 +314,7 @@ namespace PvciTranscripts
 
             DateTime? start = stamps.Count > 0 ? EpochUtc(stamps.Min()) : (DateTime?)null;
             DateTime? end = stamps.Count > 0 ? EpochUtc(stamps.Max()) : (DateTime?)null;
+            TranscriptDiagnostics diagnostics = ExtractDiagnostics(activities);
 
             var userMessages = messages.Where(m => IsUser(m)).ToList();
             var agentMessages = messages.Where(m => !IsUser(m)).ToList();
@@ -297,6 +348,16 @@ namespace PvciTranscripts
             List<long> latencies = ResponseLatencies(messages);
             List<object> toolCalls = ExtractToolCalls(activities);
             string toolsJson = WriteLimited(toolCalls, out ignore);
+            List<object> knowledgeCalls = ExtractKnowledgeCalls(activities);
+            string knowledgeJson = WriteLimited(knowledgeCalls, out ignore);
+            int knowledgeSources = 0, knowledgeFailures = 0;
+            foreach (object knowledgeCall in knowledgeCalls)
+            {
+                List<object> citedSources = Json.Arr(Json.Get(knowledgeCall, "cited_sources"));
+                if (citedSources != null) knowledgeSources += citedSources.Count;
+                object failed = Json.Get(knowledgeCall, "failed");
+                if (failed is bool && (bool)failed) knowledgeFailures++;
+            }
 
             List<object> flowCorrelation = CorrelateFlowRuns(activities, flowRuns);
             string flowsJson = WriteLimited(flowCorrelation, out ignore);
@@ -336,7 +397,9 @@ namespace PvciTranscripts
             session["pvci_transcriptid"] = Trim(transcriptId, TextLimit);
             session["pvci_botid"] = Trim(Json.Str(metadata, "BotId"), TextLimit);
             session["pvci_botname"] = Trim(botDisplayName, TextLimit);
-            session["pvci_tenantid"] = Trim(Json.Str(metadata, "AADTenantId"), TextLimit);
+            session["pvci_topicid"] = Trim(diagnostics.TopicId, TextLimit);
+            session["pvci_topicname"] = Trim(diagnostics.TopicName, TextLimit);
+            session["pvci_tenantid"] = Trim(sourceEnvironment.TenantId ?? Json.Str(metadata, "AADTenantId"), TextLimit);
             session["pvci_environmentid"] = Trim(sourceEnvironment.Id, TextLimit);
             session["pvci_environmentname"] = Trim(sourceEnvironment.Name, TextLimit);
             session["pvci_useraadobjectid"] = Trim(userAad, TextLimit);
@@ -368,12 +431,22 @@ namespace PvciTranscripts
                 session["pvci_maxtoolms"] = (int)toolDurations.Max();
             }
             session["pvci_toolcallsjson"] = toolsJson;
+            session["pvci_knowledgecallcount"] = knowledgeCalls.Count;
+            session["pvci_knowledgesourcecount"] = knowledgeSources;
+            session["pvci_knowledgefailurecount"] = knowledgeFailures;
+            session["pvci_knowledgecallsjson"] = knowledgeJson;
             session["pvci_flowrunsjson"] = flowsJson;
             session["pvci_flowruncount"] = matchedRuns;
             session["pvci_flowrunfailurecount"] = failedRuns;
             if (maxRunMs > 0) session["pvci_flowrunmaxms"] = (int)maxRunMs;
             session["pvci_sessionoutcome"] = Trim(Json.Str(sessionInfo, "outcome"), TextLimit);
-            session["pvci_outcomereason"] = Trim(Json.Str(sessionInfo, "outcomeReason"), TextLimit);
+            string userErrorReason = ErrorReason(diagnostics.PrimaryErrorCode, diagnostics.PrimaryErrorMessage);
+            session["pvci_outcomereason"] = Trim(userErrorReason ?? Json.Str(sessionInfo, "outcomeReason"), TextLimit);
+            session["pvci_usererrorcount"] = diagnostics.UserErrorCount;
+            session["pvci_primaryerrorcode"] = Trim(diagnostics.PrimaryErrorCode, TextLimit);
+            session["pvci_primaryerrormessage"] = Trim(diagnostics.PrimaryErrorMessage, MemoLimit);
+            session["pvci_primaryerrortopic"] = Trim(diagnostics.PrimaryErrorTopic, TextLimit);
+            session["pvci_errorcategory"] = Trim(diagnostics.ErrorCategory, TextLimit);
             object implied = Json.Get(sessionInfo, "impliedSuccess");
             if (implied is bool) session["pvci_isresolvedimplied"] = ((bool)implied) ? "true" : "false";
             int? sessionTurns = Json.Int(sessionInfo, "turnCount");
@@ -385,7 +458,9 @@ namespace PvciTranscripts
             session["pvci_metadatajson"] = metadataJson;
             session["pvci_transcriptcreatedon"] = createdOn;
             session["pvci_ingestedon"] = DateTime.UtcNow;
-            session["pvci_datasource"] = BuildSourceStamp(sourceEnvironment, Json.Str(metadata, "AADTenantId"));
+            session["pvci_datasource"] = BuildSourceStamp(
+                sourceEnvironment,
+                sourceEnvironment.TenantId ?? Json.Str(metadata, "AADTenantId"));
             session["pvci_correlationstatus"] = systemUser != null ? "exact" : (string.IsNullOrEmpty(userAad) ? "unmatched" : "heuristic");
             if (systemUser != null)
                 session["pvci_userid"] = new EntityReference("systemuser", systemUser.Id);
@@ -421,7 +496,8 @@ namespace PvciTranscripts
             {
                 string type = Json.Str(a, "type");
                 string name = Json.Str(a, "name");
-                if (!includeTraces && ((type != null && NoiseTypes.Contains(type)) || (name != null && NoiseEvents.Contains(name))))
+                if (!includeTraces && !IsUserErrorTrace(a)
+                    && ((type != null && NoiseTypes.Contains(type)) || (name != null && NoiseEvents.Contains(name))))
                     continue;
 
                 object from = Json.Get(a, "from");
@@ -449,7 +525,7 @@ namespace PvciTranscripts
                 turn["pvci_speaker"] = speaker;
                 if (role.HasValue) turn["pvci_role"] = role.Value;
                 turn["pvci_aadobjectid"] = Trim(Json.Str(from, "aadObjectId"), TextLimit);
-                turn["pvci_eventname"] = Trim(name, TextLimit);
+                turn["pvci_eventname"] = Trim(name ?? Json.Str(a, "valueType"), TextLimit);
                 turn["pvci_channelid"] = Trim(Json.Str(a, "channelId"), TextLimit);
                 long? ts = Json.Long(a, "timestamp");
                 if (ts.HasValue) turn["pvci_timestamputc"] = EpochUtc(ts.Value);
@@ -514,9 +590,70 @@ namespace PvciTranscripts
             return role.HasValue && role.Value == 1;
         }
 
+        private static bool IsUserErrorTrace(object activity)
+        {
+            if (!string.Equals(Json.Str(activity, "valueType"), "ErrorTraceData", StringComparison.Ordinal)) return false;
+            object isUserError = Json.Get(Json.Get(activity, "value"), "isUserError");
+            return isUserError is bool && (bool)isUserError;
+        }
+
         private static long? Ms(object activity)
         {
             return Json.Long(activity, "timestampMs");
+        }
+
+        private static TranscriptDiagnostics ExtractDiagnostics(List<object> activities)
+        {
+            var diagnostics = new TranscriptDiagnostics();
+            string currentTopic = null;
+            foreach (object activity in activities)
+            {
+                if (string.Equals(Json.Str(activity, "name"), "DynamicPlanStepTriggered", StringComparison.OrdinalIgnoreCase))
+                {
+                    string topicId = Json.Str(Json.Get(activity, "value"), "taskDialogId");
+                    if (!string.IsNullOrWhiteSpace(topicId))
+                    {
+                        currentTopic = LastSegment(topicId.Trim());
+                        if (string.IsNullOrEmpty(diagnostics.TopicId)) diagnostics.TopicId = topicId.Trim();
+                        if (string.IsNullOrEmpty(diagnostics.TopicName)) diagnostics.TopicName = currentTopic;
+                    }
+                }
+
+                if (!string.Equals(Json.Str(activity, "valueType"), "ErrorTraceData", StringComparison.Ordinal)) continue;
+                object value = Json.Get(activity, "value");
+                object isUserError = Json.Get(value, "isUserError");
+                if (!(isUserError is bool) || !(bool)isUserError) continue;
+
+                diagnostics.UserErrorCount++;
+                diagnostics.PrimaryErrorCode = TrimOrNull(Json.Str(value, "errorCode"));
+                diagnostics.PrimaryErrorMessage = TrimOrNull(Json.Str(value, "errorMessage"));
+                diagnostics.PrimaryErrorTopic = currentTopic;
+                diagnostics.ErrorCategory = ErrorCategory(diagnostics.PrimaryErrorCode, diagnostics.PrimaryErrorMessage);
+            }
+            return diagnostics;
+        }
+
+        private static string ErrorReason(string errorCode, string errorMessage)
+        {
+            if (!string.IsNullOrEmpty(errorCode) && !string.IsNullOrEmpty(errorMessage)) return errorCode + ": " + errorMessage;
+            return errorCode ?? errorMessage;
+        }
+
+        private static string ErrorCategory(string errorCode, string errorMessage)
+        {
+            string text = ((errorCode ?? string.Empty) + " " + (errorMessage ?? string.Empty)).ToLowerInvariant();
+            if (text.Contains("authentication") || text.Contains("unauthorized") || text.Contains("forbidden") || text.Contains("consent"))
+                return "Authentication";
+            if (text.Contains("connector") || text.Contains("connection") || text.Contains("reference id"))
+                return "Connector";
+            if (text.Contains("expression") || text.Contains("contentvalidation"))
+                return "Topic expression";
+            return "Topic runtime";
+        }
+
+        private static string TrimOrNull(string value)
+        {
+            return string.IsNullOrWhiteSpace(value) ? null : value.Trim();
         }
 
         /// <summary>User utterance -> first agent reply, in milliseconds.</summary>
@@ -596,6 +733,57 @@ namespace PvciTranscripts
                         { "output", null },
                     });
                 }
+            }
+            return calls;
+        }
+
+        private static List<object> ExtractKnowledgeCalls(List<object> activities)
+        {
+            var calls = new List<object>();
+            string stepId = null, task = null, startedUtc = null;
+            long? startedMs = null;
+
+            foreach (object activity in activities)
+            {
+                string name = Json.Str(activity, "name") ?? string.Empty;
+                object value = Json.Get(activity, "value");
+                if (name.Equals("DynamicPlanStepTriggered", StringComparison.OrdinalIgnoreCase))
+                {
+                    string candidateTask = Json.Str(value, "taskDialogId");
+                    if (!string.IsNullOrEmpty(candidateTask)
+                        && candidateTask.IndexOf("search", StringComparison.OrdinalIgnoreCase) >= 0)
+                    {
+                        stepId = Json.Str(value, "stepId");
+                        task = candidateTask;
+                        startedMs = Ms(activity);
+                        startedUtc = startedMs.HasValue ? FormatIso(EpochUtc(startedMs.Value / 1000)) : null;
+                    }
+                    continue;
+                }
+
+                if (!string.Equals(Json.Str(activity, "valueType"), "KnowledgeTraceData", StringComparison.Ordinal)) continue;
+                List<object> cited = Json.Arr(Json.Get(value, "citedKnowledgeSources")) ?? new List<object>();
+                List<object> failedSources = Json.Arr(Json.Get(value, "failedKnowledgeSourcesTypes")) ?? new List<object>();
+                string completion = Json.Str(value, "completionState");
+                bool completionFailed = !string.Equals(completion, "Answered", StringComparison.OrdinalIgnoreCase)
+                    && !string.Equals(completion, "Completed", StringComparison.OrdinalIgnoreCase)
+                    && !string.Equals(completion, "Complete", StringComparison.OrdinalIgnoreCase)
+                    && !string.Equals(completion, "Succeeded", StringComparison.OrdinalIgnoreCase);
+                long? finishedMs = Ms(activity);
+                object searchedValue = Json.Get(value, "isKnowledgeSearched");
+
+                calls.Add(new Dictionary<string, object>(StringComparer.Ordinal)
+                {
+                    { "step_id", stepId },
+                    { "task", task ?? "Knowledge search" },
+                    { "started_utc", startedUtc },
+                    { "duration_ms", startedMs.HasValue && finishedMs.HasValue ? (object)(double)(finishedMs.Value - startedMs.Value) : null },
+                    { "completion_state", completion },
+                    { "searched", searchedValue is bool && (bool)searchedValue },
+                    { "cited_sources", cited },
+                    { "failed_source_types", failedSources },
+                    { "failed", failedSources.Count > 0 || completionFailed },
+                });
             }
             return calls;
         }
@@ -710,10 +898,12 @@ namespace PvciTranscripts
 
                 if (name.Equals("DynamicPlanStepTriggered", StringComparison.OrdinalIgnoreCase))
                 {
+                    string taskDialogId = Json.Str(value, "taskDialogId");
+                    if (!IsFlowCandidateTask(taskDialogId)) continue;
                     steps[stepId] = new FlowSpan
                     {
                         ActionId = stepId,
-                        Topic = LastSegment(Json.Str(value, "taskDialogId")),
+                        Topic = LastSegment(taskDialogId),
                         StartMs = ts.Value,
                         Source = "plan_step",
                         Thought = Json.Str(value, "thought"),
@@ -741,6 +931,13 @@ namespace PvciTranscripts
                 }
             }
             return ordered;
+        }
+
+        private static bool IsFlowCandidateTask(string taskDialogId)
+        {
+            if (string.IsNullOrWhiteSpace(taskDialogId)) return false;
+            return taskDialogId.IndexOf("search", StringComparison.OrdinalIgnoreCase) < 0
+                && taskDialogId.IndexOf("knowledge", StringComparison.OrdinalIgnoreCase) < 0;
         }
 
         private static List<object> CorrelateFlowRuns(List<object> activities, List<Entity> flowRuns)
@@ -910,12 +1107,34 @@ namespace PvciTranscripts
             {
                 // Friendly-name enrichment is optional; environment ID remains authoritative.
             }
+            string inventoryName = ResolveInventoryEnvironmentName(service, context6.EnvironmentId);
             return new SourceEnvironment
             {
                 Id = context6.EnvironmentId,
-                Name = friendlyName ?? organizationName ?? context6.EnvironmentId,
+                Name = inventoryName ?? friendlyName,
                 OrganizationName = organizationName,
             };
+        }
+
+        private static string ResolveInventoryEnvironmentName(IOrganizationService service, string environmentId)
+        {
+            try
+            {
+                var query = new QueryExpression("pvci_environmentinventory")
+                {
+                    ColumnSet = new ColumnSet("pvci_displayname"),
+                    TopCount = 1,
+                };
+                query.Criteria.AddCondition("pvci_environmentid", ConditionOperator.Equal, environmentId);
+                EntityCollection rows = service.RetrieveMultiple(query);
+                return rows.Entities.Count > 0
+                    ? TrimOrNull(rows.Entities[0].GetAttributeValue<string>("pvci_displayname"))
+                    : null;
+            }
+            catch (FaultException<OrganizationServiceFault>)
+            {
+                return null;
+            }
         }
 
         private static string BuildSourceStamp(SourceEnvironment source, string tenantId)

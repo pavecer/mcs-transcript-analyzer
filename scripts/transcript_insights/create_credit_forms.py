@@ -106,6 +106,20 @@ def environment_form() -> str:
         + forms.row(forms.field_cell("ei_synced", "pvci_lastsyncedon", forms.DATE, "Last synced"),
                     forms.field_cell("ei_key", "pvci_sourcekey", forms.TEXT, "Source key")),
     )
+    transcripts = forms.section(
+        "ei_transcripts",
+        "Central transcript collection",
+        forms.row(forms.field_cell("ei_transcript_status", "pvci_transcriptaccessstatus", forms.TEXT, "Access status"),
+                  forms.field_cell("ei_transcript_enabled", "pvci_transcriptcollectorenabled", forms.BOOL, "Collector enabled"))
+        + forms.row(forms.field_cell("ei_transcript_reason", "pvci_transcriptaccessreason", forms.TEXT, "Access reason"),
+                    forms.field_cell("ei_transcript_sample", "pvci_transcriptsamplecount", forms.INT, "Probe sample count"))
+        + forms.row(forms.field_cell("ei_transcript_probe", "pvci_transcriptprobeon", forms.DATE, "Last probe"),
+                    forms.field_cell("ei_transcript_collected", "pvci_transcriptlastcollectedon", forms.DATE, "Collection watermark"))
+        + forms.row(forms.field_cell("ei_transcript_collection_status", "pvci_transcriptlastcollectionstatus", forms.TEXT, "Last collection status"),
+                    forms.field_cell("ei_transcript_batch", "pvci_transcriptlastbatchcount", forms.INT, "Last batch rows"))
+        + forms.row(forms.field_cell("ei_transcript_error", "pvci_transcriptlastcollectionerror", forms.MEMO, "Last collection error", rowspan=8)),
+        columns="1",
+    )
     raw = forms.section(
         "ei_raw",
         "Raw source record",
@@ -113,7 +127,7 @@ def environment_form() -> str:
                                    rowspan=30, pcf=True, depth=4, height=650)),
         columns="1",
     )
-    return f"<form><tabs>{forms.tab('ei_summary', 'Environment', identity + lineage)}{forms.tab('ei_raw_tab', 'Raw Source', raw)}</tabs>{forms.control_descriptions()}</form>"
+    return f"<form><tabs>{forms.tab('ei_summary', 'Environment', identity + lineage)}{forms.tab('ei_transcript_tab', 'Transcript Collection', transcripts)}{forms.tab('ei_raw_tab', 'Raw Source', raw)}</tabs>{forms.control_descriptions()}</form>"
 
 
 def inventory_sync_form() -> str:

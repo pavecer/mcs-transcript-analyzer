@@ -10,7 +10,6 @@ import { Pvci_credituserusagesService } from "../generated/services/Pvci_creditu
 import { Pvci_creditprivacysettingsService } from "../generated/services/Pvci_creditprivacysettingsService";
 import { Pvci_environmentinventoriesService } from "../generated/services/Pvci_environmentinventoriesService";
 import { Pvci_governancesyncrunsService } from "../generated/services/Pvci_governancesyncrunsService";
-import { Pvci_inventorysyncrunsService } from "../generated/services/Pvci_inventorysyncrunsService";
 import { Pvci_thresholdchangerequestsService } from "../generated/services/Pvci_thresholdchangerequestsService";
 import { Pvci_transcriptsessionsService } from "../generated/services/Pvci_transcriptsessionsService";
 import type { Pvci_agentinventories } from "../generated/models/Pvci_agentinventoriesModel";
@@ -22,7 +21,6 @@ import type { Pvci_credituserusages } from "../generated/models/Pvci_credituseru
 import type { Pvci_creditprivacysettings } from "../generated/models/Pvci_creditprivacysettingsModel";
 import type { Pvci_environmentinventories } from "../generated/models/Pvci_environmentinventoriesModel";
 import type { Pvci_governancesyncruns } from "../generated/models/Pvci_governancesyncrunsModel";
-import type { Pvci_inventorysyncruns } from "../generated/models/Pvci_inventorysyncrunsModel";
 import type { Pvci_thresholdchangerequests } from "../generated/models/Pvci_thresholdchangerequestsModel";
 import type { SessionRow } from "../lib/model";
 import { loadAllPages } from "../lib/paging";
@@ -69,13 +67,11 @@ const CHANGE_REQUEST_FIELDS = [
 const ENVIRONMENT_FIELDS = [
   "pvci_environmentinventoryid", "pvci_environmentid", "pvci_displayname", "pvci_environmenturl",
   "pvci_environmenttype", "pvci_geo", "pvci_state", "pvci_ismanaged", "pvci_hasdataverse",
-  "pvci_hasdetailedaccess", "pvci_lastsyncedon",
-];
-
-const INVENTORY_SYNC_FIELDS = [
-  "pvci_inventorysyncrunid", "pvci_name", "pvci_source", "pvci_startedon", "pvci_completedon",
-  "pvci_status", "pvci_environmentcount", "pvci_agentcount", "pvci_createdcount",
-  "pvci_updatedcount", "pvci_rejectedcount",
+  "pvci_hasdetailedaccess", "pvci_lastsyncedon", "pvci_transcriptaccessstatus",
+  "pvci_transcriptaccessreason", "pvci_transcriptprobeon", "pvci_transcriptsamplecount",
+  "pvci_transcriptcollectorenabled", "pvci_transcriptlastcollectedon",
+  "pvci_transcriptlastcollectionstatus", "pvci_transcriptlastcollectionerror",
+  "pvci_transcriptlastbatchcount",
 ];
 
 const SYNC_FIELDS = [
@@ -125,7 +121,6 @@ export function Credits({ sidebarTarget }: { sidebarTarget: HTMLElement | null }
   const [governanceSyncRuns, setGovernanceSyncRuns] = useState<Pvci_governancesyncruns[]>([]);
   const [changeRequests, setChangeRequests] = useState<Pvci_thresholdchangerequests[]>([]);
   const [environments, setEnvironments] = useState<Pvci_environmentinventories[]>([]);
-  const [inventorySyncRuns, setInventorySyncRuns] = useState<Pvci_inventorysyncruns[]>([]);
   const [syncRuns, setSyncRuns] = useState<Pvci_creditsyncruns[]>([]);
   const [userUsage, setUserUsage] = useState<Pvci_credituserusages[]>([]);
   const [privacy, setPrivacy] = useState<Pvci_creditprivacysettings | null>(null);
@@ -154,7 +149,7 @@ export function Credits({ sidebarTarget }: { sidebarTarget: HTMLElement | null }
     let cancelled = false;
     void (async () => {
       try {
-        const [usageResult, capacityResult, agentResult, thresholdResult, governanceSyncResult, changeRequestResult, environmentResult, inventorySyncResult, syncResult, userResult, privacyResult, sessionResult] = await Promise.all([
+        const [usageResult, capacityResult, agentResult, thresholdResult, governanceSyncResult, changeRequestResult, environmentResult, syncResult, userResult, privacyResult, sessionResult] = await Promise.all([
           loadAllPages((skipToken, maxPageSize) => Pvci_creditusagesService.getAll({ select: USAGE_FIELDS, orderBy: ["pvci_usagedate desc"], maxPageSize, skipToken })),
           loadAllPages((skipToken, maxPageSize) => Pvci_creditcapacitysnapshotsService.getAll({ select: CAPACITY_FIELDS, orderBy: ["pvci_asofdate desc"], maxPageSize, skipToken })),
           loadAllPages((skipToken, maxPageSize) => Pvci_agentinventoriesService.getAll({ select: AGENT_FIELDS, orderBy: ["pvci_displayname asc"], maxPageSize, skipToken })),
@@ -162,7 +157,6 @@ export function Credits({ sidebarTarget }: { sidebarTarget: HTMLElement | null }
           Pvci_governancesyncrunsService.getAll({ select: GOVERNANCE_SYNC_FIELDS, orderBy: ["pvci_startedon desc"], top: 50 }),
           Pvci_thresholdchangerequestsService.getAll({ select: CHANGE_REQUEST_FIELDS, orderBy: ["pvci_requestedon desc"], top: 100 }),
           loadAllPages((skipToken, maxPageSize) => Pvci_environmentinventoriesService.getAll({ select: ENVIRONMENT_FIELDS, orderBy: ["pvci_displayname asc"], maxPageSize, skipToken })),
-          Pvci_inventorysyncrunsService.getAll({ select: INVENTORY_SYNC_FIELDS, orderBy: ["pvci_startedon desc"], top: 50 }),
           Pvci_creditsyncrunsService.getAll({ select: SYNC_FIELDS, orderBy: ["pvci_startedon desc"], top: 50 }),
           loadAllPages((skipToken, maxPageSize) => Pvci_credituserusagesService.getAll({ select: USER_USAGE_FIELDS, orderBy: ["pvci_usagedate desc"], maxPageSize, skipToken })),
           Pvci_creditprivacysettingsService.getAll({ select: PRIVACY_FIELDS, filter: "pvci_settingkey eq 'credit-user-disclosure'", top: 1 }),
@@ -176,7 +170,6 @@ export function Credits({ sidebarTarget }: { sidebarTarget: HTMLElement | null }
         setGovernanceSyncRuns((governanceSyncResult.data ?? []) as unknown as Pvci_governancesyncruns[]);
         setChangeRequests((changeRequestResult.data ?? []) as unknown as Pvci_thresholdchangerequests[]);
         setEnvironments(environmentResult);
-        setInventorySyncRuns((inventorySyncResult.data ?? []) as unknown as Pvci_inventorysyncruns[]);
         setSyncRuns((syncResult.data ?? []) as unknown as Pvci_creditsyncruns[]);
         setUserUsage(userResult);
         setPrivacy(((privacyResult.data ?? [])[0] ?? null) as unknown as Pvci_creditprivacysettings | null);
@@ -501,10 +494,8 @@ export function Credits({ sidebarTarget }: { sidebarTarget: HTMLElement | null }
   );
 
   const latestSync = syncRuns[0];
-  const latestInventorySync = inventorySyncRuns[0];
   const latestGovernanceSync = governanceSyncRuns[0];
   const linkedThresholdCount = scopedThresholds.filter((row) => row._pvci_agentid_value).length;
-  const detailedEnvironmentCount = environments.filter((row) => row.pvci_hasdetailedaccess).length;
   const latestUsageDate = environmentUsage.reduce<string | undefined>(
     (latest, row) => !latest || (row.pvci_usagedate ?? "") > latest ? row.pvci_usagedate : latest,
     undefined
@@ -690,7 +681,6 @@ export function Credits({ sidebarTarget }: { sidebarTarget: HTMLElement | null }
         <div className="freshness">
           <span>Usage through <strong>{fmtDate(latestUsageDate)}</strong></span>
           <span>Credit sync <strong>{fmtDateTime(latestSync?.pvci_completedon)}</strong></span>
-          <span>Inventory sync <strong>{fmtDateTime(latestInventorySync?.pvci_completedon)}</strong></span>
           <span>Governance sync <strong>{fmtDateTime(latestGovernanceSync?.pvci_completedon)}</strong></span>
         </div>
       </div>
@@ -881,18 +871,9 @@ export function Credits({ sidebarTarget }: { sidebarTarget: HTMLElement | null }
         <div className="report-heading">
           <div>
             <span className="report-eyebrow">Operations</span>
-            <h3 className="heading-with-help">Capacity, privacy, and collector health<HelpTip text="Administrative status for available capacity, shared user-name disclosure, and scheduled collector freshness." /></h3>
+            <h3 className="heading-with-help">Capacity, privacy, and governance health<HelpTip text="Administrative status for available capacity, shared user-name disclosure, credit controls, and collector freshness." /></h3>
             <p>Administrative context for the reporting data.</p>
           </div>
-        </div>
-
-        <SectionHeading text="Tenant inventory" help="Environment and agent inventory collected independently of credit activity. Detailed access reflects environments where deeper Dataverse enrichment is available." className="report-subheading" />
-        <div className="sync-strip">
-          <span>{latestInventorySync?.pvci_name ?? "No inventory sync run"}</span>
-          <span className={`conf ${latestInventorySync?.pvci_status === "success" ? "high" : "multiple"}`}>{latestInventorySync?.pvci_status ?? "not configured"}</span>
-          <span>{environments.length} environments</span>
-          <span>{agents.length} agents/resources</span>
-          <span>{detailedEnvironmentCount} detailed access</span>
         </div>
 
         <SectionHeading text="Agent credit limits" help="Latest Power Platform resource-threshold state. Authorized Credit Administrators can submit audited change requests for processor validation." className="report-subheading" />

@@ -14,6 +14,15 @@ interface Gap {
   ms: number;
 }
 
+interface ErrorEvent {
+  id: string;
+  at?: string;
+  code?: string;
+  message?: string;
+  topic?: string;
+  category: string;
+}
+
 export function EssOps({ session, turns, loading }: { session: SessionRow; turns: TurnRow[]; loading: boolean }) {
   if (loading) return <div className="muted pad">Loading ESS operations view…</div>;
 
@@ -21,8 +30,9 @@ export function EssOps({ session, turns, loading }: { session: SessionRow; turns
   const maxGap = largestGap(turns);
   const staleGaps = topStaleGaps(turns, 60_000, 4);
   const unansweredUserTurns = countUnansweredUserTurns(turns);
+  const errorEvents = deriveErrorEvents(turns);
 
-  const firstReplyMs = firstReplyLatency(turns) ?? session.pvci_firstresponsems ?? null;
+  const firstReplyMs = session.pvci_firstresponsems ?? firstReplyLatency(turns) ?? null;
   const sessionTopic = session.pvci_topicname ?? topicSteps[0]?.topic ?? "—";
   const firstTopicAt = topicSteps[0]?.startedUtc;
 
@@ -31,19 +41,58 @@ export function EssOps({ session, turns, loading }: { session: SessionRow; turns
   return (
     <div className="ess-ops">
       <div className="muted small pad-sm">
-        ESS operations lens: highlights routing choices and conversation health over raw payload noise.
+        Conversation overview: what the user experienced, how the agent routed the request, and which observable systems participated.
       </div>
 
       <div className="ess-kpis">
         <Kpi label="Environment" value={sourceEnvironmentLabel(session)} hint={session.pvci_tenantid ? `tenant ${session.pvci_tenantid}` : undefined} />
         <Kpi label="Primary topic" value={sessionTopic} hint={firstTopicAt ? `first picked ${fmtClock(firstTopicAt)}` : undefined} />
         <Kpi label="First reply" value={fmtMs(firstReplyMs)} />
-        <Kpi label="Max silent gap" value={fmtMs(maxGap?.ms ?? null)} hint={maxGap ? `${fmtClock(maxGap.fromUtc)} → ${fmtClock(maxGap.toUtc)}` : undefined} />
+        <Kpi label="Largest retained-event gap" value={fmtMs(maxGap?.ms ?? null)} hint={maxGap ? `${fmtClock(maxGap.fromUtc)} → ${fmtClock(maxGap.toUtc)}` : undefined} />
         <Kpi label="Unanswered user turns" value={String(unansweredUserTurns)} hint={unansweredUserTurns > 0 ? "candidate stale handoff" : undefined} />
         <Kpi label="Topic steps" value={String(topicSteps.length)} />
+        <Kpi
+          label="Knowledge calls"
+          value={String(session.pvci_knowledgecallcount ?? 0)}
+          hint={`${session.pvci_knowledgesourcecount ?? 0} cited source(s)`}
+        />
+        <Kpi
+          label="User errors"
+          value={String(session.pvci_usererrorcount ?? errorEvents.length)}
+          hint={session.pvci_errorcategory ?? undefined}
+        />
       </div>
 
-      <h3 className="sub">Topic pick timeline</h3>
+      <h3 className="sub">Failure timeline</h3>
+      {!errorEvents.length ? (
+        <div className="muted small pad-sm">No user-facing runtime failure trace was retained.</div>
+      ) : (
+        <table className="runtable ess-error-table">
+          <thead>
+            <tr>
+              <th>at</th>
+              <th>category</th>
+              <th>topic</th>
+              <th>error</th>
+            </tr>
+          </thead>
+          <tbody>
+            {errorEvents.map((error) => (
+              <tr key={error.id}>
+                <td className="mono">{fmtClock(error.at)}</td>
+                <td><span className="conf risk-critical">{error.category}</span></td>
+                <td className="mono">{error.topic ?? "—"}</td>
+                <td>
+                  <strong className="ess-error-code">{error.code ?? "UserError"}</strong>
+                  <span className="ess-error-message">{error.message ?? "No error message was recorded."}</span>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+
+      <h3 className="sub">Routing timeline</h3>
       {!topicSteps.length ? (
         <div className="muted small pad-sm">
           No DynamicPlan step activity found. Check transcript retention and reasoning capture.
@@ -71,9 +120,9 @@ export function EssOps({ session, turns, loading }: { session: SessionRow; turns
         </table>
       )}
 
-      <h3 className="sub">Stale segments</h3>
+      <h3 className="sub">Retained-event gaps</h3>
       {!staleGaps.length ? (
-        <div className="muted small pad-sm">No inactivity gap over 60s detected.</div>
+        <div className="muted small pad-sm">No gap over 60 seconds exists between retained transcript events.</div>
       ) : (
         <table className="runtable ess-stale-table">
           <thead>
@@ -139,6 +188,42 @@ function firstReplyLatency(turns: TurnRow[]): number | null {
 
   const agentTs = Date.parse(firstAgent.pvci_timestamputc);
   return Number.isNaN(agentTs) ? null : agentTs - userTs;
+}
+
+function deriveErrorEvents(turns: TurnRow[]): ErrorEvent[] {
+  const ordered = [...turns].sort((left, right) => (left.pvci_turnindex ?? 0) - (right.pvci_turnindex ?? 0));
+  const errors: ErrorEvent[] = [];
+  let currentTopic: string | undefined;
+
+  for (const turn of ordered) {
+    const payload = safeParse(turn.pvci_valuejson) as Record<string, unknown> | undefined;
+    if (turn.pvci_eventname === "DynamicPlanStepTriggered") {
+      const topicId = typeof payload?.taskDialogId === "string" ? payload.taskDialogId : undefined;
+      currentTopic = topicId ? topicId.split(".").pop() ?? topicId : currentTopic;
+      continue;
+    }
+    if (turn.pvci_eventname !== "ErrorTraceData" || payload?.isUserError !== true) continue;
+
+    const code = typeof payload.errorCode === "string" ? payload.errorCode : undefined;
+    const message = typeof payload.errorMessage === "string" ? payload.errorMessage : undefined;
+    errors.push({
+      id: turn.pvci_transcriptturnid,
+      at: turn.pvci_timestamputc,
+      code,
+      message,
+      topic: currentTopic,
+      category: classifyError(code, message),
+    });
+  }
+  return errors;
+}
+
+function classifyError(code?: string, message?: string): string {
+  const text = `${code ?? ""} ${message ?? ""}`.toLowerCase();
+  if (["authentication", "unauthorized", "forbidden", "consent"].some((token) => text.includes(token))) return "Authentication";
+  if (["connector", "connection", "reference id"].some((token) => text.includes(token))) return "Connector";
+  if (["expression", "contentvalidation"].some((token) => text.includes(token))) return "Topic expression";
+  return "Topic runtime";
 }
 
 function deriveTopicSteps(turns: TurnRow[], planEventsJson?: string): TopicStep[] {
@@ -285,6 +370,24 @@ function countUnansweredUserTurns(turns: TurnRow[]): number {
 
 function buildHints(session: SessionRow, firstReplyMs: number | null, maxGap: Gap | null, unansweredUserTurns: number) {
   const hints: Array<{ title: string; detail: string; where: string; band: "good" | "warn" | "bad" }> = [];
+
+  if ((session.pvci_usererrorcount ?? 0) > 0) {
+    hints.push({
+      title: session.pvci_errorcategory ?? "Topic runtime failure",
+      detail: `${session.pvci_usererrorcount} user-facing error(s). ${session.pvci_primaryerrorcode ?? "No error code recorded"}.`,
+      where: `Inspect Failure timeline at ${session.pvci_primaryerrortopic ?? "the active topic"}. ${session.pvci_primaryerrormessage ?? ""}`.trim(),
+      band: "bad",
+    });
+  }
+
+  if ((session.pvci_knowledgefailurecount ?? 0) > 0) {
+    hints.push({
+      title: "Knowledge retrieval failure",
+      detail: `${session.pvci_knowledgefailurecount} knowledge retrieval(s) reported failed sources or incomplete execution.`,
+      where: "Open Knowledge and inspect completion state plus failed source types.",
+      band: "bad",
+    });
+  }
 
   if ((session.pvci_toolerrorcount ?? 0) > 0) {
     hints.push({

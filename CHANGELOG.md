@@ -3,6 +3,24 @@
 Release history for MCS Transcript Analyzer. Each published package version is immutable; package
 checksums and source provenance are recorded in `site/downloads/release-manifest.json`.
 
+## 1.4.0.15 - 2026-08-25
+
+Cross-environment transcript operations release.
+
+- Added tenant inventory-backed central transcript collection through one packaged, tenant-neutral Dataverse connection reference.
+- Added source-managed onboarding with audited access requests, least-privilege verification, explicit access states, and a verified-only collection gate.
+- Added runtime-failure, knowledge-retrieval, agent-reasoning, and time-based flow-correlation investigation surfaces.
+- Added Inventory Management with clickable readiness summaries, source enablement controls, and visible denied or unsupported environments.
+- Added one persistent code-app navigation bar for Sessions, Trends, Inventory, and Credits, with contextual sidebars and responsive mobile behavior.
+- Kept Administrator bootstrap unavailable until external reconciliation can provision access and prove that temporary elevation was removed.
+- Validated both managed packages as upgrades in PVE Dev and through a manual cross-tenant TPM upgrade.
+
+Artifacts:
+
+- Core: `pvConversationInsights-managed-1.4.0.15.zip`
+- Preview: `pvConversationInsightsCodeApp-managed-1.4.0.15.zip`
+- Release manifest: [`site/downloads/release-manifest.json`](site/downloads/release-manifest.json)
+
 ## 1.3.1.0 - 2026-08-12
 
 Backward-compatible governance bug fix.

@@ -1,0 +1,9 @@
+<customapirequestparameter uniquename="SourceTenantId">
+  <displayname default="Source tenant ID">
+    <label description="Source tenant ID" languagecode="1033" />
+  </displayname>
+  <iscustomizable>1</iscustomizable>
+  <isoptional>0</isoptional>
+  <name>SourceTenantId</name>
+  <type>10</type>
+</customapirequestparameter>

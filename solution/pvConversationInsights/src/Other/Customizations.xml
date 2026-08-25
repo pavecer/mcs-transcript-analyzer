@@ -16,6 +16,15 @@
   <AppModules />
   <EntityDataProviders />
   <connectionreferences>
+    <connectionreference connectionreferencelogicalname="pvci_centralcollector">
+      <connectionreferencedisplayname>Pvci Centralcollector</connectionreferencedisplayname>
+      <connectorid>/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps</connectorid>
+      <description>Used by the central cross-environment transcript collector.</description>
+      <iscustomizable>1</iscustomizable>
+      <promptingbehavior>0</promptingbehavior>
+      <statecode>0</statecode>
+      <statuscode>1</statuscode>
+    </connectionreference>
     <connectionreference connectionreferencelogicalname="pvci_dataversesync">
       <connectionreferencedisplayname>PVCI Dataverse (transcript sync)</connectionreferencedisplayname>
       <connectorid>/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps</connectorid>

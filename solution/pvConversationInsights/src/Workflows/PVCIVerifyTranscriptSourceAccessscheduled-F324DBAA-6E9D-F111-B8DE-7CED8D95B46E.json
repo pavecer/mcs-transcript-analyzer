@@ -1,0 +1,257 @@
+{
+  "properties": {
+    "connectionReferences": {
+      "pvci_centralcollector": {
+        "runtimeSource": "embedded",
+        "connection": {
+          "connectionReferenceLogicalName": "pvci_centralcollector"
+        },
+        "api": {
+          "name": "shared_commondataserviceforapps"
+        }
+      }
+    },
+    "definition": {
+      "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+      "contentVersion": "1.0.0.0",
+      "parameters": {
+        "$connections": {
+          "defaultValue": {},
+          "type": "Object"
+        },
+        "$authentication": {
+          "defaultValue": {},
+          "type": "SecureObject"
+        }
+      },
+      "triggers": {
+        "Every_minute": {
+          "type": "Recurrence",
+          "recurrence": {
+            "frequency": "Minute",
+            "interval": 1
+          },
+          "runtimeConfiguration": {
+            "concurrency": {
+              "runs": 1
+            }
+          }
+        }
+      },
+      "actions": {
+        "List_pending_verification_requests": {
+          "type": "OpenApiConnection",
+          "runAfter": {},
+          "inputs": {
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+              "connectionName": "pvci_centralcollector",
+              "operationId": "ListRecords"
+            },
+            "parameters": {
+              "entityName": "pvci_transcriptaccessrequests",
+              "$select": "pvci_transcriptaccessrequestid,pvci_environmentid,pvci_environmenturl,pvci_action,pvci_requestedmode,pvci_status,_pvci_environmentinventoryid_value",
+              "$filter": "pvci_status eq 'Pending' and pvci_action eq 'Verify'",
+              "$orderby": "createdon asc",
+              "$top": 20
+            }
+          }
+        },
+        "Process_verification_requests": {
+          "type": "Foreach",
+          "runAfter": {
+            "List_pending_verification_requests": [
+              "Succeeded"
+            ]
+          },
+          "foreach": "@body('List_pending_verification_requests')?['value']",
+          "runtimeConfiguration": {
+            "concurrency": {
+              "repetitions": 1
+            }
+          },
+          "actions": {
+            "Mark_processing": {
+              "type": "OpenApiConnection",
+              "runAfter": {},
+              "inputs": {
+                "host": {
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+                  "connectionName": "pvci_centralcollector",
+                  "operationId": "UpdateOnlyRecord"
+                },
+                "parameters": {
+                  "entityName": "pvci_transcriptaccessrequests",
+                  "recordId": "@items('Process_verification_requests')?['pvci_transcriptaccessrequestid']",
+                  "item/pvci_status": "Processing",
+                  "item/pvci_processor": "PVCI Verify Transcript Source Access (scheduled)",
+                  "item/pvci_error": ""
+                }
+              }
+            },
+            "Probe_source_access": {
+              "type": "Scope",
+              "runAfter": {
+                "Mark_processing": [
+                  "Succeeded"
+                ]
+              },
+              "actions": {
+                "Probe_source_transcript_access": {
+                  "type": "OpenApiConnection",
+                  "runAfter": {},
+                  "inputs": {
+                    "host": {
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+                      "connectionName": "pvci_centralcollector",
+                      "operationId": "ListRecordsWithOrganization"
+                    },
+                    "parameters": {
+                      "organization": "@items('Process_verification_requests')?['pvci_environmenturl']",
+                      "entityName": "conversationtranscripts",
+                      "$select": "conversationtranscriptid",
+                      "$top": 1
+                    }
+                  }
+                }
+              }
+            },
+            "Mark_verified": {
+              "type": "OpenApiConnection",
+              "runAfter": {
+                "Probe_source_access": [
+                  "Succeeded"
+                ]
+              },
+              "inputs": {
+                "host": {
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+                  "connectionName": "pvci_centralcollector",
+                  "operationId": "UpdateOnlyRecord"
+                },
+                "parameters": {
+                  "entityName": "pvci_transcriptaccessrequests",
+                  "recordId": "@items('Process_verification_requests')?['pvci_transcriptaccessrequestid']",
+                  "item/pvci_status": "Verified",
+                  "item/pvci_processedon": "@utcNow()",
+                  "item/pvci_accessstatus": "@if(empty(body('Probe_source_transcript_access')?['value']),'readable_empty','readable_with_rows')",
+                  "item/pvci_roleverified": false,
+                  "item/pvci_elevationcleanupverified": false,
+                  "item/pvci_evidence": "@concat('One-row ID-only Dataverse probe succeeded; sampleCount=',string(length(body('Probe_source_transcript_access')?['value'])))",
+                  "item/pvci_error": ""
+                }
+              }
+            },
+            "Project_verified_access": {
+              "type": "OpenApiConnection",
+              "runAfter": {
+                "Mark_verified": [
+                  "Succeeded"
+                ]
+              },
+              "inputs": {
+                "host": {
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+                  "connectionName": "pvci_centralcollector",
+                  "operationId": "UpdateOnlyRecord"
+                },
+                "parameters": {
+                  "entityName": "pvci_environmentinventories",
+                  "recordId": "@items('Process_verification_requests')?['_pvci_environmentinventoryid_value']",
+                  "item/pvci_transcriptonboardingmode": "@items('Process_verification_requests')?['pvci_requestedmode']",
+                  "item/pvci_transcriptonboardingstatus": "Verified",
+                  "item/pvci_transcriptaccessstatus": "@if(empty(body('Probe_source_transcript_access')?['value']),'readable_empty','readable_with_rows')",
+                  "item/pvci_transcriptaccessreason": "",
+                  "item/pvci_transcriptprobeon": "@utcNow()",
+                  "item/pvci_transcriptaccesslastverifiedon": "@utcNow()",
+                  "item/pvci_transcriptsamplecount": "@length(body('Probe_source_transcript_access')?['value'])",
+                  "item/pvci_transcriptaccessroleverified": false,
+                  "item/pvci_transcriptelevationcleanupverified": false,
+                  "item/pvci_transcriptonboardinglasterror": ""
+                }
+              }
+            },
+            "Handle_verification_failure": {
+              "type": "Scope",
+              "runAfter": {
+                "Probe_source_access": [
+                  "Failed",
+                  "TimedOut"
+                ]
+              },
+              "actions": {
+                "Mark_verification_failed": {
+                  "type": "OpenApiConnection",
+                  "runAfter": {},
+                  "inputs": {
+                    "host": {
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+                      "connectionName": "pvci_centralcollector",
+                      "operationId": "UpdateOnlyRecord"
+                    },
+                    "parameters": {
+                      "entityName": "pvci_transcriptaccessrequests",
+                      "recordId": "@items('Process_verification_requests')?['pvci_transcriptaccessrequestid']",
+                      "item/pvci_status": "Failed",
+                      "item/pvci_processedon": "@utcNow()",
+                      "item/pvci_accessstatus": "access_denied",
+                      "item/pvci_roleverified": false,
+                      "item/pvci_elevationcleanupverified": false,
+                      "item/pvci_evidence": "One-row ID-only Dataverse probe failed or timed out.",
+                      "item/pvci_error": "Collector identity cannot read conversation transcripts in the source environment."
+                    }
+                  }
+                },
+                "Project_denied_access": {
+                  "type": "OpenApiConnection",
+                  "runAfter": {
+                    "Mark_verification_failed": [
+                      "Succeeded"
+                    ]
+                  },
+                  "inputs": {
+                    "host": {
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+                      "connectionName": "pvci_centralcollector",
+                      "operationId": "UpdateOnlyRecord"
+                    },
+                    "parameters": {
+                      "entityName": "pvci_environmentinventories",
+                      "recordId": "@items('Process_verification_requests')?['_pvci_environmentinventoryid_value']",
+                      "item/pvci_transcriptonboardingmode": "@items('Process_verification_requests')?['pvci_requestedmode']",
+                      "item/pvci_transcriptonboardingstatus": "Failed",
+                      "item/pvci_transcriptaccessstatus": "access_denied",
+                      "item/pvci_transcriptaccessreason": "dataverse_read_not_available",
+                      "item/pvci_transcriptprobeon": "@utcNow()",
+                      "item/pvci_transcriptsamplecount": 0,
+                      "item/pvci_transcriptaccessroleverified": false,
+                      "item/pvci_transcriptelevationcleanupverified": false,
+                      "item/pvci_transcriptcollectorenabled": false,
+                      "item/pvci_transcriptonboardinglasterror": "Collector identity cannot read conversation transcripts in the source environment."
+                    }
+                  }
+                }
+              }
+            },
+            "Complete_verification_request": {
+              "type": "Compose",
+              "runAfter": {
+                "Project_verified_access": [
+                  "Succeeded",
+                  "Skipped"
+                ],
+                "Handle_verification_failure": [
+                  "Succeeded",
+                  "Skipped"
+                ]
+              },
+              "inputs": "@items('Process_verification_requests')?['pvci_transcriptaccessrequestid']"
+            }
+          }
+        }
+      }
+    },
+    "templateName": null
+  },
+  "schemaVersion": "1.0.0.0"
+}

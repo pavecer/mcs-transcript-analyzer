@@ -35,12 +35,21 @@ export interface SessionRow {
   pvci_tooltotalms?: number;
   pvci_maxtoolms?: number;
   pvci_toolcallsjson?: string;
+  pvci_knowledgecallcount?: number;
+  pvci_knowledgesourcecount?: number;
+  pvci_knowledgefailurecount?: number;
+  pvci_knowledgecallsjson?: string;
   pvci_flowrunsjson?: string;
   pvci_flowruncount?: number;
   pvci_flowrunfailurecount?: number;
   pvci_flowrunmaxms?: number;
   pvci_sessionoutcome?: string;
   pvci_outcomereason?: string;
+  pvci_usererrorcount?: number;
+  pvci_primaryerrorcode?: string;
+  pvci_primaryerrormessage?: string;
+  pvci_primaryerrortopic?: string;
+  pvci_errorcategory?: string;
   pvci_isresolvedimplied?: string;
   pvci_turncount?: number;
   pvci_activitiesjson?: string;
@@ -73,6 +82,18 @@ export interface ToolCall {
   failed?: boolean;
   exception?: string;
   output?: unknown;
+}
+
+export interface KnowledgeCall {
+  step_id?: string;
+  task?: string;
+  started_utc?: string;
+  duration_ms?: number | null;
+  completion_state?: string;
+  searched: boolean;
+  cited_sources: string[];
+  failed_source_types: string[];
+  failed: boolean;
 }
 
 export interface SourceStamp {
@@ -157,9 +178,17 @@ export function parseSourceStamp(raw?: string): SourceStamp | null {
 }
 
 export function sourceEnvironmentLabel(s: SessionRow): string {
-  if (s.pvci_environmentname) return s.pvci_environmentname;
   const stamp = parseSourceStamp(s.pvci_datasource);
-  return stamp?.environmentName ?? s.pvci_environmentid ?? stamp?.environmentId ?? stamp?.org ?? "unknown";
+  if (s.pvci_environmentname && !isTechnicalEnvironmentLabel(s.pvci_environmentname)) return s.pvci_environmentname;
+  if (stamp?.environmentName && !isTechnicalEnvironmentLabel(stamp.environmentName)) return stamp.environmentName;
+  return s.pvci_environmentname ?? s.pvci_environmentid ?? stamp?.environmentId ?? stamp?.org ?? "unknown";
+}
+
+export function isTechnicalEnvironmentLabel(value: string): boolean {
+  const normalized = value.trim();
+  return /^[0-9a-f]{8}-[0-9a-f-]{27}$/i.test(normalized)
+    || /^unq[0-9a-f]{24,}$/i.test(normalized)
+    || /^org[0-9a-f]{8,}(?:\.|$)/i.test(normalized);
 }
 
 export function sourceEnvironmentKey(s: SessionRow): string {

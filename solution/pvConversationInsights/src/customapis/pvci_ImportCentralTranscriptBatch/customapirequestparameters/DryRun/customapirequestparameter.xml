@@ -1,0 +1,9 @@
+<customapirequestparameter uniquename="DryRun">
+  <displayname default="Validate without writing">
+    <label description="Validate without writing" languagecode="1033" />
+  </displayname>
+  <iscustomizable>1</iscustomizable>
+  <isoptional>1</isoptional>
+  <name>DryRun</name>
+  <type>0</type>
+</customapirequestparameter>

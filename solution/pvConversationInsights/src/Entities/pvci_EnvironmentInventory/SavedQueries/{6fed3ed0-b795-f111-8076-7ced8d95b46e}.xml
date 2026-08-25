@@ -17,6 +17,11 @@
           <cell name="pvci_state" width="100" />
           <cell name="pvci_hasdataverse" width="100" />
           <cell name="pvci_hasdetailedaccess" width="110" />
+          <cell name="pvci_transcriptaccessstatus" width="150" />
+          <cell name="pvci_transcriptcollectorenabled" width="110" />
+          <cell name="pvci_transcriptprobeon" width="140" />
+          <cell name="pvci_transcriptlastcollectedon" width="150" />
+          <cell name="pvci_transcriptlastcollectionstatus" width="140" />
           <cell name="pvci_lastsyncedon" width="140" />
         </row>
       </grid>
@@ -32,6 +37,11 @@
           <attribute name="pvci_state" />
           <attribute name="pvci_hasdataverse" />
           <attribute name="pvci_hasdetailedaccess" />
+          <attribute name="pvci_transcriptaccessstatus" />
+          <attribute name="pvci_transcriptcollectorenabled" />
+          <attribute name="pvci_transcriptprobeon" />
+          <attribute name="pvci_transcriptlastcollectedon" />
+          <attribute name="pvci_transcriptlastcollectionstatus" />
           <attribute name="pvci_lastsyncedon" />
           <attribute name="pvci_environmentinventoryid" />
           <order attribute="pvci_displayname" descending="false" />

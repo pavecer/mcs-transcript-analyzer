@@ -1,0 +1,9 @@
+<customapirequestparameter uniquename="SourceEnvironmentId">
+  <displayname default="Source Power Platform environment ID">
+    <label description="Source Power Platform environment ID" languagecode="1033" />
+  </displayname>
+  <iscustomizable>1</iscustomizable>
+  <isoptional>0</isoptional>
+  <name>SourceEnvironmentId</name>
+  <type>10</type>
+</customapirequestparameter>

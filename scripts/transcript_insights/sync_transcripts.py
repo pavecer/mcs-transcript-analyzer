@@ -337,6 +337,13 @@ def flow_action_spans(activities: list[dict[str, Any]]) -> list[dict[str, Any]]:
 PLAN_STEP_FALLBACK_MS = 90_000
 
 
+def is_flow_candidate_task(task_dialog_id: Any) -> bool:
+    if not isinstance(task_dialog_id, str) or not task_dialog_id.strip():
+        return False
+    normalized = task_dialog_id.lower()
+    return "search" not in normalized and "knowledge" not in normalized
+
+
 def plan_step_spans(activities: list[dict[str, Any]]) -> list[dict[str, Any]]:
     steps: dict[str, dict[str, Any]] = {}
     for a in activities:
@@ -350,6 +357,9 @@ def plan_step_spans(activities: list[dict[str, Any]]) -> list[dict[str, Any]]:
             continue
         rec = steps.setdefault(step_id, {})
         if name == "DynamicPlanStepTriggered":
+            if not is_flow_candidate_task(value.get("taskDialogId")):
+                steps.pop(step_id, None)
+                continue
             rec["start_ms"] = ts
             rec["topic"] = (value.get("taskDialogId") or "").split(".")[-1]
             rec["thought"] = value.get("thought")
@@ -481,6 +491,106 @@ def fetch_flow_runs(dv: Dv, since_iso: str | None) -> list[dict[str, Any]]:
     return rows
 
 
+def error_category(error_code: str | None, error_message: str | None) -> str:
+    text = f"{error_code or ''} {error_message or ''}".lower()
+    if any(token in text for token in ("authentication", "unauthorized", "forbidden", "consent")):
+        return "Authentication"
+    if any(token in text for token in ("connector", "connection", "reference id")):
+        return "Connector"
+    if any(token in text for token in ("expression", "contentvalidation")):
+        return "Topic expression"
+    return "Topic runtime"
+
+
+def transcript_diagnostics(activities: list[dict[str, Any]]) -> dict[str, Any]:
+    current_topic_id: str | None = None
+    current_topic_name: str | None = None
+    first_topic_id: str | None = None
+    first_topic_name: str | None = None
+    errors: list[dict[str, Any]] = []
+
+    for activity in activities:
+        if activity.get("name") == "DynamicPlanStepTriggered" and isinstance(activity.get("value"), dict):
+            topic_id = activity["value"].get("taskDialogId")
+            if isinstance(topic_id, str) and topic_id.strip():
+                current_topic_id = topic_id.strip()
+                current_topic_name = current_topic_id.split(".")[-1]
+                first_topic_id = first_topic_id or current_topic_id
+                first_topic_name = first_topic_name or current_topic_name
+
+        if activity.get("valueType") != "ErrorTraceData":
+            continue
+        value = activity.get("value")
+        if not isinstance(value, dict) or value.get("isUserError") is not True:
+            continue
+        error_code = value.get("errorCode")
+        error_message = value.get("errorMessage")
+        code = error_code.strip() if isinstance(error_code, str) and error_code.strip() else None
+        message = error_message.strip() if isinstance(error_message, str) and error_message.strip() else None
+        errors.append({
+            "code": code,
+            "message": message,
+            "topic": current_topic_name,
+            "category": error_category(code, message),
+        })
+
+    primary = errors[-1] if errors else {}
+    details = [part for part in (primary.get("code"), primary.get("message")) if part]
+    return {
+        "topic_id": first_topic_id,
+        "topic_name": first_topic_name,
+        "user_error_count": len(errors),
+        "primary_error_code": primary.get("code"),
+        "primary_error_message": primary.get("message"),
+        "primary_error_topic": primary.get("topic"),
+        "error_category": primary.get("category"),
+        "user_error_reason": ": ".join(details) if details else None,
+    }
+
+
+def knowledge_calls(activities: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    active_steps: dict[str, dict[str, Any]] = {}
+    calls: list[dict[str, Any]] = []
+
+    for activity in activities:
+        name = activity.get("name") or ""
+        value = activity.get("value")
+        if name == "DynamicPlanStepTriggered" and isinstance(value, dict):
+            task_id = value.get("taskDialogId")
+            step_id = value.get("stepId")
+            if isinstance(task_id, str) and "search" in task_id.lower() and isinstance(step_id, str):
+                active_steps[step_id] = {
+                    "step_id": step_id,
+                    "task": task_id,
+                    "started_utc": iso(epoch_utc(activity.get("timestamp"))),
+                    "start_ms": _ms(activity),
+                }
+            continue
+
+        if activity.get("valueType") != "KnowledgeTraceData" or not isinstance(value, dict):
+            continue
+
+        active = next(reversed(active_steps.values()), {}) if active_steps else {}
+        cited = [item for item in (value.get("citedKnowledgeSources") or []) if isinstance(item, str)]
+        failed = [item for item in (value.get("failedKnowledgeSourcesTypes") or []) if isinstance(item, str)]
+        finished_ms = _ms(activity)
+        started_ms = active.get("start_ms")
+        calls.append({
+            "step_id": active.get("step_id"),
+            "task": active.get("task") or "Knowledge search",
+            "started_utc": active.get("started_utc"),
+            "duration_ms": finished_ms - started_ms
+            if isinstance(finished_ms, int) and isinstance(started_ms, int) else None,
+            "completion_state": value.get("completionState"),
+            "searched": value.get("isKnowledgeSearched") is True,
+            "cited_sources": cited,
+            "failed_source_types": failed,
+            "failed": bool(failed) or str(value.get("completionState") or "").lower() not in {"answered", "completed", "complete", "succeeded"},
+        })
+
+    return calls
+
+
 def parse_transcript(row: dict[str, Any]) -> dict[str, Any]:
     meta = json.loads(row["metadata"]) if row.get("metadata") else {}
     content = json.loads(row["content"]) if row.get("content") else {}
@@ -518,10 +628,12 @@ def parse_transcript(row: dict[str, Any]) -> dict[str, Any]:
     for a in acts:
         if a.get("valueType") == "SessionInfo" and isinstance(a.get("value"), dict):
             session_info = a["value"]
+    diagnostics = transcript_diagnostics(acts)
 
     latencies = response_latencies(messages)
     lat_values = [x["latency_ms"] for x in latencies if x.get("latency_ms") is not None]
     calls = tool_calls(acts)
+    knowledge = knowledge_calls(acts)
     call_durations = [c["duration_ms"] for c in calls if c.get("duration_ms") is not None]
 
     start = epoch_utc(min(stamps)) if stamps else None
@@ -561,8 +673,15 @@ def parse_transcript(row: dict[str, Any]) -> dict[str, Any]:
         "last_agent_message": (agent_msgs[-1].get("text") if agent_msgs else None),
         "plan_events": plan_events,
         "test_mode": test_mode,
+        "topic_name": diagnostics["topic_name"],
+        "topic_id": diagnostics["topic_id"],
         "session_outcome": session_info.get("outcome"),
-        "outcome_reason": session_info.get("outcomeReason"),
+        "outcome_reason": diagnostics["user_error_reason"] or session_info.get("outcomeReason"),
+        "user_error_count": diagnostics["user_error_count"],
+        "primary_error_code": diagnostics["primary_error_code"],
+        "primary_error_message": diagnostics["primary_error_message"],
+        "primary_error_topic": diagnostics["primary_error_topic"],
+        "error_category": diagnostics["error_category"],
         "implied_success": session_info.get("impliedSuccess"),
         "session_turn_count": session_info.get("turnCount"),
         "latencies": latencies,
@@ -574,6 +693,10 @@ def parse_transcript(row: dict[str, Any]) -> dict[str, Any]:
         "tool_error_count": sum(1 for c in calls if c.get("failed")),
         "tool_total_ms": sum(call_durations) if call_durations else None,
         "max_tool_ms": max(call_durations) if call_durations else None,
+        "knowledge_calls": knowledge,
+        "knowledge_call_count": len(knowledge),
+        "knowledge_source_count": sum(len(call["cited_sources"]) for call in knowledge),
+        "knowledge_failure_count": sum(1 for call in knowledge if call["failed"]),
         "activities": acts,
     }
 
@@ -695,6 +818,7 @@ def _sync_one(
     plan_json, _ = jdump(p["plan_events"])
     metadata_json, _ = jdump(p["metadata"])
     tools_json, _ = jdump(p["tool_calls"])
+    knowledge_json, _ = jdump(p["knowledge_calls"])
 
     flow_correlation = correlate_flow_runs(flow_action_spans(p["activities"]), flow_runs)
     flows_json, _ = jdump(flow_correlation)
@@ -707,6 +831,8 @@ def _sync_one(
         "pvci_transcriptid": s1000(p["transcript_id"]),
         "pvci_botid": s1000(p["bot_id"]),
         "pvci_botname": s1000(bot_display_name),
+        "pvci_topicname": s1000(p["topic_name"]),
+        "pvci_topicid": s1000(p["topic_id"]),
         "pvci_tenantid": s1000(p["tenant_id"]),
         **environment_payload(source_ctx),
         "pvci_useraadobjectid": s1000(p["user_aad"]),
@@ -733,12 +859,21 @@ def _sync_one(
         "pvci_tooltotalms": p["tool_total_ms"],
         "pvci_maxtoolms": p["max_tool_ms"],
         "pvci_toolcallsjson": tools_json,
+        "pvci_knowledgecallcount": p["knowledge_call_count"],
+        "pvci_knowledgesourcecount": p["knowledge_source_count"],
+        "pvci_knowledgefailurecount": p["knowledge_failure_count"],
+        "pvci_knowledgecallsjson": knowledge_json,
         "pvci_flowrunsjson": flows_json,
         "pvci_flowruncount": len(matched_runs),
         "pvci_flowrunfailurecount": len(failed_runs),
         "pvci_flowrunmaxms": max(run_durations) if run_durations else None,
         "pvci_sessionoutcome": s1000(p["session_outcome"]),
         "pvci_outcomereason": s1000(p["outcome_reason"]),
+        "pvci_usererrorcount": p["user_error_count"],
+        "pvci_primaryerrorcode": s1000(p["primary_error_code"]),
+        "pvci_primaryerrormessage": p["primary_error_message"],
+        "pvci_primaryerrortopic": s1000(p["primary_error_topic"]),
+        "pvci_errorcategory": s1000(p["error_category"]),
         "pvci_isresolvedimplied": s1000(str(p["implied_success"]).lower() if p["implied_success"] is not None else None),
         "pvci_turncount": p["session_turn_count"],
         "pvci_planeventsjson": plan_json,
@@ -779,7 +914,13 @@ def _sync_one(
     for a in p["activities"]:
         atype = a.get("type")
         ename = a.get("name")
-        if not include_traces and (atype in NOISE_TYPES or ename in NOISE_EVENTS):
+        value = a.get("value")
+        is_user_error_trace = (
+            a.get("valueType") == "ErrorTraceData"
+            and isinstance(value, dict)
+            and value.get("isUserError") is True
+        )
+        if not include_traces and not is_user_error_trace and (atype in NOISE_TYPES or ename in NOISE_EVENTS):
             continue
         frm = a.get("from") or {}
         role = frm.get("role")
@@ -802,7 +943,7 @@ def _sync_one(
             "pvci_speaker": s1000(speaker),
             "pvci_role": role if isinstance(role, int) else None,
             "pvci_aadobjectid": s1000(frm.get("aadObjectId")),
-            "pvci_eventname": s1000(ename),
+            "pvci_eventname": s1000(ename or a.get("valueType")),
             "pvci_channelid": s1000(a.get("channelId")),
             "pvci_timestamputc": iso(epoch_utc(a.get("timestamp"))),
             "pvci_turntext": (a.get("text") or None),
