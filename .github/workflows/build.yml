@@ -19,7 +19,9 @@ jobs:
           python-version: "3.12"
       - run: pip install -r scripts/transcript_insights/requirements.txt
       - name: Compile
-        run: python -m compileall -q scripts/transcript_insights
+        run: python -m compileall -q scripts
+      - name: Validate LinkedIn release automation
+        run: python -m unittest scripts.test_generate_linkedin_post scripts.test_publish_linkedin_post
       - name: Enforce shared VS Code browser policy
         run: python3 scripts/validate_browser_policy.py
 
