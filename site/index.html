@@ -243,7 +243,7 @@
     .comparison td:first-child { font-weight: 650; }
     .yes { color: var(--cp-success); font-weight: 700; }
     .no { color: var(--cp-danger); font-weight: 700; }
-    .table-scroll { overflow-x: auto; }
+    .table-scroll { width: 100%; min-width: 0; max-width: 100%; overflow-x: auto; }
 
     .architecture { display: grid; grid-template-columns: 1fr auto 1fr auto 1.25fr; gap: 14px; align-items: stretch; }
     .arch-node { padding: 24px; border: 1px solid var(--cp-border); border-radius: 8px; background: var(--cp-surface); }
@@ -467,6 +467,7 @@
           <article class="feature"><i class="feature-icon" data-lucide="wrench" aria-hidden="true"></i><h3>Tool-call diagnostics</h3><p>Review connector and AI Builder invocations, duration, output, and exceptions where available.</p></article>
           <article class="feature"><i class="feature-icon" data-lucide="workflow" aria-hidden="true"></i><h3>Flow correlation</h3><p>Match Power Automate runs to session windows and surface failed or unusually slow actions.</p></article>
           <article class="feature"><i class="feature-icon" data-lucide="gauge" aria-hidden="true"></i><h3>Copilot inventory and credits</h3><p>Filter GitHub harness and spend risk, review human-readable controls, and submit audited agent-limit changes.</p></article>
+          <article class="feature"><i class="feature-icon" data-lucide="network" aria-hidden="true"></i><h3>Cross-environment collection</h3><p>Discover tenant environments, verify least-privilege transcript access, and collect only from explicitly enabled readable sources.</p></article>
         </div>
       </div>
     </section>
@@ -544,10 +545,10 @@
       <div class="shell">
         <div class="section-head" data-reveal>
           <div><span class="section-kicker">Architecture</span><h2>Runs where the data lives</h2></div>
-          <p class="section-intro">A sandboxed Dataverse plugin incrementally parses finalized transcripts. A recurrence flow drains the backlog without an external host or stored access token.</p>
+          <p class="section-intro">A sandboxed Dataverse plugin parses finalized transcripts locally or from approved tenant inventory sources. Packaged recurrence flows drain each backlog without an external host or stored access token.</p>
         </div>
         <div class="architecture" data-reveal aria-label="Solution data flow">
-          <article class="arch-node"><span class="node-label">Source</span><h3>Copilot Studio transcripts</h3><p>Bot Framework activities stored in Dataverse after each session.</p></article>
+          <article class="arch-node"><span class="node-label">Source</span><h3>Approved Dataverse environments</h3><p>Local transcripts and explicitly enabled cross-environment sources verified through a least-privilege ID-only probe.</p></article>
           <div class="arch-arrow"><i data-lucide="arrow-right" aria-hidden="true"></i></div>
           <article class="arch-node"><span class="node-label">Processing</span><h3>Custom API + plugin</h3><p>Parses identity, turns, latency, plans, tool calls, and outcomes.</p></article>
           <div class="arch-arrow"><i data-lucide="arrow-right" aria-hidden="true"></i></div>
@@ -565,6 +566,11 @@
         </div>
         <div class="tracking-grid" data-reveal>
           <div>
+            <div class="tracking-item">
+              <h3>1.4.0.15</h3>
+              <p>Cross-environment transcript collection, source-managed access verification, deeper runtime diagnostics, Inventory Management, and persistent code-app navigation.</p>
+              <div class="tracking-meta"><span>Released 2026-08-25</span><a href="https://github.com/pavecer/mcs-transcript-analyzer/blob/main/CHANGELOG.md">Full changelog</a></div>
+            </div>
             <div class="tracking-item">
               <h3>1.3.1.0</h3>
               <p>Copilot Credit operations: usage and capacity facts, tenant inventory, risk bands, least-privilege roles, and audited agent-threshold requests.</p>
@@ -589,7 +595,7 @@
         </div>
         <div class="tracking-grid" data-reveal>
           <div class="tracking-list">
-            <article class="tracking-item"><h3>Replace pre-authorized collection with zero-touch onboarding</h3><p>Provision and continuously reconcile a least-privilege transcript-reader application identity across eligible environments from one tenant-admin setup.</p><div class="tracking-meta"><span>Now · Collector authorization</span></div></article>
+            <article class="tracking-item"><h3>Replace pre-authorized collection with zero-touch onboarding</h3><p>Source-managed audited verification is implemented; automatic administrator bootstrap and continuous least-privilege reconciliation remain before completion.</p><div class="tracking-meta"><span>Now · Collector authorization</span></div></article>
             <article class="tracking-item"><h3>In-platform flow-run detail enrichment</h3><p>Move action and loop-iteration detail enrichment into an approved DLP/custom-connector path when the Power Automate API audience is available.</p><div class="tracking-meta"><span>Next · Policy validation</span></div></article>
             <article class="tracking-item"><h3>Detailed cross-environment agent enrichment</h3><p>Add explicit per-environment Dataverse metadata where the collector identity has access, while preserving unknown as unknown.</p><div class="tracking-meta"><span>Next · Planned</span></div></article>
           </div>
@@ -613,9 +619,9 @@
           <div class="steps" data-reveal>
             <article class="step"><h3>Download the managed ZIP</h3><p>Keep the archive intact. Power Apps imports the ZIP directly; do not extract it.</p></article>
             <article class="step"><h3>Import in Power Apps</h3><p>Open <strong>Solutions</strong>, choose <strong>Import solution</strong>, upload the ZIP, and complete the import wizard.</p></article>
-            <article class="step"><h3>Configure connections and tenant</h3><p>Bind <code>pvci_dataversesync</code> to Dataverse, <code>pvci_licensinghttp</code> and <code>pvci_powerplatformapi</code> to the licensing API, and <code>pvci_powerplatformadminv2</code> to Power Platform for Admins V2. Then set <code>pvci_CreditReportingTenantId</code>.</p></article>
+            <article class="step"><h3>Configure connections and tenant</h3><p>Bind <code>pvci_dataversesync</code> and <code>pvci_centralcollector</code> to Dataverse, <code>pvci_licensinghttp</code> and <code>pvci_powerplatformapi</code> to the licensing API, and <code>pvci_powerplatformadminv2</code> to Power Platform for Admins V2. Then set <code>pvci_CreditReportingTenantId</code>.</p></article>
             <article class="step"><h3>Activate and run the flows</h3><p>Verify transcript, credit, inventory, governance collection, and the threshold processor with a no-op request before scheduling.</p></article>
-            <article class="step"><h3>Assign access</h3><p>Grant app and Dataverse access, then follow the <a href="https://github.com/pavecer/mcs-transcript-analyzer/blob/main/docs/permissions-and-inventory.md">permissions and inventory checklist</a> for collector and cross-environment roles.</p></article>
+            <article class="step"><h3>Assign and verify source access</h3><p>Grant app access, then follow the <a href="https://github.com/pavecer/mcs-transcript-analyzer/blob/main/docs/permissions-and-inventory.md">permissions and inventory checklist</a>. Each selected source must enable the collector identity and grant organization-level Read on Conversation Transcript before verification and collection can succeed.</p></article>
           </div>
           <aside class="package" data-reveal aria-label="Download package details">
             <h3>PV Conversation Insights</h3>
@@ -645,7 +651,7 @@
         </div>
 
         <div class="command" data-reveal>
-          <code id="import-command">pac solution import --path pvConversationInsights-managed-1.3.1.0.zip --activate-plugins</code>
+          <code id="import-command">pac solution import --path pvConversationInsights-managed-1.4.0.15.zip --activate-plugins</code>
           <button class="icon-button" id="copy-command" type="button" title="Copy import command" aria-label="Copy import command"><i data-lucide="copy" aria-hidden="true"></i></button>
         </div>
 

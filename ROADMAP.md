@@ -4,7 +4,7 @@ This roadmap describes product direction, not a promise of delivery dates. The p
 this file must agree about supported behavior and boundaries. Use the status and exit criteria to
 keep work testable.
 
-Last reviewed: 2026-08-13
+Last reviewed: 2026-08-25
 
 ## Now
 
@@ -17,16 +17,16 @@ Last reviewed: 2026-08-13
 
 ### Replace pre-authorized collection with zero-touch onboarding
 
-- **Status:** Architecture investigated; implementation blocked on choosing preview solution-only bootstrap versus GA external reconciler
-- **Goal:** Replace per-environment manual role assignment with one tenant-admin setup that continuously provisions and repairs least-privilege transcript access across eligible environments.
-- **Exit criteria:** One administrative consent/configuration onboards the existing environment inventory, a newly created environment is reconciled automatically, every application user has organization Read on Conversation Transcript without retained System Administrator, and denied/unsupported environments remain explicit.
+- **Status:** Source-managed request/status backend, code-app workflow, and packaged verifier are implemented and smoke-tested in PVE Dev; external administrator-bootstrap reconciliation remains
+- **Goal:** Support both source-managed least-privilege onboarding for restricted environments and optional administrator bootstrap where policy permits it, while converging on a dedicated collector identity with organization Read on Conversation Transcript and no retained System Administrator.
+- **Exit criteria:** Inventory Management controls each environment's onboarding mode (`Source-managed`, `Administrator bootstrap`, or `Excluded`), exposes approval/setup/verification/cleanup state, and never offers unavailable automation. Source-managed environments can verify a locally assigned least-privilege role without elevation. Bootstrap environments are reconciled automatically, temporary System Administrator access is removed and proven removed, new environments are detected, and denied/unsupported environments remain explicit.
 - **Tracking:** [Operations guide](docs/operations.md) and [permissions checklist](docs/permissions-and-inventory.md)
 
 ## Next
 
 ### Central transcript batch collector
 
-- **Status:** Import and routing work for pre-authorized environments; `1.4.0.2` is not feature-complete for tenant-wide use
+- **Status:** Source-managed import, routing, and verified-only enablement shipped in `1.4.0.15` after cross-tenant upgrade validation; automated onboarding remains
 - **Goal:** Read transcripts from registry-approved source environments and import normalized sessions and turns into the collector environment through a bounded, idempotent Custom API.
 - **Exit criteria:** PVE Preview to PVE Dev import/idempotent replay and generic-flow runs pass. Completion additionally requires automated least-privilege source onboarding; manual role assignment in every environment is not accepted as completion.
 - **Tracking:** [Cross-environment design](docs/cross-environment-credit-consumption-design.md) and [architecture](docs/architecture.md)
