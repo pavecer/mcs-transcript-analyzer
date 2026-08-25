@@ -2,11 +2,11 @@
 
 ## Current implementation and optional runtime
 
-The public `1.4.0.15` core solution collects Copilot Credit data directly. The `2.0.0.5` candidate
+The stable `2.0.0.5` release
 moves only the three licensing-backed flows and two licensing HTTP connection references into the
 optional `pvConversationInsightsCredits` add-on. All credit schema, plugins, APIs, roles, forms,
 views, and model-driven navigation intentionally remain in required core to avoid destructive data
-migration. The candidate is PVE-validated and passed the user-performed manual Contoso TPM upgrade.
+migration. The release passed PVE validation and the user-performed manual Contoso TPM upgrade.
 
 Without the add-on, transcript analysis, tenant inventory, and central transcript collection
 remain available and do not require licensing-administrator access. Credits navigation stays

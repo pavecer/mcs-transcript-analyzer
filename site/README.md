@@ -3,9 +3,8 @@
 The public presentation is deployed from this directory by `.github/workflows/pages.yml`.
 The stable managed solution ZIPs are release artifacts, not generic source archives: they must be
 exported from their deployed Dataverse solutions and pass `scripts/validate_site.py`. The current
-public release remains the two-package `1.4.0.15` set. The three `2.0.0.5` managed candidates passed
-the user-performed manual Contoso TPM upgrade but stay under `output/candidate/` until stable
-promotion; do not copy them here early.
+public release is the three-package `2.0.0.5` set. Its managed packages passed PVE validation and
+the user-performed manual Contoso TPM upgrade before exact-byte promotion from `output/candidate/`.
 Product capabilities, setup, and public copy must also pass `scripts/validate_documentation.py`.
 The root [CHANGELOG.md](../CHANGELOG.md) records shipped versions and [ROADMAP.md](../ROADMAP.md)
 records prioritized work and explicit product boundaries; update both with the public page.

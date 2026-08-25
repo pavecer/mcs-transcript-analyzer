@@ -307,7 +307,7 @@
     .trust-check span { color: var(--cp-text-muted); font-size: 14px; line-height: 1.5; }
     .trust-check a { font-weight: 650; }
     .hash { margin: 13px 0 0; color: var(--cp-text-soft); font-family: Consolas, "Courier New", Courier, monospace; font-size: 11px; overflow-wrap: anywhere; }
-    .preview-release {
+    .preview-release, .addon-release {
       display: grid;
       grid-template-columns: minmax(0, 1fr) minmax(320px, 0.85fr);
       gap: 54px;
@@ -316,9 +316,10 @@
       padding-top: 64px;
       border-top: 1px solid var(--cp-border);
     }
-    .preview-copy h3 { margin: 8px 0 14px; font-size: 30px; }
-    .preview-copy p { color: var(--cp-text-muted); }
-    .preview-copy ul { padding-left: 20px; color: var(--cp-text-muted); }
+    .preview-copy h3, .addon-copy h3 { margin: 8px 0 14px; font-size: 30px; }
+    .preview-copy p, .addon-copy p { color: var(--cp-text-muted); }
+    .preview-copy ul, .addon-copy ul { padding-left: 20px; color: var(--cp-text-muted); }
+    .credits-package { position: static; }
     .preview-package { position: static; border-top-color: var(--cp-warning); }
     .preview-badge { color: var(--cp-warning); font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; }
 
@@ -345,7 +346,7 @@
 
     footer { padding: 38px 0; border-top: 1px solid var(--cp-border); background: var(--cp-bg-elevated); }
     .footer-inner { display: flex; justify-content: space-between; align-items: center; gap: 24px; color: var(--cp-text-muted); font-size: 14px; }
-    .footer-links { display: flex; gap: 20px; }
+    .footer-links { display: flex; flex-wrap: wrap; gap: 20px; }
 
     .hero-content { animation: hero-enter 650ms ease-out both; }
     @keyframes hero-enter {
@@ -376,7 +377,7 @@
       .arch-arrow { transform: rotate(90deg); min-height: 34px; }
       .install-layout { grid-template-columns: 1fr; }
       .package { position: static; }
-      .preview-release { grid-template-columns: 1fr; }
+      .preview-release, .addon-release { grid-template-columns: 1fr; }
       .limitations { grid-template-columns: 1fr; }
       .tracking-grid { grid-template-columns: 1fr; }
     }
@@ -440,7 +441,7 @@
             </a>
             <a class="button" href="#install"><i data-lucide="list-checks" aria-hidden="true"></i>Installation guide</a>
           </div>
-          <p class="version-note"><strong>Version <span data-release-version="core">1.4.0.15</span></strong> · Managed Dataverse solution · MIT licensed</p>
+          <p class="version-note"><strong>Version <span data-release-version="core">2.0.0.5</span></strong> · Managed Dataverse solution · MIT licensed</p>
         </div>
       </div>
     </section>
@@ -476,7 +477,7 @@
       <div class="shell">
         <div class="section-head" data-reveal>
           <div><span class="section-kicker">Copilot Credit operations</span><h2>Usage truth and guarded controls</h2></div>
-          <p class="section-intro">The optional 2.0 candidate credit add-on separates licensing runtime from transcript analysis while keeping billing facts, tenant inventory, threshold state, and audited changes distinct. Public downloads remain at 1.4.0.15.</p>
+          <p class="section-intro">The optional stable 2.0 credit add-on separates licensing runtime from transcript analysis while keeping billing facts, tenant inventory, threshold state, and audited changes distinct.</p>
         </div>
         <div class="credit-offer" data-reveal>
           <article class="credit-row">
@@ -555,7 +556,7 @@
           <article class="arch-node"><span class="node-label">Investigation</span><h3>Conversation Insights</h3><p>Dataverse tables, model-driven app, forms, views, and searchable JSON.</p></article>
         </div>
         <p class="arch-detail" data-reveal><strong>Additive by default.</strong> Finalized transcripts are treated as immutable. Reprocessing is an explicit operation, and the watermark freezes when a batch fails so a bad record cannot be silently skipped.</p>
-        <div class="tracking-boundary" data-reveal><strong>2.0.0.5 candidate architecture</strong> Exactly three synchronized managed candidates are staged: required <code>pvConversationInsights</code> transcript/shared core, optional <code>pvConversationInsightsCredits</code> licensing runtime, and optional unsupported <code>pvConversationInsightsCodeApp</code>. Core retains all schema, APIs, roles, the model-driven app, four transcript/shared flows, and three non-licensing references. The credit add-on owns only three credit flows, two licensing references, and the required credit tenant variable definition; core does not prompt for it. Sessions, Trends, and Credits resource reporting remain host-scoped without environment selectors until an administrator enables a verified remote source; credit user usage and recent governance request history remain tenant-wide. PVE deployment, tenant-neutral package validation, and the hosted UI smoke passed; TPM manual upgrade validation passed in the user-performed Contoso test. Stable promotion remains pending.</div>
+        <div class="tracking-boundary" data-reveal><strong>2.0.0.5 stable architecture</strong> Exactly three synchronized managed packages are published: required <code>pvConversationInsights</code> transcript/shared core, optional <code>pvConversationInsightsCredits</code> licensing runtime, and optional unsupported <code>pvConversationInsightsCodeApp</code>. Core retains all schema, APIs, roles, the model-driven app, four transcript/shared flows, and three non-licensing references. The credit add-on owns only three credit flows, two licensing references, and the required credit tenant variable definition; core does not prompt for it. Sessions, Trends, and Credits resource reporting remain host-scoped without environment selectors until an administrator enables a verified remote source; credit user usage and recent governance request history remain tenant-wide. PVE deployment, tenant-neutral package validation, and the hosted UI smoke passed; TPM manual upgrade validation passed in the user-performed Contoso test before exact-byte stable promotion.</div>
       </div>
     </section>
 
@@ -567,6 +568,11 @@
         </div>
         <div class="tracking-grid" data-reveal>
           <div>
+            <div class="tracking-item">
+              <h3>2.0.0.5</h3>
+              <p>Stable three-package architecture with required transcript core, optional Credits runtime, and optional unsupported preview code app, validated through PVE hosted smoke and a user-performed Contoso TPM upgrade.</p>
+              <div class="tracking-meta"><span>Released 2026-08-25</span><a href="https://github.com/pavecer/mcs-transcript-analyzer/blob/main/CHANGELOG.md">Full changelog</a></div>
+            </div>
             <div class="tracking-item">
               <h3>1.4.0.15</h3>
               <p>Cross-environment transcript collection, source-managed access verification, deeper runtime diagnostics, Inventory Management, and persistent code-app navigation.</p>
@@ -588,7 +594,7 @@
               <div class="tracking-meta"><a href="https://github.com/pavecer/mcs-transcript-analyzer/tags">Version tags</a><a href="downloads/release-manifest.json">Release manifest</a></div>
             </div>
           </div>
-          <div class="tracking-boundary"><strong>Release discipline</strong> The 2.0 candidate requires synchronized core, credit add-on, and code-app versions, fresh managed exports, updated documentation, validated checksums, and clean-install plus upgrade tests. Candidate ZIPs remain outside public downloads until manual target-tenant approval and byte-identical promotion.</div>
+          <div class="tracking-boundary"><strong>Release discipline</strong> Stable releases require synchronized core, credit add-on, and code-app versions, fresh managed exports, updated documentation, validated checksums, and clean-install plus upgrade tests. Candidate ZIPs remain outside public downloads until manual target-tenant approval and byte-identical promotion.</div>
         </div>
       </div>
     </section>
@@ -602,7 +608,6 @@
         <div class="tracking-grid" data-reveal>
           <div class="tracking-list">
             <article class="tracking-item"><h3>Replace pre-authorized collection with zero-touch onboarding</h3><p>Source-managed audited verification is implemented; automatic administrator bootstrap and continuous least-privilege reconciliation remain before completion.</p><div class="tracking-meta"><span>Now · Collector authorization</span></div></article>
-            <article class="tracking-item"><h3>Promote the three-package 2.0 candidate</h3><p>The corrected 2.0.0.5 candidate adds host-only Credits scoping. PVE deployment, tenant-neutral exports, hosted UI smoke, and the user-performed manual Contoso TPM upgrade passed; stable promotion remains the release gate.</p><div class="tracking-meta"><span>Now · Candidate, not shipped</span></div></article>
             <article class="tracking-item"><h3>In-platform flow-run detail enrichment</h3><p>Move action and loop-iteration detail enrichment into an approved DLP/custom-connector path when the Power Automate API audience is available.</p><div class="tracking-meta"><span>Next · Policy validation</span></div></article>
             <article class="tracking-item"><h3>Detailed cross-environment agent enrichment</h3><p>Add explicit per-environment Dataverse metadata where the collector identity has access, while preserving unknown as unknown.</p><div class="tracking-meta"><span>Next · Planned</span></div></article>
           </div>
@@ -620,24 +625,24 @@
       <div class="shell">
         <div class="section-head" data-reveal>
           <div><span class="section-kicker">Install</span><h2>Import the solution</h2></div>
-          <p class="section-intro">These controls download the stable 1.4.0.15 core and preview packages from the published manifest. The three-package 2.0.0.5 candidate passed manual Contoso TPM validation but is not offered here until stable promotion.</p>
+          <p class="section-intro">These controls download the stable 2.0.0.5 core, optional Credits add-on, and optional unsupported preview package from the published manifest.</p>
         </div>
         <div class="install-layout">
           <div class="steps" data-reveal>
             <article class="step"><h3>Download the managed ZIP</h3><p>Keep the archive intact. Power Apps imports the ZIP directly; do not extract it.</p></article>
             <article class="step"><h3>Import in Power Apps</h3><p>Open <strong>Solutions</strong>, choose <strong>Import solution</strong>, upload the ZIP, and complete the import wizard.</p></article>
-            <article class="step"><h3>Configure connections and tenant</h3><p>Bind <code>pvci_dataversesync</code> and <code>pvci_centralcollector</code> to Dataverse, <code>pvci_licensinghttp</code> and <code>pvci_powerplatformapi</code> to the licensing API, and <code>pvci_powerplatformadminv2</code> to Power Platform for Admins V2. The two licensing references use the same endpoint and may share one valid physical connection. Then set <code>pvci_CreditReportingTenantId</code>.</p></article>
-            <article class="step"><h3>Activate and run the flows</h3><p>Verify transcript, credit, inventory, governance collection, and the threshold processor with a no-op request before scheduling.</p></article>
+            <article class="step"><h3>Configure connections</h3><p>For core, bind <code>pvci_dataversesync</code> and <code>pvci_centralcollector</code> to Dataverse and <code>pvci_powerplatformadminv2</code> to Power Platform for Admins V2. When installing the optional Credits add-on, also bind <code>pvci_licensinghttp</code> and <code>pvci_powerplatformapi</code> to the licensing API and set <code>pvci_CreditReportingTenantId</code>. The two licensing references may share one valid physical connection.</p></article>
+            <article class="step"><h3>Activate and run the flows</h3><p>Verify the core transcript and inventory flows before scheduling. With the optional Credits add-on, also verify the credit and governance flows and test the threshold processor with a no-op request.</p></article>
             <article class="step"><h3>Assign and verify source access</h3><p>Grant app access, then follow the <a href="https://github.com/pavecer/mcs-transcript-analyzer/blob/main/docs/permissions-and-inventory.md">permissions and inventory checklist</a>. Each selected source must enable the collector identity and grant organization-level Read on Conversation Transcript before verification and collection can succeed.</p></article>
           </div>
           <aside class="package" data-reveal aria-label="Download package details">
             <h3>PV Conversation Insights</h3>
-            <div class="package-meta">Managed solution · version <span data-release-version="core">1.4.0.15</span></div>
+            <div class="package-meta">Managed solution · version <span data-release-version="core">2.0.0.5</span></div>
             <ul class="package-list">
               <li><i data-lucide="check" aria-hidden="true"></i><span>Dataverse schema, forms, and views</span></li>
               <li><i data-lucide="check" aria-hidden="true"></i><span>Model-driven investigation app</span></li>
               <li><i data-lucide="check" aria-hidden="true"></i><span>Custom API and sandboxed plugin</span></li>
-              <li><i data-lucide="check" aria-hidden="true"></i><span>Collection flows plus audited agent-limit request processing</span></li>
+              <li><i data-lucide="check" aria-hidden="true"></i><span>Transcript and shared inventory collection flows</span></li>
             </ul>
             <div class="trust-panel">
               <div class="trust-head"><i data-lucide="shield-alert" aria-hidden="true"></i><strong>Import only what you trust</strong></div>
@@ -652,19 +657,47 @@
           </aside>
         </div>
 
+        <div class="addon-release" id="credits-download">
+          <div class="addon-copy">
+            <span class="section-kicker">Optional add-on</span>
+            <h3>Copilot Credit runtime</h3>
+            <p>Install <code>pvConversationInsightsCredits-managed-2.0.0.5.zip</code> when the environment needs Copilot Credit usage, capacity, and audited threshold governance. Transcript-only operation can omit it and requires no licensing-administrator access.</p>
+            <ul>
+              <li>For a clean installation, import core first and Credits second.</li>
+              <li>For a 1.4.0.15 upgrade, import Credits first and apply the core managed upgrade second.</li>
+              <li>Map both licensing connection references and set the target tenant ID.</li>
+              <li>Credits remains Setup required until successful credit-sync evidence exists.</li>
+            </ul>
+          </div>
+          <aside class="package credits-package" aria-label="Credits add-on download details">
+            <h3>PV Conversation Insights Credits</h3>
+            <div class="package-meta">Managed add-on · version <span data-release-version="credits">2.0.0.5</span></div>
+            <div class="trust-panel">
+              <div class="trust-head"><i data-lucide="shield-alert" aria-hidden="true"></i><strong>Import only what you trust</strong></div>
+              <p>This package adds licensing-backed flows and connection references that run with the permissions granted in your environment.</p>
+              <label class="trust-check" for="trust-credits">
+                <input id="trust-credits" type="checkbox" aria-controls="download-credits">
+                <span>I have <a href="https://github.com/pavecer/mcs-transcript-analyzer" target="_blank" rel="noopener noreferrer">reviewed the source</a>, trust this add-on, and will test it in a sandbox first.</span>
+              </label>
+            </div>
+            <button class="button primary" id="download-credits" type="button" data-artifact="credits" disabled><i data-lucide="download" aria-hidden="true"></i>Download Credits ZIP</button>
+            <p class="hash">SHA-256: <span id="credits-package-hash">loading…</span></p>
+          </aside>
+        </div>
+
         <div class="notice" data-reveal>
-          <strong>First import shows &quot;Invalid connection&quot; for PVCI Licensing API or PVCI Power Platform API?</strong>
+          <strong>Installing the optional Credits add-on shows &quot;Invalid connection&quot;?</strong>
           Do not select an existing entry whose <code>BaseResourceUrl</code> is blank. Open the row menu, choose <b>Add new connection</b>, and create <b>HTTP with Microsoft Entra ID (preauthorized)</b>. For commercial cloud, enter <code>https://licensing.powerplatform.microsoft.com/</code> for both <b>Base Resource URL</b> and <b>Microsoft Entra ID Resource URI</b>, then sign in with the intended licensing administrator. Return to the import wizard, refresh if needed, and select that valid connection for both <code>pvci_licensinghttp</code> and <code>pvci_powerplatformapi</code>. The &quot;Power Platform API&quot; row is the licensing-governance reference; it does not use <code>api.powerplatform.com</code>. See the <a href="https://github.com/pavecer/mcs-transcript-analyzer/blob/main/docs/permissions-and-inventory.md#first-import-connection-wizard">first-import connection checklist</a> for roles, DLP requirements, and recovery steps.
         </div>
 
         <div class="notice" data-reveal>
-          <strong>The preview code app is not part of this ZIP.</strong>
-          The managed package installs the supported model-driven experience. The richer React code app remains a preview and must be deployed separately from the repository.
+          <strong>The preview code app is a separate optional managed package.</strong>
+          The core package installs the supported model-driven experience. The downloadable React code-app package remains an unsupported preview and should be tested in a sandbox.
         </div>
 
         <div class="notice" data-reveal>
-          <strong>About the 2.0 candidate.</strong>
-          Clean candidate tests import core, optional credits, then optional code app. Upgrades from 1.4.0.15 import the credit add-on first, apply the core managed upgrade second, and upgrade the code app last. Transcript-only use can omit the credit add-on and needs no licensing-administrator access. Credits is unavailable without the add-on, setup-required until successful sync evidence exists, and ready only after both conditions are met.
+          <strong>About the stable 2.0 release.</strong>
+          Clean installations import core, optional credits, then optional code app. Upgrades from 1.4.0.15 import the credit add-on first, apply the core managed upgrade second, and upgrade the code app last. Transcript-only use can omit the credit add-on and needs no licensing-administrator access. Credits is unavailable without the add-on, setup-required until successful sync evidence exists, and ready only after both conditions are met.
         </div>
 
         <div class="notice" data-reveal>
@@ -673,7 +706,7 @@
         </div>
 
         <div class="command" data-reveal>
-          <code id="import-command">pac solution import --path pvConversationInsights-managed-1.4.0.15.zip --activate-plugins</code>
+          <code id="import-command">pac solution import --path pvConversationInsights-managed-2.0.0.5.zip --activate-plugins</code>
           <button class="icon-button" id="copy-command" type="button" title="Copy import command" aria-label="Copy import command"><i data-lucide="copy" aria-hidden="true"></i></button>
         </div>
 
@@ -692,7 +725,7 @@
           <aside class="package preview-package" aria-label="Preview code app download details">
             <span class="preview-badge">Preview · unsupported</span>
             <h3>Conversation Insights Explorer</h3>
-            <div class="package-meta">Managed code-app solution · version <span data-release-version="codeApp">1.4.0.15</span></div>
+            <div class="package-meta">Managed code-app solution · version <span data-release-version="codeApp">2.0.0.5</span></div>
             <div class="trust-panel">
               <div class="trust-head"><i data-lucide="triangle-alert" aria-hidden="true"></i><strong>Understand the preview risk</strong></div>
               <p>This package uses Power Apps code apps and preview ALM capabilities. Preview features can change, have limited support, or become unavailable.</p>
@@ -753,6 +786,7 @@
       });
     }
     wireDownloadGate("trust-package", "download-package");
+    wireDownloadGate("trust-credits", "download-credits");
     wireDownloadGate("trust-codeapp", "download-codeapp");
 
     fetch("downloads/release-manifest.json")
@@ -763,6 +797,7 @@
       .then((manifest) => {
         Object.assign(artifacts, manifest.artifacts);
         document.getElementById("package-hash").textContent = artifacts.core.sha256;
+        document.getElementById("credits-package-hash").textContent = artifacts.credits.sha256;
         document.getElementById("codeapp-package-hash").textContent = artifacts.codeApp.sha256;
         document.querySelectorAll('[data-release-version="core"]').forEach((element) => {
           element.textContent = artifacts.core.version;
@@ -770,11 +805,15 @@
         document.querySelectorAll('[data-release-version="codeApp"]').forEach((element) => {
           element.textContent = artifacts.codeApp.version;
         });
+        document.querySelectorAll('[data-release-version="credits"]').forEach((element) => {
+          element.textContent = artifacts.credits.version;
+        });
         document.getElementById("import-command").textContent =
           `pac solution import --path ${artifacts.core.filename} --activate-plugins`;
       })
       .catch(() => {
         document.getElementById("package-hash").textContent = "see release manifest";
+        document.getElementById("credits-package-hash").textContent = "see release manifest";
         document.getElementById("codeapp-package-hash").textContent = "see release manifest";
       });
 

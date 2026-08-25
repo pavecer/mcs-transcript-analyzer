@@ -56,16 +56,15 @@
   ],
   "surfaceCoverage": {
     "CHANGELOG.md": [
-      "Unreleased - 2.0.0.5 candidate",
+      "2.0.0.5 - 2026-08-25",
       "pvConversationInsightsCredits-managed-2.0.0.5.zip",
+      "Published downloads",
       "Credits resource reporting remain scoped",
       "1.3.0.0",
       "pvConversationInsights-managed-1.3.0.0.zip",
       "release-manifest.json"
     ],
     "ROADMAP.md": [
-      "Three-package 2.0 candidate promotion",
-      "manual Contoso TPM upgrade passed",
       "Replace pre-authorized collection with zero-touch onboarding",
       "Detailed cross-environment agent enrichment",
       "Explicitly out of scope for the current product boundary",
@@ -86,7 +85,7 @@
       ,"Credits resource reporting remain scoped"
     ],
     "docs/architecture.md": [
-      "Candidate solution boundaries",
+      "Stable solution boundaries",
       "pvConversationInsightsCredits",
       "PVCI Collect Credit Governance",
       "PVCI Apply Credit Governance Requests",
@@ -125,7 +124,7 @@
       "Environment allocation, TenantPool, and PayGo mutation remain out of scope"
     ],
     "docs/operations.md": [
-      "Managed 2.0.0.5 candidate installation and upgrade",
+      "Managed 2.0.0.5 stable installation and upgrade",
       "pvConversationInsightsCredits-managed-2.0.0.5.zip",
       "PVCI Credit Administrator",
       "pvci_powerplatformapi",
@@ -146,7 +145,7 @@
       ,"Credits resource reporting stay scoped to the host environment"
     ],
     "scripts/transcript_insights/README.md": [
-      "exactly three managed candidates",
+      "exactly three managed packages",
       "{customTableCount} custom tables",
       "PVCI Credit Administrator",
       "create_credit_governance_flow.py",
@@ -243,9 +242,12 @@
       ".github/skills/release-documentation/SKILL.md"
     ],
     "site/index.html": [
-      "2.0.0.5 candidate architecture",
+      "2.0.0.5 stable architecture",
       "pvConversationInsightsCredits",
-      "Candidate, not shipped",
+      "Released 2026-08-25",
+      "id=\"trust-credits\"",
+      "id=\"download-credits\"",
+      "id=\"credits-package-hash\"",
       "id=\"credits\"",
       "Actual billed and non-billed",
       "Spend-risk bands",

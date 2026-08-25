@@ -3,13 +3,12 @@
 Release history for MCS Transcript Analyzer. Each published package version is immutable; package
 checksums and source provenance are recorded in `site/downloads/release-manifest.json`.
 
-## Unreleased - 2.0.0.5 candidate
+## 2.0.0.5 - 2026-08-25
 
-The following architecture is validated in PVE, passed the hosted UI smoke, and passed the
-user-performed manual Contoso TPM upgrade test, but is not yet a stable public release. Stable
-promotion remains pending, so the published `1.4.0.15` packages and release manifest remain unchanged.
+Stable three-package architecture release after PVE deployment and hosted UI smoke, tenant-neutral
+package validation, and the user-performed manual Contoso TPM upgrade test.
 
-- Split the product into exactly three synchronized managed candidates: required transcript/shared
+- Split the product into exactly three synchronized managed packages: required transcript/shared
   core, optional Copilot Credit runtime add-on, and optional unsupported preview code app.
 - Kept all Dataverse schema, plugins, Custom APIs, roles, the model-driven app, inventory and
   transcript runtime, four transcript/shared flows, and three non-licensing connection references
@@ -19,7 +18,7 @@ promotion remains pending, so the published `1.4.0.15` packages and release mani
   into `pvConversationInsightsCredits`. Core imports no longer prompt for this credit-only setting.
 - Changed tenant inventory import to derive the current tenant from Dataverse organization metadata,
   while preserving rejection when an explicit payload tenant conflicts with the environment.
-- Prevented managed candidates from packaging environment-variable current values; the optional
+- Prevented managed packages from including environment-variable current values; the optional
   add-on prompts each target for its own tenant ID and no PVE value is distributed.
 - Fixed the code-app Credits capability check so entering the checking state no longer cancels its
   own Dataverse queries and leaves the page stuck at availability validation. Capability queries
@@ -44,10 +43,10 @@ promotion remains pending, so the published `1.4.0.15` packages and release mani
 - Validated in PVE that all three live solutions are `2.0.0.5`; core exports exactly four flows and
   three non-licensing references; the add-on exports exactly three flows and two licensing
   references; all seven unique flows are active; all five references are mapped; and all three
-  managed exports pass tenant-neutral candidate validation. The hosted PVE UI smoke and the
+  managed exports pass tenant-neutral package validation. The hosted PVE UI smoke and the
   user-performed manual Contoso TPM upgrade passed.
 
-Candidate artifacts (not published downloads):
+Published downloads:
 
 - Core: `pvConversationInsights-managed-2.0.0.5.zip`
 - Credits: `pvConversationInsightsCredits-managed-2.0.0.5.zip`

@@ -1,6 +1,6 @@
 # Release package automation
 
-The `2.0.0.5` candidate contract contains exactly three managed Power Platform solutions:
+The stable `2.0.0.5` release contains exactly three managed Power Platform solutions:
 
 | Package | Solution | Support status | Import order |
 | --- | --- | --- | --- |
@@ -10,11 +10,10 @@ The `2.0.0.5` candidate contract contains exactly three managed Power Platform s
 
 Core intentionally retains every table, plugin, Custom API, role, the model-driven app, four
 transcript/shared flows, and three non-licensing references. Credits owns only three credit flows,
-two licensing references, and the required credit tenant variable definition; managed candidates
+two licensing references, and the required credit tenant variable definition; managed packages
 must contain no environment-variable current value. The code app stays separate so environments can use the supported
-model-driven app without preview technology. This candidate has passed PVE package and live-runtime
-validation, and the user-performed manual Contoso TPM upgrade passed. The public site must continue serving the
-immutable two-package `1.4.0.15` release until promotion.
+model-driven app without preview technology. This release passed PVE package and live-runtime
+validation and the user-performed manual Contoso TPM upgrade.
 
 ## Automation design
 

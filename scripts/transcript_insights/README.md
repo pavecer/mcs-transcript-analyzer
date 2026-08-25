@@ -5,17 +5,16 @@ and carries end-user identity. See `docs/api-reference.md`.
 
 ## Solution pipeline (v9.1)
 
-The current `2.0.0.5` release contract builds exactly three managed candidates:
+The current stable `2.0.0.5` release contains exactly three managed packages:
 `pvConversationInsights` required core, `pvConversationInsightsCredits` optional licensing runtime,
 and `pvConversationInsightsCodeApp` optional unsupported preview. Core retains all schema, plugins,
 APIs, roles, apps, inventory/transcript runtime, four transcript/shared flows, and three
 non-licensing references. The add-on owns only three credit flows, the two licensing references,
 and the required `pvci_CreditReportingTenantId` definition. Core inventory derives tenant scope
 server-side and does not depend on that variable.
-These are candidate artifacts under `output/candidate/`; public `1.4.0.15` downloads remain
-unchanged until stable promotion; the user-performed manual Contoso TPM upgrade passed.
+The published packages passed PVE validation and the user-performed manual Contoso TPM upgrade.
 
-For a clean candidate install use core, optional credits, then optional code app. For an upgrade
+For a clean installation use core, optional credits, then optional code app. For an upgrade
 from `1.4.0.15`, install credits first, apply the core managed upgrade second, and upgrade the code
 app last. Transcript-only operation omits the credit add-on and does not need licensing
 administrator access.

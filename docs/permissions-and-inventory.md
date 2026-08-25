@@ -2,7 +2,7 @@
 
 ## What the managed solution includes
 
-The `2.0.0.5` candidate separates package ownership without moving the security or data model.
+The stable `2.0.0.5` release separates package ownership without moving the security or data model.
 Required `pvConversationInsights` core still owns all four roles, all tables, plugins, Custom APIs,
 the model-driven app, and transcript/inventory runtime. Optional `pvConversationInsightsCredits`
 owns only the three credit flows and `pvci_licensinghttp` plus `pvci_powerplatformapi`. Optional
@@ -136,7 +136,7 @@ and [field-level data sources](https://github.com/microsoft/Power-CAT-Copilot-St
 
 ### Collector environment
 
-For a clean `2.0.0.5` candidate test, import core, optional credits, then optional code app. For a
+For a clean `2.0.0.5` installation, import core, optional credits, then optional code app. For a
 manual upgrade from `1.4.0.15`, import credits first, apply the core managed upgrade second, and
 upgrade the code app last. This preserves existing credit workflow identities while transferring
 their solution ownership additively. Do not perform TPM imports or connection changes through

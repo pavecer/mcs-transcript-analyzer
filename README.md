@@ -28,21 +28,19 @@ the preauthorized HTTP connection with both licensing-service URLs first.
 | **Custom APIs + plugin** | Local incremental transcript sync, bounded cross-environment transcript import, and validated idempotent credit import |
 | **Python toolkit** | Bulk backfill, plugin registration, flow-run detail fetch |
 
-### 2.0.0.5 candidate package architecture
+### 2.0.0.5 stable package architecture
 
-The repository currently stages three synchronized managed candidates. This is not yet the public
-stable release: hosted PVE UI validation and the user-performed manual Contoso TPM upgrade passed,
-but stable promotion remains; website downloads and the release manifest still point to immutable
-`1.4.0.15` artifacts.
+The current stable release contains three synchronized managed packages after hosted PVE UI
+validation, tenant-neutral package validation, and the user-performed manual Contoso TPM upgrade.
 
-| Candidate | Required? | Ownership |
+| Package | Required? | Ownership |
 | --- | --- | --- |
 | `pvConversationInsights` | Required | All 17 tables, plugins and Custom APIs, four roles, model-driven app, inventory/transcript runtime, four transcript/shared flows, and `pvci_dataversesync`, `pvci_powerplatformadminv2`, and `pvci_centralcollector` |
 | `pvConversationInsightsCredits` | Optional | Only the three credit collection/governance flows, licensing references `pvci_licensinghttp` and `pvci_powerplatformapi`, and required `pvci_CreditReportingTenantId` definition |
 | `pvConversationInsightsCodeApp` | Optional preview | Only the unsupported preview code app and its declared core dependencies |
 
-For a clean `2.0.0.5` candidate test, import core, then optional credits, then optional code app. To
-upgrade public `1.4.0.15`, import the credits add-on first, apply the core managed upgrade second,
+For a clean `2.0.0.5` installation, import core, then optional credits, then optional code app. To
+upgrade from `1.4.0.15`, import the credits add-on first, apply the core managed upgrade second,
 and upgrade the code app last. This additive ownership transfer preserves the existing credit flow
 identities while core retains schema and data ownership. Core does not contain or request the credit
 tenant variable. The optional credit add-on prompts for its required target-tenant current value and

@@ -27,23 +27,22 @@ cp config/transcript_solution_config.sample.json config/transcript_solution_conf
 
 If tokens expire: `az login --tenant <tenantId>`.
 
-## Managed 2.0.0.5 candidate installation and upgrade
+## Managed 2.0.0.5 stable installation and upgrade
 
-The three `2.0.0.5` managed ZIPs under `output/candidate/` are for manual target-tenant testing;
-they are not public stable downloads. PVE has validated all three solution versions, exact flow
+The three published `2.0.0.5` managed ZIPs passed PVE validation for all solution versions, exact flow
 and connection-reference ownership, seven unique active flows, five mapped references, and
 tenant-neutral managed exports. The authenticated hosted PVE UI smoke passed across Sessions,
 Trends, and Credits in the persisted cross-environment consent state. The user-performed manual
 Contoso TPM import and upgrade test passed.
 
-For a clean candidate install:
+For a clean installation:
 
 1. Import `pvConversationInsights-managed-2.0.0.5.zip`. Core does not prompt for a credit tenant ID.
 2. Optionally import `pvConversationInsightsCredits-managed-2.0.0.5.zip` and supply the required
     `pvci_CreditReportingTenantId` current value in the import wizard.
 3. Optionally import `pvConversationInsightsCodeApp-managed-2.0.0.5.zip` last.
 
-For an upgrade from public `1.4.0.15`, order is part of the migration contract:
+For an upgrade from `1.4.0.15`, order is part of the migration contract:
 
 1. Import `pvConversationInsightsCredits-managed-2.0.0.5.zip` first. This additively takes
     solution ownership of the three existing credit workflow identities and two licensing

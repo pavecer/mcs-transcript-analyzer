@@ -1,11 +1,9 @@
 # Architecture
 
-## Candidate solution boundaries
+## Stable solution boundaries
 
-Version `2.0.0.5` is a three-package candidate architecture, not a shipped public release. PVE
-deployment, tenant-neutral package validation, and the hosted UI smoke are complete. The
-user-performed manual Contoso TPM upgrade passed; stable promotion remains pending. Stable `1.4.0.15` downloads remain
-the public installation surface.
+Version `2.0.0.5` is the stable three-package architecture after PVE deployment, tenant-neutral
+package validation, the hosted UI smoke, and the user-performed manual Contoso TPM upgrade.
 
 | Managed solution | Boundary |
 | --- | --- |
@@ -14,7 +12,7 @@ the public installation surface.
 | `pvConversationInsightsCodeApp` | Optional unsupported preview. Owns only the code app and its declared dependencies. |
 
 Keeping all schema and server-side runtime in core avoids destructive data migration. Clean
-candidate imports use core, credits, then code app. Upgrades from `1.4.0.15` install credits first,
+installations use core, optional credits, then optional code app. Upgrades from `1.4.0.15` install credits first,
 apply the core managed upgrade second, and upgrade the code app last. The order lets the add-on
 claim the existing credit workflow identities before core relinquishes solution ownership.
 
@@ -308,7 +306,7 @@ organizations and administrator bootstrap is an optional capability, never a pre
 
 The required core solution is tenant-neutral and packages the importer, schema, model-driven app,
 single Dataverse connection reference, and generic central flow. Environment identity and
-enablement remain Dataverse rows, not solution metadata. In the `2.0.0.5` candidate, core derives
+enablement remain Dataverse rows, not solution metadata. In the `2.0.0.5` release, core derives
 inventory tenant scope from current-organization metadata and has no dependency on the credit tenant
 variable. The optional credit add-on contains its required variable definition, three flows, and two
 licensing references, while the third managed solution contains only the preview code app and its
