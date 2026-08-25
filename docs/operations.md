@@ -82,6 +82,16 @@ Base Resource URL:             https://licensing.powerplatform.microsoft.com/
 Microsoft Entra ID Resource URI: https://licensing.powerplatform.microsoft.com/
 ```
 
+During managed-solution import, an entry showing `Invalid connection` and a blank
+`BaseResourceUrl` is an incomplete physical connection, not a usable default. Choose **Add new
+connection** from the import row, create the preauthorized HTTP connection with both values above,
+return to the wizard, and map it to both **PVCI Licensing API** (`pvci_licensinghttp`) and **PVCI
+Power Platform API** (`pvci_powerplatformapi`) when one licensing-administrator identity owns both
+flows. Despite its display name, the latter is the licensing-governance reference and uses the same
+`licensing.powerplatform.microsoft.com` audience. See the
+[first-import connection wizard](permissions-and-inventory.md#first-import-connection-wizard) for
+the complete five-row mapping and recovery steps.
+
 The connection owner needs the Power Platform administrative access required by the licensing
 service. DLP/ACP must allow this premium connector and Microsoft Dataverse in the collector
 environment. Provision the solution schema first so `pvci_CreditReportingTenantId` exists. On the
