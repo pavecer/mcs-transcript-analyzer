@@ -43,3 +43,11 @@ GitHub Pages release history, or roadmap status.
   succeeds. Enforce that the generic `PVCI Collect Central Transcripts (scheduled)` flow is in
   core, uses `ListRecordsWithOrganization`, and contains no hardcoded source topology or
   `pvci_transcript_http_*` references.
+10. After manual target-tenant approval, commit package inputs first. Copy the exact validated
+  candidate bytes into `site/downloads/`, generate the stable manifest with that implementation
+  commit, and commit publication surfaces separately.
+11. Run `python3 scripts/validate_release_promotion.py --version <version>` before opening or
+  merging the release PR. This must prove candidate/stable byte identity and source provenance.
+12. Wait for every required PR check before merge, then verify the Pages deployment and public
+  manifest after merge. Do not create a second release-writing agent; CI jobs and validators are
+  independent gates while this agent remains the single release owner.

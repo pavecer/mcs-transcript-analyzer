@@ -36,6 +36,15 @@ override the tenant-ID boundary.
 7. Run `python3 scripts/validate_documentation.py` and `python3 scripts/validate_site.py`.
 8. Test the public page at desktop and mobile widths in the shared VS Code browser page when the
    page changes.
+9. For a candidate promotion, commit package inputs before generating the stable manifest. Copy
+   the exact target-tenant-tested candidate ZIPs into `site/downloads/`; do not rebuild them.
+10. Generate the manifest with the implementation commit, commit release surfaces separately, and
+    run `python3 scripts/validate_release_promotion.py --version <version>`.
+11. Open a PR, wait for every required check, merge, and verify Pages plus the public manifest.
+
+The Release Maintainer is the single mutation owner. Treat package validation, documentation/site
+validation, CI build jobs, target-tenant testing, and Pages verification as independent gates rather
+than assigning overlapping agents that can race on release files.
 
 ## Issue candidate releases
 
@@ -53,6 +62,8 @@ candidate package must be corrected after import, increment only the fourth segm
 to `output/candidate/`; do not modify `site/downloads/`, the release manifest, changelog shipped
 section, or public release history until the candidate passes target-tenant validation. Candidate
 packages must pass the same component and tenant-neutrality checks as public packages.
+Stable promotion must additionally prove that candidate and public ZIP hashes are identical and
+that `sourceCommit` is the latest commit touching package inputs.
 
 ## Roadmap discipline
 

@@ -190,8 +190,8 @@ Before exporting:
    imports core first and code app second, maps packaged references, populates inventory, enables
    reviewed sources, and turns on the packaged collector. Do not perform those writes in TPM.
 
-Candidate `1.4.0.2` limits scheduled reads to explicitly collector-enabled sources, but it only
-works for environments where the mapped identity is already authorized. It is not the zero-touch
-tenant-wide solution and must not be promoted as feature-complete. The earlier `1.4.0.0` and
-`1.4.0.1` candidates must not be reused or overwritten. Published `1.3.1.0` artifacts are immutable
-and must not be replaced.
+Release `1.4.0.15` supports source-managed verification and collection only after the mapped
+identity receives organization-level Conversation Transcript Read in each selected source.
+Administrator bootstrap remains unavailable until an external reconciler can provision access and
+prove temporary elevation cleanup. Never present manual per-source authorization as zero-touch
+onboarding, and never overwrite any prior candidate or published package version.
