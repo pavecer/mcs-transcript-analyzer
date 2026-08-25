@@ -17,6 +17,20 @@ from pathlib import Path
 import msal
 
 CACHE_FILE = Path(__file__).resolve().parents[2] / ".msal_token_cache.json"
+AUTHORIZED_WRITE_TENANT_ID = "1938ee32-a258-454c-b8db-3a928341bd69"
+
+
+def require_authorized_tenant(tenant_id: str) -> None:
+    if tenant_id.strip().lower() != AUTHORIZED_WRITE_TENANT_ID:
+        raise RuntimeError(
+            "Programmatic Dataverse writes are restricted to development tenant "
+            f"{AUTHORIZED_WRITE_TENANT_ID}; received {tenant_id!r}."
+        )
+
+
+def require_authorized_config(config_path: str | Path) -> None:
+    config = json.loads(Path(config_path).read_text(encoding="utf-8"))
+    require_authorized_tenant(config["tenantId"])
 
 
 def _az_command(resource: str, tenant_id: str | None = None) -> list[str]:

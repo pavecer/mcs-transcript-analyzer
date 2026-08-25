@@ -1,7 +1,14 @@
 import unittest
+from pathlib import Path
+from tempfile import TemporaryDirectory
 from unittest.mock import patch
 
-from scripts.transcript_insights.dv_token import _az_command
+from scripts.transcript_insights.dv_token import (
+    AUTHORIZED_WRITE_TENANT_ID,
+    _az_command,
+    require_authorized_config,
+    require_authorized_tenant,
+)
 
 
 class AzureCliTokenCommandTests(unittest.TestCase):
@@ -38,6 +45,23 @@ class AzureCliTokenCommandTests(unittest.TestCase):
             ["--tenant", "11111111-2222-3333-4444-555555555555"],
             command[-2:],
         )
+
+    def test_write_guard_accepts_only_development_tenant(self):
+        require_authorized_tenant(AUTHORIZED_WRITE_TENANT_ID.upper())
+
+        with self.assertRaisesRegex(RuntimeError, "restricted to development tenant"):
+            require_authorized_tenant("11111111-2222-3333-4444-555555555555")
+
+    def test_config_write_guard_reads_tenant_id(self):
+        with TemporaryDirectory() as directory:
+            config = Path(directory) / "config.json"
+            config.write_text(
+                '{"tenantId":"11111111-2222-3333-4444-555555555555"}',
+                encoding="utf-8",
+            )
+
+            with self.assertRaisesRegex(RuntimeError, "11111111-2222-3333"):
+                require_authorized_config(config)
 
 
 if __name__ == "__main__":

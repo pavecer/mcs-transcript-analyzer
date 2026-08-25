@@ -18,6 +18,8 @@ from pathlib import Path
 
 from azure.identity import InteractiveBrowserCredential
 
+from dv_token import require_authorized_tenant
+
 
 def load_env_file(path: Path) -> None:
     if not path.exists():
@@ -50,6 +52,10 @@ def main() -> None:
     dataverse_url = os.environ.get("DATAVERSE_URL")
     if not dataverse_url:
         raise RuntimeError("DATAVERSE_URL is required. Set it in .env or environment variables.")
+    tenant_id = os.environ.get("POWER_PLATFORM_TENANT_ID")
+    if not tenant_id:
+        raise RuntimeError("POWER_PLATFORM_TENANT_ID is required for write authorization.")
+    require_authorized_tenant(tenant_id)
 
     from PowerPlatform.Dataverse.client import DataverseClient
 

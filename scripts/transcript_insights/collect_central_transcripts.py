@@ -16,7 +16,7 @@ from pathlib import Path
 from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from dv_token import get_token, get_token_from_config  # noqa: E402
+from dv_token import get_token, get_token_from_config, require_authorized_config  # noqa: E402
 from sync_transcripts import (  # noqa: E402
     Dv,
     IDENTITY,
@@ -280,6 +280,7 @@ def main() -> None:
     parser.add_argument("--reprocess", action="store_true")
     parser.add_argument("--dry-run", action="store_true", help="Read and parse without writing to collector Dataverse")
     args = parser.parse_args()
+    require_authorized_config(args.config)
     print(json.dumps(collect(args), indent=2))
 
 

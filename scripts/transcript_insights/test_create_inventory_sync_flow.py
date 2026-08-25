@@ -8,7 +8,6 @@ from scripts.transcript_insights.create_inventory_sync_flow import (
     ENVIRONMENT_PAGE_SIZE,
     MAX_ENVIRONMENT_PAGES,
     MAX_RESOURCE_PAGES,
-    TENANT_PARAMETER,
     build_clientdata,
     build_definition,
     resolve_connection_id,
@@ -57,11 +56,15 @@ class InventorySyncFlowTests(unittest.TestCase):
         )
 
     def test_inventory_audit_is_separate_from_credit_sync(self) -> None:
-        actions = build_definition()["actions"]
+        definition = build_definition()
+        actions = definition["actions"]
+        self.assertNotIn("pvci_CreditReportingTenantId (pvci_CreditReportingTenantId)", definition["parameters"])
+        self.assertNotIn("tenantId", actions["Until_environment_pages_complete"]["actions"]["Compose_environment_payload"]["inputs"])
+        self.assertNotIn("tenantId", actions["Until_resource_pages_complete"]["actions"]["Compose_agent_payload"]["inputs"])
         payload = actions["Compose_inventory_sync_payload"]["inputs"]
         self.assertIn("inventorySyncRun", payload)
         self.assertNotIn("syncRun", payload)
-        self.assertIn(f"parameters('{TENANT_PARAMETER}')", payload["tenantId"])
+        self.assertNotIn("tenantId", payload)
         self.assertEqual(
             "@string(outputs('Compose_inventory_sync_payload'))",
             actions["Finalize_inventory_sync"]["inputs"]["parameters"]["item/PayloadJson"],

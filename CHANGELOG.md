@@ -3,6 +3,55 @@
 Release history for MCS Transcript Analyzer. Each published package version is immutable; package
 checksums and source provenance are recorded in `site/downloads/release-manifest.json`.
 
+## 2.0.0.5 - 2026-08-25
+
+Stable three-package architecture release after PVE deployment and hosted UI smoke, tenant-neutral
+package validation, and the user-performed manual Contoso TPM upgrade test.
+
+- Split the product into exactly three synchronized managed packages: required transcript/shared
+  core, optional Copilot Credit runtime add-on, and optional unsupported preview code app.
+- Kept all Dataverse schema, plugins, Custom APIs, roles, the model-driven app, inventory and
+  transcript runtime, four transcript/shared flows, and three non-licensing connection references
+  in core to avoid destructive schema or data migration.
+- Moved ownership of only the three credit flows and the `pvci_licensinghttp` and
+  `pvci_powerplatformapi` references, plus the required `pvci_CreditReportingTenantId` definition,
+  into `pvConversationInsightsCredits`. Core imports no longer prompt for this credit-only setting.
+- Changed tenant inventory import to derive the current tenant from Dataverse organization metadata,
+  while preserving rejection when an explicit payload tenant conflicts with the environment.
+- Prevented managed packages from including environment-variable current values; the optional
+  add-on prompts each target for its own tenant ID and no PVE value is distributed.
+- Fixed the code-app Credits capability check so entering the checking state no longer cancels its
+  own Dataverse queries and leaves the page stuck at availability validation. Capability queries
+  now time out into the retry state instead of displaying an indefinite loading message.
+- Defined clean installation order as core, optional credits, optional code app. For upgrades from
+  `1.4.0.15`, install the credit add-on first, apply the core managed upgrade second, and upgrade
+  the code app last so existing credit workflow identities move additively.
+- Kept Credits navigation visible with capability states: unavailable without the add-on,
+  setup-required until successful credit-sync evidence exists, and ready only when both exist.
+  Credit data services are not mounted before ready.
+- Confirmed transcript analysis does not require licensing-administrator access when the optional
+  credit add-on is omitted.
+- Made transcript scope local-only by default in the code app. Inventory discovery and access
+  verification do not enable remote collection; a verified remote source requires explicit
+  administrator consent that transcripts will be copied into and retained in the installed
+  Dataverse environment. Reporting environment selectors appear only while a remote source is
+  enabled, and Sessions, Trends, and Credits resource reporting remain scoped to the host environment
+  until then. User usage and recent governance request history remain tenant-wide. Disabling a
+  source stops future imports without deleting data already copied.
+- Corrected Credits local-only filtering so hiding its environment selector cannot leave remote
+  usage, capacity, agent, threshold, or correlation rows in the active reporting scope.
+- Validated in PVE that all three live solutions are `2.0.0.5`; core exports exactly four flows and
+  three non-licensing references; the add-on exports exactly three flows and two licensing
+  references; all seven unique flows are active; all five references are mapped; and all three
+  managed exports pass tenant-neutral package validation. The hosted PVE UI smoke and the
+  user-performed manual Contoso TPM upgrade passed.
+
+Published downloads:
+
+- Core: `pvConversationInsights-managed-2.0.0.5.zip`
+- Credits: `pvConversationInsightsCredits-managed-2.0.0.5.zip`
+- Preview: `pvConversationInsightsCodeApp-managed-2.0.0.5.zip`
+
 ## 1.4.0.15 - 2026-08-25
 
 Cross-environment transcript operations release.

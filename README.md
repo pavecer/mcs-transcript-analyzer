@@ -28,14 +28,44 @@ the preauthorized HTTP connection with both licensing-service URLs first.
 | **Custom APIs + plugin** | Local incremental transcript sync, bounded cross-environment transcript import, and validated idempotent credit import |
 | **Python toolkit** | Bulk backfill, plugin registration, flow-run detail fetch |
 
+### 2.0.0.5 stable package architecture
+
+The current stable release contains three synchronized managed packages after hosted PVE UI
+validation, tenant-neutral package validation, and the user-performed manual Contoso TPM upgrade.
+
+| Package | Required? | Ownership |
+| --- | --- | --- |
+| `pvConversationInsights` | Required | All 17 tables, plugins and Custom APIs, four roles, model-driven app, inventory/transcript runtime, four transcript/shared flows, and `pvci_dataversesync`, `pvci_powerplatformadminv2`, and `pvci_centralcollector` |
+| `pvConversationInsightsCredits` | Optional | Only the three credit collection/governance flows, licensing references `pvci_licensinghttp` and `pvci_powerplatformapi`, and required `pvci_CreditReportingTenantId` definition |
+| `pvConversationInsightsCodeApp` | Optional preview | Only the unsupported preview code app and its declared core dependencies |
+
+For a clean `2.0.0.5` installation, import core, then optional credits, then optional code app. To
+upgrade from `1.4.0.15`, import the credits add-on first, apply the core managed upgrade second,
+and upgrade the code app last. This additive ownership transfer preserves the existing credit flow
+identities while core retains schema and data ownership. Core does not contain or request the credit
+tenant variable. The optional credit add-on prompts for its required target-tenant current value and
+never packages the value from PVE.
+
+Credits navigation remains visible. It reports **Unavailable** when the add-on is absent,
+**Setup required** when the add-on is installed without successful credit-sync evidence, and
+**Ready** only after both are present. Credit data services are not mounted before Ready. A
+transcript-only deployment does not require either licensing HTTP connection or
+licensing-administrator access.
+
 `PVCI Collect Central Transcripts (scheduled)` is packaged in the core solution. It uses one
 solution-aware Microsoft Dataverse connection reference and the supported selected-environment
 action to read source URLs dynamically from Environment Inventory. After import, map that one
 connection and run tenant inventory. In the code app, choose **Source-managed**, grant the collector
 identity a least-privilege role with organization-level Read on **Conversation Transcript** in each
 selected source environment, and submit **Verify access**. The packaged request processor records
-the one-row ID-only probe result; only a readable `Verified` source can then be enabled for collection.
-Failed probes remain visible and keep collection off. Administrator bootstrap is shown as
+the one-row ID-only probe result; discovery and verification do not enable collection. Transcript
+sync is local to the installed environment by default. Enabling a readable `Verified` remote source
+requires an explicit administrator confirmation that transcript data will be copied into and stored
+in the installed Dataverse environment. Disabling it stops future imports but does not delete records
+already copied. Sessions, Trends, and Credits resource reporting remain scoped to the host environment,
+with their environment selectors hidden, until at least one remote source is enabled. User usage and
+recent governance request history remain tenant-wide. Failed probes remain
+visible and keep collection off. Administrator bootstrap is shown as
 unavailable until its external reconciler is deployed. No tenant name, source ID, URL, or physical
 connection is hardcoded.
 

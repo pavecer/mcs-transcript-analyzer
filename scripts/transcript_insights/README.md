@@ -5,6 +5,33 @@ and carries end-user identity. See `docs/api-reference.md`.
 
 ## Solution pipeline (v9.1)
 
+The current stable `2.0.0.5` release contains exactly three managed packages:
+`pvConversationInsights` required core, `pvConversationInsightsCredits` optional licensing runtime,
+and `pvConversationInsightsCodeApp` optional unsupported preview. Core retains all schema, plugins,
+APIs, roles, apps, inventory/transcript runtime, four transcript/shared flows, and three
+non-licensing references. The add-on owns only three credit flows, the two licensing references,
+and the required `pvci_CreditReportingTenantId` definition. Core inventory derives tenant scope
+server-side and does not depend on that variable.
+The published packages passed PVE validation and the user-performed manual Contoso TPM upgrade.
+
+For a clean installation use core, optional credits, then optional code app. For an upgrade
+from `1.4.0.15`, install credits first, apply the core managed upgrade second, and upgrade the code
+app last. Transcript-only operation omits the credit add-on and does not need licensing
+administrator access.
+
+Local transcript sync is automatic in the environment where the solution is installed. Tenant
+inventory discovery and a readable verification probe are not consent to collect from another
+environment. A verified remote source begins collection only after an administrator explicitly
+enables it and confirms that its transcripts will be copied into and retained by the installed
+Dataverse environment. Disabling that source stops future imports but does not delete copied data.
+Every utility that mutates Dataverse validates the configured tenant through
+`require_authorized_config` or `require_authorized_tenant`; only development tenant
+`1938ee32-a258-454c-b8db-3a928341bd69` is accepted. Read-only probes remain available elsewhere.
+Until a remote source is enabled, Sessions, Trends, and Credits resource reporting are scoped to the
+host environment and do not show environment selectors. Credit user usage and recent governance
+request history remain tenant-wide. Credits remains visible as Unavailable without its add-on, Setup
+required before a successful credit sync, and Ready only after that evidence exists.
+
 Run in this order against a fresh environment:
 
 ```bash
@@ -121,7 +148,7 @@ python3 scripts/transcript_insights/create_credit_sync_flow.py \
   --http-connection-id shared-webcontents-00000000
 ```
 
-Provision the solution schema first. The script writes the configured tenant ID as the current
+Install the optional credit add-on first. The script writes the configured tenant ID as the current
 value of `pvci_CreditReportingTenantId` outside the solution. On subsequent deployments,
 `--http-connection-id` is optional and the existing target-environment `pvci_licensinghttp`
 binding is reused. Neither the current tenant value nor the physical connection ID is exported.

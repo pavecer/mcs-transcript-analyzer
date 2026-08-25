@@ -1,8 +1,8 @@
 {
   "core": {
     "solutionUniqueName": "pvConversationInsights",
-    "version": "1.4.0.15",
-    "filename": "pvConversationInsights-managed-1.4.0.15.zip",
+    "version": "2.0.0.5",
+    "filename": "pvConversationInsights-managed-2.0.0.5.zip",
     "requiredTables": [
       "pvci_agentinventory",
       "pvci_agentthresholdsnapshot",
@@ -24,9 +24,6 @@
       "systemuser"
     ],
     "requiredWorkflows": [
-      "PVCI Collect Copilot Credit Usage (scheduled)",
-      "PVCI Collect Credit Governance (scheduled)",
-      "PVCI Apply Credit Governance Requests (scheduled)",
       "PVCI Collect Tenant Agent Inventory (scheduled)",
       "PVCI Collect Central Transcripts (scheduled)",
       "PVCI Verify Transcript Source Access (scheduled)",
@@ -39,12 +36,38 @@
       "PVCI Source Access Processor"
     ]
   },
+  "credits": {
+    "solutionUniqueName": "pvConversationInsightsCredits",
+    "version": "2.0.0.5",
+    "filename": "pvConversationInsightsCredits-managed-2.0.0.5.zip",
+    "dependsOn": [
+      "core"
+    ],
+    "requiredWorkflows": [
+      "PVCI Collect Copilot Credit Usage (scheduled)",
+      "PVCI Collect Credit Governance (scheduled)",
+      "PVCI Apply Credit Governance Requests (scheduled)"
+    ],
+    "requiredConnectionReferences": [
+      "pvci_licensinghttp",
+      "pvci_powerplatformapi"
+    ],
+    "requiredEnvironmentVariables": [
+      "pvci_CreditReportingTenantId"
+    ]
+  },
   "codeApp": {
     "solutionUniqueName": "pvConversationInsightsCodeApp",
-    "version": "1.4.0.15",
-    "filename": "pvConversationInsightsCodeApp-managed-1.4.0.15.zip",
+    "version": "2.0.0.5",
+    "filename": "pvConversationInsightsCodeApp-managed-2.0.0.5.zip",
+    "dependsOn": [
+      "core"
+    ],
     "appId": "cdab27a0-70fe-4819-a0c1-230e6ca99cc4",
     "componentSchemaName": "pve_conversationinsightsexplorer_a5d19",
+    "requiredSystemTables": [
+      "solution"
+    ],
     "requiredCoreTables": [
       "pvci_agentinventory",
       "pvci_agentthresholdsnapshot",

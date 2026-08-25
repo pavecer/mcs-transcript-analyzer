@@ -15,10 +15,13 @@ import msal
 import requests
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from dv_token import get_token  # noqa: E402
+from dv_token import (  # noqa: E402
+    AUTHORIZED_WRITE_TENANT_ID as AUTHORIZED_TENANT_ID,
+    get_token,
+    require_authorized_tenant,
+)
 
 
-AUTHORIZED_TENANT_ID = "1938ee32-a258-454c-b8db-3a928341bd69"
 DISPOSABLE_NAME_PREFIX = "PVCI Onboarding E2E "
 BASELINE_ROLE = "PVCI Transcript Collector Baseline"
 COLLECTOR_ROLE = "PVCI Transcript Collector"
@@ -261,8 +264,7 @@ def application_user_role_names(
 
 
 def validate(args: argparse.Namespace) -> dict[str, Any]:
-    if args.tenant_id != AUTHORIZED_TENANT_ID:
-        raise RuntimeError("Refusing to write outside the authorized development/test tenant.")
+    require_authorized_tenant(args.tenant_id)
     environment_url = args.environment_url.rstrip("/")
     assert_disposable_environment(args.environment_id, environment_url)
     admin_token = get_token(

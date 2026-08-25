@@ -17,9 +17,8 @@ on:
         default: false
 
 permissions:
-  contents: write
+  contents: read
   id-token: write
-  pages: write
 
 concurrency:
   group: refresh-release-packages
@@ -28,6 +27,7 @@ concurrency:
 env:
   ALLOWED_PROGRAMMATIC_TENANT_ID: 1938ee32-a258-454c-b8db-3a928341bd69
   CORE_SOLUTION: pvConversationInsights
+  CREDITS_SOLUTION: pvConversationInsightsCredits
   CODEAPP_SOLUTION: pvConversationInsightsCodeApp
   POWER_PLATFORM_CLIENT_ID: ${{ vars.POWER_PLATFORM_CLIENT_ID }}
   POWER_PLATFORM_TENANT_ID: ${{ vars.POWER_PLATFORM_TENANT_ID }}
@@ -37,8 +37,6 @@ env:
 jobs:
   refresh:
     runs-on: ubuntu-latest
-    outputs:
-      changed: ${{ steps.changes.outputs.changed }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -151,57 +149,37 @@ jobs:
         if: steps.changes.outputs.changed == 'true'
         shell: bash
         run: |
+          mkdir -p output/candidate
           core_file=$(python3 -c 'import json; print(json.load(open("config/release-packages.json"))["core"]["filename"])')
+          credits_file=$(python3 -c 'import json; print(json.load(open("config/release-packages.json"))["credits"]["filename"])')
           codeapp_file=$(python3 -c 'import json; print(json.load(open("config/release-packages.json"))["codeApp"]["filename"])')
           pac solution export \
             --environment "$POWER_PLATFORM_ENVIRONMENT_URL" \
             --name "$CORE_SOLUTION" \
-            --path "site/downloads/$core_file" \
+            --path "output/candidate/$core_file" \
+            --managed --overwrite
+          pac solution export \
+            --environment "$POWER_PLATFORM_ENVIRONMENT_URL" \
+            --name "$CREDITS_SOLUTION" \
+            --path "output/candidate/$credits_file" \
             --managed --overwrite
           pac solution export \
             --environment "$POWER_PLATFORM_ENVIRONMENT_URL" \
             --name "$CODEAPP_SOLUTION" \
-            --path "site/downloads/$codeapp_file" \
+            --path "output/candidate/$codeapp_file" \
             --managed --overwrite
 
-      - name: Validate and checkpoint packages
+      - name: Validate candidate packages
         if: steps.changes.outputs.changed == 'true'
         run: |
-          python3 scripts/update_release_manifest.py \
-            --source-commit "${{ steps.changes.outputs.source_sha }}"
-          python3 scripts/validate_site.py
+          version=$(python3 -c 'import json; print(json.load(open("config/release-packages.json"))["core"]["version"])')
+          python3 scripts/validate_candidate_packages.py --version "$version"
 
-      - name: Commit generated release artifacts
+      - name: Upload synchronized candidate set
         if: steps.changes.outputs.changed == 'true'
-        shell: bash
-        run: |
-          git add site/downloads
-          if git diff --cached --quiet; then
-            echo "Exports are byte-for-byte unchanged; nothing to publish."
-            exit 0
-          fi
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git commit -m "Refresh downloadable solution packages"
-          git push
-
-      - uses: actions/configure-pages@v5
-        if: steps.changes.outputs.changed == 'true'
-
-      - name: Upload refreshed Pages artifact
-        if: steps.changes.outputs.changed == 'true'
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
-          path: site
-
-  deploy-pages:
-    if: needs.refresh.outputs.changed == 'true'
-    needs: refresh
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - name: Deploy refreshed packages to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+          name: managed-candidate-${{ steps.changes.outputs.source_sha }}
+          path: output/candidate/
+          if-no-files-found: error
+          retention-days: 30

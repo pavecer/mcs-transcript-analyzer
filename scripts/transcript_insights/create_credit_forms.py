@@ -11,7 +11,7 @@ import requests
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import create_forms as forms  # noqa: E402
-from dv_token import get_token_from_config  # noqa: E402
+from dv_token import get_token_from_config, require_authorized_config  # noqa: E402
 
 SOLUTION = "pvConversationInsights"
 ENTITIES = (
@@ -451,6 +451,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--config", default="config/transcript_solution_config.dev.json")
     args = parser.parse_args()
+    require_authorized_config(args.config)
     token, dv_url = get_token_from_config(args.config)
     base = f"{dv_url}/api/data/v9.1"
     headers = {

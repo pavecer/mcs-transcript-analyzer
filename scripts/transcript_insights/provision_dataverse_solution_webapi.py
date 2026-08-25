@@ -17,7 +17,7 @@ from typing import Any
 import requests
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from dv_token import get_token  # noqa: E402
+from dv_token import get_token, require_authorized_tenant  # noqa: E402
 
 
 @dataclass
@@ -397,6 +397,7 @@ def main() -> None:
     args = parser.parse_args()
 
     cfg = load_config(Path(args.config), Path(args.definition))
+    require_authorized_tenant(cfg.tenant_id)
     definition = json.loads(Path(args.definition).read_text(encoding="utf-8"))
     token = acquire(cfg)
 

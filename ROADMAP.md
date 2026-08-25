@@ -8,13 +8,6 @@ Last reviewed: 2026-08-25
 
 ## Now
 
-### Central transcript source discovery
-
-- **Status:** Implemented and tenant-probed in PVE Dev and TPM
-- **Goal:** Build a read-only tenant-wide source registry that uses the Power Platform admin inventory to test Dataverse transcript access per environment, without installing the solution into source environments.
-- **Exit criteria:** Met. PVE and TPM probes distinguish readable-with-data, readable-empty, access-denied, and unavailable environments without copying transcript content. Both apps expose the persisted status.
-- **Tracking:** [Operations guide](docs/operations.md), [architecture](docs/architecture.md), and `scripts/transcript_insights/probe_transcript_sources.py`
-
 ### Replace pre-authorized collection with zero-touch onboarding
 
 - **Status:** Source-managed request/status backend, code-app workflow, and packaged verifier are implemented and smoke-tested in PVE Dev; external administrator-bootstrap reconciliation remains
@@ -104,6 +97,8 @@ These are not silently forgotten backlog items:
 - Exact credit allocation to a transcript, evaluation, tool call, or user-agent pair.
 - Environment allocation, `TenantPool`, or PayGo mutation.
 - Treating unavailable cross-environment metadata as evidence that an agent does not exist.
+- Claiming a release candidate is shipped or TPM-validated before its manual upgrade gate
+  completes.
 
 Changes to this boundary require product evidence, documentation review, versioned managed-package
 upgrades, and a new release entry in [CHANGELOG.md](CHANGELOG.md).

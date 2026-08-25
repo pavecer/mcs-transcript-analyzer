@@ -28,9 +28,10 @@ the user performs TPM imports and upgrades manually. Tenant names, URLs, and pro
 override the tenant-ID boundary.
 
 1. Review `ROADMAP.md` and move only completed, verified work into `CHANGELOG.md`.
-2. Add a dated changelog entry with user-visible behavior, boundaries, and both package artifacts.
+2. Add a dated changelog entry with user-visible behavior, boundaries, and all three package artifacts.
 3. Update the public release-history and roadmap sections in `site/index.html`.
-4. Keep the core and code-app versions synchronized and never overwrite a published version.
+4. Keep the core, optional credit add-on, and optional code-app versions synchronized and never
+   overwrite a published version.
 5. Regenerate `site/downloads/release-manifest.json` after exporting managed packages.
 6. Review the surfaces indexed by `config/documentation-contract.json`.
 7. Run `python3 scripts/validate_documentation.py` and `python3 scripts/validate_site.py`.
@@ -59,9 +60,10 @@ Dataverse managed solutions cannot be exported from a managed target, so do not 
 export step or overwrite the stable package.
 
 For a feature candidate that needs cross-tenant validation before public release, use the next
-minor four-part version (for example `1.4.0.0`) for both core and code-app source solutions. If a
+minor four-part version (for example `2.0.0.0`) for the core, credit add-on, and code-app source
+solutions. If a
 candidate package must be corrected after import, increment only the fourth segment (for example
-`1.4.0.1`) and never overwrite the earlier ZIP. Export
+`2.0.0.1`) and never overwrite the earlier ZIP. Export
 to `output/candidate/`; do not modify `site/downloads/`, the release manifest, changelog shipped
 section, or public release history until the candidate passes target-tenant validation. Candidate
 packages must pass the same component and tenant-neutrality checks as public packages.

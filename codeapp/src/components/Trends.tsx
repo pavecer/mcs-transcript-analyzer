@@ -5,12 +5,18 @@ import { fmtMs, isEssSession, latencyBand, sourceEnvironmentKey, sourceEnvironme
 type Grain = "hour" | "day";
 interface AgentOption { id: string; name: string }
 
-export function Trends({ sessions, loading }: { sessions: SessionRow[]; loading: boolean }) {
+export function Trends({ sessions, loading, allowEnvironmentSelection }: {
+  sessions: SessionRow[];
+  loading: boolean;
+  allowEnvironmentSelection: boolean;
+}) {
   const [agent, setAgent] = useState<string>("*");
   const [hideTest, setHideTest] = useState(true);
   const [essOnly, setEssOnly] = useState(true);
   const [environment, setEnvironment] = useState("*");
   const [grain, setGrain] = useState<Grain | "auto">("auto");
+
+  const activeEnvironment = allowEnvironmentSelection ? environment : "*";
 
   const environmentOptions = useMemo(() => {
     const options = new Map<string, string>();
@@ -26,7 +32,7 @@ export function Trends({ sessions, loading }: { sessions: SessionRow[]; loading:
       const options = new Map<string, AgentOption>();
       sessions.forEach((session) => {
         if (essOnly && !isEssSession(session)) return;
-        if (environment !== "*" && sourceEnvironmentKey(session) !== environment) return;
+        if (activeEnvironment !== "*" && sourceEnvironmentKey(session) !== activeEnvironment) return;
         if (hideTest && session.pvci_istestmode) return;
         const id = session.pvci_botid ?? session.pvci_botname;
         if (!id) return;
@@ -34,7 +40,7 @@ export function Trends({ sessions, loading }: { sessions: SessionRow[]; loading:
       });
       return [...options.values()].sort((left, right) => left.name.localeCompare(right.name));
     },
-    [sessions, environment, essOnly, hideTest]
+    [sessions, activeEnvironment, essOnly, hideTest]
   );
 
   const activeAgent = agent === "*" || agents.some((option) => option.id === agent) ? agent : "*";
@@ -46,12 +52,12 @@ export function Trends({ sessions, loading }: { sessions: SessionRow[]; loading:
         if (essOnly && !isEssSession(s)) return false;
         if (activeAgent !== "*" && (s.pvci_botid ?? s.pvci_botname) !== activeAgent) return false;
 
-        if (environment !== "*") {
-          if (sourceEnvironmentKey(s) !== environment) return false;
+        if (activeEnvironment !== "*") {
+          if (sourceEnvironmentKey(s) !== activeEnvironment) return false;
         }
         return Boolean(s.pvci_startdatetimeutc);
       }),
-    [sessions, activeAgent, hideTest, essOnly, environment]
+    [sessions, activeAgent, hideTest, essOnly, activeEnvironment]
   );
 
   const effectiveGrain: Grain = useMemo(() => {
@@ -146,7 +152,7 @@ export function Trends({ sessions, loading }: { sessions: SessionRow[]; loading:
       </div>
 
       <div className="trend-filterbar" aria-label="Trend filters">
-        <label className="trend-filter">
+        {allowEnvironmentSelection && <label className="trend-filter">
           <span>Environment</span>
           <select
             value={environment}
@@ -155,7 +161,7 @@ export function Trends({ sessions, loading }: { sessions: SessionRow[]; loading:
             <option value="*">All environments ({environmentOptions.length})</option>
             {environmentOptions.map(([id, label]) => <option key={id} value={id}>{label}</option>)}
           </select>
-        </label>
+        </label>}
         <label className="trend-filter">
           <span>Agent</span>
           <select value={activeAgent} onChange={(event) => setAgent(event.target.value)}>

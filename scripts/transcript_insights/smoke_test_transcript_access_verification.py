@@ -12,7 +12,7 @@ from pathlib import Path
 from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from dv_token import get_token_from_config  # noqa: E402
+from dv_token import get_token_from_config, require_authorized_config  # noqa: E402
 from register_plugin import Dv  # noqa: E402
 
 
@@ -92,6 +92,8 @@ def main() -> None:
 
     token, dataverse_url = get_token_from_config(args.config)
     dv = Dv(f"{dataverse_url}/api/data/v9.1", token)
+    if not args.request_key:
+        require_authorized_config(args.config)
     result = (
         request_status(dv, args.request_key)
         if args.request_key

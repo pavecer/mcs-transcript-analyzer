@@ -109,5 +109,12 @@ export const dataSourcesInfo = {
     "primaryKey": "pvci_transcriptturnid",
     "dataSourceType": "Dataverse",
     "apis": {}
+  },
+  "solutions": {
+    "tableId": "",
+    "version": "",
+    "primaryKey": "solutionid",
+    "dataSourceType": "Dataverse",
+    "apis": {}
   }
 };

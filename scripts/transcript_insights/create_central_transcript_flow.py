@@ -10,7 +10,7 @@ from pathlib import Path
 from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from dv_token import get_token_from_config  # noqa: E402
+from dv_token import get_token_from_config, require_authorized_config  # noqa: E402
 from register_plugin import Dv  # noqa: E402
 
 
@@ -301,6 +301,7 @@ def main() -> None:
         response["solutionOutput"] = str(solution_output)
 
     if args.deploy:
+        require_authorized_config(args.config)
         token, dv_url = get_token_from_config(args.config)
         dv = Dv(f"{dv_url}/api/data/v9.1", token)
         reference = dv.find(

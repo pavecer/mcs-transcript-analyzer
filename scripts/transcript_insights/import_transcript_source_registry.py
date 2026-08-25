@@ -9,7 +9,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from dv_token import get_token_from_config  # noqa: E402
+from dv_token import get_token_from_config, require_authorized_config  # noqa: E402
 from register_plugin import Dv  # noqa: E402
 
 
@@ -25,6 +25,7 @@ def main() -> None:
     )
     parser.add_argument("--disable-all-collectors", action="store_true")
     args = parser.parse_args()
+    require_authorized_config(args.config)
 
     registry = json.loads(Path(args.registry).read_text(encoding="utf-8"))
     token, dv_url = get_token_from_config(args.config)

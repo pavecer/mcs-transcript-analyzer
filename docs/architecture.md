@@ -1,5 +1,26 @@
 # Architecture
 
+## Stable solution boundaries
+
+Version `2.0.0.5` is the stable three-package architecture after PVE deployment, tenant-neutral
+package validation, the hosted UI smoke, and the user-performed manual Contoso TPM upgrade.
+
+| Managed solution | Boundary |
+| --- | --- |
+| `pvConversationInsights` | Required transcript/shared core. Owns every table, plugin, Custom API, role, the model-driven app, inventory and transcript runtime, four transcript/shared flows, and three non-licensing connection references. |
+| `pvConversationInsightsCredits` | Optional credit runtime add-on. Owns only three credit flows, `pvci_licensinghttp`, `pvci_powerplatformapi`, and the required `pvci_CreditReportingTenantId` definition; it contains no table schema, plugin, API, role, or app. |
+| `pvConversationInsightsCodeApp` | Optional unsupported preview. Owns only the code app and its declared dependencies. |
+
+Keeping all schema and server-side runtime in core avoids destructive data migration. Clean
+installations use core, optional credits, then optional code app. Upgrades from `1.4.0.15` install credits first,
+apply the core managed upgrade second, and upgrade the code app last. The order lets the add-on
+claim the existing credit workflow identities before core relinquishes solution ownership.
+
+The code app detects the optional runtime without making licensing access a transcript-analysis
+dependency. Credits remains a visible destination with `Unavailable`, `Setup required`, and
+`Ready` states. The app mounts credit data services only in Ready, after add-on presence and a
+successful credit-sync record are both observed.
+
 ## Components
 
 | Component | Runs where | Purpose |
@@ -221,12 +242,18 @@ volume and are skipped. `IncludeTraces` keeps them at roughly 4× the row count.
 supportable option. The code app is preview and premium, but can do things forms cannot, such
 as interleaving messages and reasoning in one chronological replay.
 
-The code app supports ESS-scoped cross-environment diagnostics through an environment filter.
-There is no tenant picker because one installed solution serves one tenant. New records use the
-first-class environment columns; legacy source stamps remain a read fallback. Sessions, Trends,
-Inventory, and Credits share one persistent top-level navigation bar so destinations do not move
-between workspaces. The sidebar is contextual: Sessions and Credits use it for dense filters and
-selection, while Trends and Inventory retain the full workspace width.
+The code app starts in local-only mode. It obtains the host environment ID from Power Apps context,
+scopes Sessions, Trends, and Credits resource reporting to that environment, and hides their
+environment selectors. Credit user usage and recent governance request history remain tenant-wide.
+If host context is unavailable, Credits fails closed instead of falling back to all environments.
+Inventory remains
+the sole cross-environment configuration surface. After an administrator verifies and explicitly
+enables at least one remote source, the app reveals environment filters for cross-environment
+diagnostics. There is no tenant picker because one installed solution serves one tenant. New records
+use the first-class environment columns; legacy source stamps remain a read fallback. Sessions,
+Trends, Inventory, and Credits share one persistent top-level navigation bar so destinations do not
+move between workspaces. The sidebar is contextual: Sessions and Credits use it for dense filters
+and selection, while Trends and Inventory retain the full workspace width.
 
 Central collection begins with a read-only source registry. Power Platform Admins V2 can enumerate
 tenant environments, but Dataverse table access is still evaluated in each source organization.
@@ -277,10 +304,13 @@ the GA `pac admin assign-user --application-user` route requires an external wor
 solution-only cloud flow. Therefore, source-managed verification is the baseline for restricted
 organizations and administrator bootstrap is an optional capability, never a prerequisite.
 
-The public core solution is tenant-neutral and packages the importer, schema, model-driven app,
+The required core solution is tenant-neutral and packages the importer, schema, model-driven app,
 single Dataverse connection reference, and generic central flow. Environment identity and
-enablement remain Dataverse rows, not solution metadata. The second managed solution contains only
-the preview code app and its declared dependencies.
+enablement remain Dataverse rows, not solution metadata. In the `2.0.0.5` release, core derives
+inventory tenant scope from current-organization metadata and has no dependency on the credit tenant
+variable. The optional credit add-on contains its required variable definition, three flows, and two
+licensing references, while the third managed solution contains only the preview code app and its
+declared dependencies.
 
 **Payload size guards.** Memo columns cap at 1,048,576 characters; writes are capped at 900,000
 with pretty-print falling back to compact and then truncation, flagged by `PayloadTruncated`.

@@ -2,6 +2,13 @@
 
 ## What the managed solution includes
 
+The stable `2.0.0.5` release separates package ownership without moving the security or data model.
+Required `pvConversationInsights` core still owns all four roles, all tables, plugins, Custom APIs,
+the model-driven app, and transcript/inventory runtime. Optional `pvConversationInsightsCredits`
+owns only the three credit flows and `pvci_licensinghttp` plus `pvci_powerplatformapi`. Optional
+`pvConversationInsightsCodeApp` owns only the unsupported preview app. PVE validation is complete;
+the user-performed manual Contoso TPM upgrade passed.
+
 The current source contract includes four least-privilege Dataverse application roles. All are mapped
 to the model-driven app and apply to the same Dataverse data sources used by the code app:
 
@@ -47,6 +54,13 @@ There are three independent permission boundaries:
 Do not assign Global Administrator for routine collection. Use a dedicated account, the least
 privileged roles that satisfy the required scope, and Privileged Identity Management where your
 organization supports it.
+
+For transcript-only operation, install core without the credit add-on. No licensing HTTP
+connection, licensing-administrator access, credit flow ownership, or premium HTTP entitlement is
+required for transcript analysis. The model-driven Credits navigation can remain visible because
+the schema remains in core, but capability is unavailable until the add-on exists. If the add-on is
+installed, its documented licensing permissions still apply; the capability remains setup-required
+until a successful credit sync proves runtime readiness.
 
 ## Assign the external roles
 
@@ -107,7 +121,13 @@ System Administrator. **Excluded** records a deliberate policy decision and turn
 Inventory Management is the sole configuration surface for these choices. It must show onboarding
 mode and lifecycle state independently from transcript probe state and collector enablement. A
 successful role assignment does not enable collection automatically; the operator reviews the
-verification result and enables collection separately. Ordinary users of the code app are never
+verification result and enables collection separately. The enable confirmation is also the explicit
+data-movement consent: remote transcript data is copied into and retained by the collector
+Dataverse environment. Turning the source off stops subsequent imports and does not delete data
+already copied. Sessions, Trends, and Credits resource reporting stay scoped to the host environment,
+and their environment selectors remain hidden, until a remote collector is enabled. Credit user usage
+and recent governance request history remain tenant-wide.
+Ordinary users of the code app are never
 added to source environments merely because they can view collector data.
 
 See the Copilot Agent Kit references for its
@@ -115,6 +135,12 @@ See the Copilot Agent Kit references for its
 and [field-level data sources](https://github.com/microsoft/Power-CAT-Copilot-Studio-Kit/blob/main/AGENT_INVENTORY_DATA_SOURCE.md).
 
 ### Collector environment
+
+For a clean `2.0.0.5` installation, import core, optional credits, then optional code app. For a
+manual upgrade from `1.4.0.15`, import credits first, apply the core managed upgrade second, and
+upgrade the code app last. This preserves existing credit workflow identities while transferring
+their solution ownership additively. Do not perform TPM imports or connection changes through
+automation.
 
 In the environment where PVCI is installed:
 
@@ -129,8 +155,9 @@ In the environment where PVCI is installed:
    licensing audience as the usage collector; keep the physical connection target explicit.
 5. Create `pvci_dataversesync` with Microsoft Dataverse and bind all solution connection
    references to the intended dedicated account.
-6. Set the current value of `pvci_CreditReportingTenantId` to the tenant GUID. Do not put a
-   tenant-specific default value in the managed solution.
+6. When the optional credit add-on is installed, set the current value of
+   `pvci_CreditReportingTenantId` to the tenant GUID. Core does not own or require this definition.
+   Do not put a tenant-specific default or current value in either managed solution.
 7. Confirm DLP and Advanced Connector Policies allow Microsoft Dataverse, HTTP with Microsoft
    Entra ID, and Power Platform for Admins V2 in the collector environment.
 8. Save all three collectors, run each manually, and activate recurrence only after all three

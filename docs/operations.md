@@ -27,6 +27,42 @@ cp config/transcript_solution_config.sample.json config/transcript_solution_conf
 
 If tokens expire: `az login --tenant <tenantId>`.
 
+## Managed 2.0.0.5 stable installation and upgrade
+
+The three published `2.0.0.5` managed ZIPs passed PVE validation for all solution versions, exact flow
+and connection-reference ownership, seven unique active flows, five mapped references, and
+tenant-neutral managed exports. The authenticated hosted PVE UI smoke passed across Sessions,
+Trends, and Credits in the persisted cross-environment consent state. The user-performed manual
+Contoso TPM import and upgrade test passed.
+
+For a clean installation:
+
+1. Import `pvConversationInsights-managed-2.0.0.5.zip`. Core does not prompt for a credit tenant ID.
+2. Optionally import `pvConversationInsightsCredits-managed-2.0.0.5.zip` and supply the required
+    `pvci_CreditReportingTenantId` current value in the import wizard.
+3. Optionally import `pvConversationInsightsCodeApp-managed-2.0.0.5.zip` last.
+
+For an upgrade from `1.4.0.15`, order is part of the migration contract:
+
+1. Import `pvConversationInsightsCredits-managed-2.0.0.5.zip` first. This additively takes
+    solution ownership of the three existing credit workflow identities and two licensing
+    references, owns the required tenant variable definition, and preserves its target current value.
+2. Apply `pvConversationInsights-managed-2.0.0.5.zip` as a managed upgrade second. Core retains all
+    tables, data, plugins, Custom APIs, roles, the model-driven app, four transcript/shared flows,
+    and three non-licensing references.
+3. Upgrade `pvConversationInsightsCodeApp-managed-2.0.0.5.zip` last when the preview app is used.
+
+Do not delete the old core credit components before installing the add-on, and do not use a clean
+core-first order for this upgrade. In TPM, perform every import, connection mapping, publish, and
+flow activation manually.
+
+A transcript-only installation stops after core. It does not create or require
+`pvci_licensinghttp`, `pvci_powerplatformapi`, or licensing-administrator access. When the optional
+credit add-on is installed, create and map both licensing references, then run the credit usage
+collector. Credits remains **Setup required** until a successful `pvci_creditsyncrun` exists and
+becomes **Ready** only after that evidence is present; before Ready, the code app does not mount
+credit data services.
+
 ## First-time deployment
 
 ```bash
@@ -94,7 +130,7 @@ the complete five-row mapping and recovery steps.
 
 The connection owner needs the Power Platform administrative access required by the licensing
 service. DLP/ACP must allow this premium connector and Microsoft Dataverse in the collector
-environment. Provision the solution schema first so `pvci_CreditReportingTenantId` exists. On the
+environment. Install the optional credit add-on first so `pvci_CreditReportingTenantId` exists. On the
 first source deployment, bind the physical connection to the solution-aware flow:
 
 ```bash
@@ -367,7 +403,14 @@ and choose **Verify access**. Use the readiness summary buttons or the synchroni
 limit the environment list to ready, enabled, readable, denied, or not-ready sources. `PVCI Verify Transcript Source Access (scheduled)` processes only
 pending `Verify` requests and writes the ID-only probe result to the request and Environment
 Inventory. It does not claim that a successful data read proves the exact assigned role. Only a
-source with onboarding `Verified` and readable access can be enabled. The central collector still
+source with onboarding `Verified` and readable access can be enabled. Enabling requires an explicit
+administrator confirmation that transcript data will move from that remote source and be retained
+in the Dataverse environment where PVCI is installed. Discovery, a readable probe, and `Verified`
+status never imply this consent. Disabling a source stops future imports but does not remove sessions
+or turns already copied; use the organization's approved Dataverse retention process when deletion
+is required. Until at least one remote source is enabled, the code app scopes Sessions, Trends, and
+Credits resource reporting to the host environment and hides their controls for selecting other
+environments. Credit user usage and recent governance request history remain tenant-wide. The central collector still
 probes before each content read; a later failed or timed-out probe records `access_denied`, disables
 that source, and continues with other sources. After repairing source access, submit a new
 verification request before enabling collection again.
@@ -504,7 +547,7 @@ GET {dataverseUrl}/api/data/v9.1/pvci_syncstates
 
 A frozen watermark is by design: it stops a failing transcript being skipped forever.
 
-## Promoting to another environment
+## Promoting the public 1.x package to another environment
 
 ```bash
 pac solution export --name pvConversationInsights --path ./pvConversationInsights.zip --managed

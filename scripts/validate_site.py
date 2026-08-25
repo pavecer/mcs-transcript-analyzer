@@ -4,13 +4,16 @@
 from __future__ import annotations
 
 import json
+import hashlib
 import struct
 import sys
 from html.parser import HTMLParser
 from pathlib import Path
 from urllib.parse import urlparse
+from xml.etree import ElementTree as ET
+from zipfile import ZipFile
 
-from update_release_manifest import FULL_COMMIT_PATTERN, MANIFEST_PATH, inspect_package, read_config
+from update_release_manifest import FULL_COMMIT_PATTERN, MANIFEST_PATH
 from validate_solution_ownership import main as validate_solution_ownership
 
 
@@ -18,6 +21,8 @@ ROOT = Path(__file__).resolve().parents[1]
 SITE = ROOT / "site"
 INDEX = SITE / "index.html"
 PREVIEW = SITE / "assets" / "conversation-insights-preview.png"
+RELEASE_CONFIG = ROOT / "config" / "release-packages.json"
+LEGACY_ARTIFACT_KEYS = {"core", "codeApp"}
 
 
 class ReferenceParser(HTMLParser):
@@ -37,14 +42,20 @@ def fail(message: str) -> None:
     raise SystemExit(1)
 
 
-def validate_html(html: str, config: dict[str, dict[str, str]]) -> None:
+def validate_html(html: str, manifest: dict[str, object]) -> None:
+    artifacts = manifest.get("artifacts", {})
+    if not isinstance(artifacts, dict):
+        fail("published release manifest artifacts must be an object")
+    release_config = json.loads(RELEASE_CONFIG.read_text(encoding="utf-8"))
+    candidate_version = release_config["core"]["version"]
+    promoted = artifacts.get("core", {}).get("version") == candidate_version
     required = [
         'id="capabilities"',
         'id="credits"',
         'id="architecture"',
         'id="install"',
         'id="preview-download"',
-        config["core"]["filename"],
+        artifacts["core"]["filename"],
         "downloads/release-manifest.json",
         'id="trust-package"',
         'id="download-package"',
@@ -59,9 +70,24 @@ def validate_html(html: str, config: dict[str, dict[str, str]]) -> None:
         'wireDownloadGate("trust-codeapp", "download-codeapp")',
         "Preview features can change, have limited support, or become unavailable.",
         "Per-user limits are not available",
+        "pvConversationInsightsCredits",
+        "TPM manual upgrade validation",
         "docs/credit-reporting.md",
         "docs/permissions-and-inventory.md",
     ]
+    required.append(
+        f"{candidate_version} stable architecture"
+        if promoted
+        else f"{candidate_version} candidate architecture"
+    )
+    if promoted:
+        required.extend([
+            artifacts["credits"]["filename"],
+            'id="trust-credits"',
+            'id="download-credits"',
+            'data-release-version="credits"',
+            'wireDownloadGate("trust-credits", "download-credits")',
+        ])
     missing = [value for value in required if value not in html]
     if missing:
         fail(f"site/index.html is missing required release content: {missing}")
@@ -79,24 +105,46 @@ def validate_html(html: str, config: dict[str, dict[str, str]]) -> None:
             fail(f"broken local reference in site/index.html: {reference}")
 
 
-def validate_packages(config: dict[str, dict[str, str]]) -> None:
-    try:
-        actual = {
-            "core": inspect_package("core", config["core"]),
-            "codeApp": inspect_package("codeApp", config["codeApp"]),
-        }
-    except (FileNotFoundError, KeyError, RuntimeError, ValueError) as exc:
-        fail(str(exc))
-
+def validate_packages() -> dict[str, object]:
     if not MANIFEST_PATH.is_file():
         fail(f"missing release manifest: {MANIFEST_PATH.relative_to(ROOT)}")
     manifest = json.loads(MANIFEST_PATH.read_text(encoding="utf-8"))
     if not FULL_COMMIT_PATTERN.fullmatch(manifest.get("sourceCommit", "")):
         fail("release manifest sourceCommit must be a full 40-character lowercase Git commit SHA")
-    for key, package in actual.items():
-        published = manifest.get("artifacts", {}).get(key)
-        if published != package:
-            fail(f"release manifest is stale for {key}; run scripts/update_release_manifest.py")
+    artifacts = manifest.get("artifacts", {})
+    release_config = json.loads(RELEASE_CONFIG.read_text(encoding="utf-8"))
+    configured_artifacts = set(release_config)
+    core_version = artifacts.get("core", {}).get("version")
+    expected_artifacts = (
+        configured_artifacts
+        if core_version == release_config["core"]["version"]
+        else LEGACY_ARTIFACT_KEYS
+    )
+    if set(artifacts) != expected_artifacts:
+        fail(
+            "published release manifest artifact set does not match its release generation: "
+            f"expected={sorted(expected_artifacts)}, actual={sorted(artifacts)}"
+        )
+    for key, published in artifacts.items():
+        path = SITE / "downloads" / published["filename"]
+        if not path.is_file():
+            fail(f"missing published {key} package: {path.relative_to(ROOT)}")
+        if hashlib.sha256(path.read_bytes()).hexdigest() != published["sha256"]:
+            fail(f"published {key} package checksum does not match release manifest")
+        with ZipFile(path) as bundle:
+            corrupt = bundle.testzip()
+            if corrupt:
+                fail(f"corrupt file in {path.name}: {corrupt}")
+            solution = ET.fromstring(bundle.read("solution.xml"))
+        observed = (
+            solution.findtext(".//UniqueName"),
+            solution.findtext(".//Version"),
+            solution.findtext(".//Managed"),
+        )
+        expected = (published["solutionUniqueName"], published["version"], "1")
+        if observed != expected:
+            fail(f"published {key} package identity does not match release manifest")
+    return manifest
 
 
 def validate_preview() -> None:
@@ -115,13 +163,12 @@ def main() -> None:
     if not INDEX.is_file():
         fail("site/index.html is missing")
     validate_solution_ownership()
-    config = read_config()
-    validate_packages(config)
+    manifest = validate_packages()
     validate_preview()
     html = INDEX.read_text(encoding="utf-8")
-    validate_html(html, config)
+    validate_html(html, manifest)
     print(
-        "PASS: Pages site, core and preview managed packages, release manifest, "
+        "PASS: Pages site, published managed packages, release manifest, "
         "trust gates, package components, and local references are valid"
     )
 

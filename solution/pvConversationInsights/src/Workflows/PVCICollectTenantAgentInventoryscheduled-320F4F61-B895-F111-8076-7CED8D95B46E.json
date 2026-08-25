@@ -31,13 +31,6 @@
         "$authentication": {
           "defaultValue": {},
           "type": "SecureObject"
-        },
-        "pvci_CreditReportingTenantId (pvci_CreditReportingTenantId)": {
-          "defaultValue": "",
-          "type": "String",
-          "metadata": {
-            "schemaName": "pvci_CreditReportingTenantId"
-          }
         }
       },
       "triggers": {
@@ -253,7 +246,6 @@
                 ]
               },
               "inputs": {
-                "tenantId": "@parameters('pvci_CreditReportingTenantId (pvci_CreditReportingTenantId)')",
                 "adminEnvironments": "@body('List_environment_page')"
               }
             },
@@ -400,7 +392,6 @@
                 ]
               },
               "inputs": {
-                "tenantId": "@parameters('pvci_CreditReportingTenantId (pvci_CreditReportingTenantId)')",
                 "powerPlatformResourcePages": "@body('Query_agent_resources')"
               }
             },
@@ -507,7 +498,6 @@
             ]
           },
           "inputs": {
-            "tenantId": "@parameters('pvci_CreditReportingTenantId (pvci_CreditReportingTenantId)')",
             "inventorySyncRun": {
               "runKey": "@concat('inventory-', formatDateTime(utcNow(), 'yyyyMMddHHmmss'))",
               "name": "@concat('Tenant inventory - ', formatDateTime(utcNow(), 'yyyy-MM-dd HH:mm'))",

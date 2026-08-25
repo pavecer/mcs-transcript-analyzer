@@ -12,7 +12,7 @@ from typing import Any
 import requests
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from dv_token import get_token_from_config  # noqa: E402
+from dv_token import get_token_from_config, require_authorized_config  # noqa: E402
 
 
 SOLUTION = "pvConversationInsights"
@@ -194,6 +194,7 @@ def main() -> None:
         default="solution/pvConversationInsights/solution-definition.json",
     )
     args = parser.parse_args()
+    require_authorized_config(args.config)
 
     definition = json.loads(Path(args.definition).read_text(encoding="utf-8"))
     token, dataverse_url = get_token_from_config(args.config)

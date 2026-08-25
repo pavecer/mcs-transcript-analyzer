@@ -11,7 +11,7 @@ from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from create_sync_flow import Dv  # noqa: E402
-from dv_token import get_token_from_config  # noqa: E402
+from dv_token import get_token_from_config, require_authorized_config  # noqa: E402
 
 
 SOLUTION = "pvConversationInsights"
@@ -21,8 +21,6 @@ ADMIN_CONNECTOR = "/providers/Microsoft.PowerApps/apis/shared_powerplatformadmin
 DATAVERSE_CONNECTOR = "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
 ADMIN_REF_LOGICAL = "pvci_powerplatformadminv2"
 DATAVERSE_REF_LOGICAL = "pvci_dataversesync"
-TENANT_VARIABLE_SCHEMA = "pvci_CreditReportingTenantId"
-TENANT_PARAMETER = f"{TENANT_VARIABLE_SCHEMA} ({TENANT_VARIABLE_SCHEMA})"
 ADMIN_API_VERSION = "2022-03-01-preview"
 SCHEMA_VERSION = "power-platform-inventory-v1"
 ENVIRONMENT_PAGE_SIZE = 100
@@ -78,13 +76,10 @@ def increment(name: str, value: Any, run_after: dict[str, list[str]]) -> dict[st
 
 
 def build_definition() -> dict[str, Any]:
-    tenant_expression = f"parameters('{TENANT_PARAMETER}')"
     environment_payload = {
-        "tenantId": f"@{tenant_expression}",
         "adminEnvironments": "@body('List_environment_page')",
     }
     resource_payload = {
-        "tenantId": f"@{tenant_expression}",
         "powerPlatformResourcePages": "@body('Query_agent_resources')",
     }
     resource_clauses = [
@@ -102,11 +97,6 @@ def build_definition() -> dict[str, Any]:
         "parameters": {
             "$connections": {"defaultValue": {}, "type": "Object"},
             "$authentication": {"defaultValue": {}, "type": "SecureObject"},
-            TENANT_PARAMETER: {
-                "defaultValue": "",
-                "type": "String",
-                "metadata": {"schemaName": TENANT_VARIABLE_SCHEMA},
-            },
         },
         "triggers": {
             "Daily": {
@@ -290,7 +280,6 @@ def build_definition() -> dict[str, Any]:
             },
             "Compose_inventory_sync_payload": compose_action(
                 {
-                    "tenantId": f"@{tenant_expression}",
                     "inventorySyncRun": {
                         "runKey": "@concat('inventory-', formatDateTime(utcNow(), 'yyyyMMddHHmmss'))",
                         "name": "@concat('Tenant inventory - ', formatDateTime(utcNow(), 'yyyy-MM-dd HH:mm'))",
@@ -377,6 +366,7 @@ def main() -> None:
     parser.add_argument("--admin-connection-id")
     parser.add_argument("--activate", action="store_true")
     args = parser.parse_args()
+    require_authorized_config(args.config)
 
     config = json.loads(Path(args.config).read_text(encoding="utf-8"))
     token, dataverse_url = get_token_from_config(args.config)

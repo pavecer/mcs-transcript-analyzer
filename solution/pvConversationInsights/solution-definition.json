@@ -7,7 +7,7 @@
       "uniqueName": "pvConversationInsightsPublisher",
       "prefix": "pvci"
     },
-    "version": "1.4.0.15"
+    "version": "2.0.0.5"
   },
   "securityRoles": [
     {
@@ -93,15 +93,7 @@
       }
     }
   ],
-  "environmentVariables": [
-    {
-      "schemaName": "pvci_CreditReportingTenantId",
-      "displayName": "Credit Reporting Tenant ID",
-      "description": "Microsoft Entra tenant GUID used by the read-only Copilot Credit licensing collector.",
-      "type": "string",
-      "required": true
-    }
-  ],
+  "environmentVariables": [],
   "tables": [
     {
       "schemaName": "pvci_TranscriptSession",

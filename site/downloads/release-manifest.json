@@ -1,21 +1,28 @@
 {
   "schemaVersion": 1,
-  "sourceCommit": "ca3a0fe4b4e8c756bd9f54c55a065956e27d240a",
-  "generatedAtUtc": "2026-08-25T05:35:26+00:00",
+  "sourceCommit": "be33af99ae56ec4bf50e4334f94f47e96d918b31",
+  "generatedAtUtc": "2026-08-25T21:30:31+00:00",
   "artifacts": {
     "core": {
-      "filename": "pvConversationInsights-managed-1.4.0.15.zip",
+      "filename": "pvConversationInsights-managed-2.0.0.5.zip",
       "managed": true,
-      "sha256": "9a465d519b7a98f10ab573d145953eef93f0d9a5ae3e4af0c38b21bfe2384270",
+      "sha256": "caaadf84307c735d50559d386d88fd0801bdc6b6520404861c6c7368c7092bcf",
       "solutionUniqueName": "pvConversationInsights",
-      "version": "1.4.0.15"
+      "version": "2.0.0.5"
+    },
+    "credits": {
+      "filename": "pvConversationInsightsCredits-managed-2.0.0.5.zip",
+      "managed": true,
+      "sha256": "529f902f5be8f42d6c4852be0b15c6a1db84e9f629b432f801a685cd123990de",
+      "solutionUniqueName": "pvConversationInsightsCredits",
+      "version": "2.0.0.5"
     },
     "codeApp": {
-      "filename": "pvConversationInsightsCodeApp-managed-1.4.0.15.zip",
+      "filename": "pvConversationInsightsCodeApp-managed-2.0.0.5.zip",
       "managed": true,
-      "sha256": "6e5948ecdd9c670c8dac3bbf6dc96abd4a2cb2f01bd81f69b37f7c7857627481",
+      "sha256": "f5341f647eb5aa3e9d92b31f66f206dd27a3863e0cbf7406890bb72e5db4e778",
       "solutionUniqueName": "pvConversationInsightsCodeApp",
-      "version": "1.4.0.15"
+      "version": "2.0.0.5"
     }
   }
 }
