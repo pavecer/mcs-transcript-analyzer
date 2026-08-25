@@ -31,10 +31,14 @@ Use the deterministic repository scripts and workflow. Do not compose release cl
 The `publish LinkedIn release` workflow runs for non-prerelease GitHub Releases. It verifies the
 tag against the synchronized manifest, generates copy from the matching changelog section, checks
 the public Pages URL, publishes through the LinkedIn Posts API, and records the returned post URN
-in a hidden GitHub Release marker.
+in a hidden GitHub Release marker. If any required LinkedIn setting is absent, an automatic stable-
+release run still generates and validates the copy, emits a GitHub notice, and skips the public
+Pages request, LinkedIn publication, and release marker. A successful workflow without that marker
+is not evidence that a LinkedIn post occurred.
 
 Use `workflow_dispatch` with `dry_run=true` before enabling a new LinkedIn identity or API version.
-Never place an access token in repository files, logs, variables, or generated post content.
+Dry runs invoke the publisher with `--dry-run` and require no LinkedIn credentials. Never place an
+access token in repository files, logs, variables, or generated post content.
 
 ## Required GitHub environment
 
@@ -52,5 +56,8 @@ for the currently supported API versions and roles. Token issuance, expiration, 
 product approval remain external prerequisites; GitHub Actions cannot create or renew those grants
 by itself.
 
-If publication fails, correct credentials, permission, author URN, or API version and rerun the
-workflow manually. Do not edit the release marker unless LinkedIn confirms no post was created.
+After an unconfigured stable-release run, configure all three values, manually run the workflow for
+the same tag with `dry_run=true`, review the generated copy, and only then make an intentional manual
+run with `dry_run=false`. If publication fails, correct credentials, permission, author URN, or API
+version and repeat that recovery sequence. Never claim publication without the hidden release marker.
+Do not edit the release marker unless LinkedIn confirms no post was created.

@@ -98,9 +98,19 @@ current headers, versions, roles, and permission requirements in the official
 [LinkedIn Posts API documentation](https://learn.microsoft.com/linkedin/marketing/community-management/shares/posts-api).
 
 Run **publish LinkedIn release** manually with `dry_run=true` before the first live post and after
-changing the author or API version. On a successful live post, the workflow stores the returned
-LinkedIn post URN in a hidden marker in the GitHub Release notes. Normal reruns then stop instead of
-posting a duplicate.
+changing the author or API version. Dry runs call the publisher with `--dry-run` and require none of
+the three LinkedIn settings. On a successful live post, the workflow stores the returned LinkedIn
+post URN in a hidden marker in the GitHub Release notes. Normal reruns then stop instead of posting
+a duplicate.
+
+An automatic stable-release run with any missing LinkedIn setting still generates and validates the
+release copy, then emits a GitHub notice and skips public Pages verification, the LinkedIn API call,
+and the release marker. This is a successful publication skip, not evidence of a post. Never report
+that LinkedIn publication occurred unless the hidden release marker contains the returned post URN.
+
+To recover from an unconfigured run, configure `LINKEDIN_ACCESS_TOKEN`, `LINKEDIN_AUTHOR_URN`, and
+`LINKEDIN_API_VERSION`, dispatch the same stable tag with `dry_run=true`, and review the generated
+copy. Make a separate intentional dispatch with `dry_run=false` only after that dry run succeeds.
 
 The repository can automate publication after configuration, but it cannot grant LinkedIn API
 products or renew an expired OAuth authorization. Keep the token only in GitHub Secrets, rotate it
