@@ -63,63 +63,80 @@ def build_definition(frequency: str = "Hour", interval: int = 1) -> dict[str, An
             "foreach": "@body('List_transcript_sources')?['value']",
             "runtimeConfiguration": {"concurrency": {"repetitions": 1}},
             "actions": {
-                "Read_source_transcripts": {
-                    "type": "OpenApiConnection",
+                "Probe_source_access": {
+                    "type": "Scope",
                     "runAfter": {},
-                    "inputs": {
-                        "host": {
-                            "apiId": DATAVERSE_CONNECTOR,
-                            "connectionName": COLLECTOR_REFERENCE,
-                            "operationId": "ListRecordsWithOrganization",
-                        },
-                        "parameters": {
-                            "organization": "@items('Process_transcript_sources')?['pvci_environmenturl']",
-                            "entityName": "conversationtranscripts",
-                            "$select": "conversationtranscriptid,metadata,content,createdon",
-                            "$filter": (
-                                "@concat('createdon ge ',coalesce(items('Process_transcript_sources')?"
-                                "['pvci_transcriptlastcollectedon'],'1900-01-01T00:00:00Z'))"
-                            ),
-                            "$orderby": "createdon asc",
-                            "$top": BATCH_SIZE,
-                        },
-                    },
-                },
-                "Mark_source_readable": {
-                    "type": "OpenApiConnection",
-                    "runAfter": {"Read_source_transcripts": ["Succeeded"]},
-                    "inputs": {
-                        "host": {
-                            "apiId": DATAVERSE_CONNECTOR,
-                            "connectionName": COLLECTOR_REFERENCE,
-                            "operationId": "UpdateOnlyRecord",
-                        },
-                        "parameters": {
-                            "entityName": "pvci_environmentinventories",
-                            "recordId": "@items('Process_transcript_sources')?['pvci_environmentinventoryid']",
-                            "item/pvci_transcriptaccessstatus": (
-                                "@if(empty(body('Read_source_transcripts')?['value']),"
-                                "'readable_empty','readable_with_rows')"
-                            ),
-                            "item/pvci_transcriptaccessreason": "",
-                            "item/pvci_transcriptprobeon": "@utcNow()",
-                            "item/pvci_transcriptsamplecount": "@length(body('Read_source_transcripts')?['value'])",
-                        },
-                    },
-                },
-                "If_collection_enabled": {
-                    "type": "If",
-                    "runAfter": {"Mark_source_readable": ["Succeeded"]},
-                    "expression": {
-                        "equals": [
-                            "@items('Process_transcript_sources')?['pvci_transcriptcollectorenabled']",
-                            True,
-                        ]
-                    },
                     "actions": {
-                        "Import_source_batch": {
+                        "Probe_source_transcript_access": {
                             "type": "OpenApiConnection",
                             "runAfter": {},
+                            "inputs": {
+                                "host": {
+                                    "apiId": DATAVERSE_CONNECTOR,
+                                    "connectionName": COLLECTOR_REFERENCE,
+                                    "operationId": "ListRecordsWithOrganization",
+                                },
+                                "parameters": {
+                                    "organization": "@items('Process_transcript_sources')?['pvci_environmenturl']",
+                                    "entityName": "conversationtranscripts",
+                                    "$select": "conversationtranscriptid",
+                                    "$top": 1,
+                                },
+                            },
+                        },
+                    },
+                },
+                "Collect_source_transcripts": {
+                    "type": "Scope",
+                    "runAfter": {"Probe_source_access": ["Succeeded"]},
+                    "actions": {
+                        "Read_source_transcripts": {
+                            "type": "OpenApiConnection",
+                            "runAfter": {},
+                            "inputs": {
+                                "host": {
+                                    "apiId": DATAVERSE_CONNECTOR,
+                                    "connectionName": COLLECTOR_REFERENCE,
+                                    "operationId": "ListRecordsWithOrganization",
+                                },
+                                "parameters": {
+                                    "organization": "@items('Process_transcript_sources')?['pvci_environmenturl']",
+                                    "entityName": "conversationtranscripts",
+                                    "$select": "conversationtranscriptid,metadata,content,createdon",
+                                    "$filter": (
+                                        "@concat('createdon ge ',coalesce(items('Process_transcript_sources')?"
+                                        "['pvci_transcriptlastcollectedon'],'1900-01-01T00:00:00Z'))"
+                                    ),
+                                    "$orderby": "createdon asc",
+                                    "$top": BATCH_SIZE,
+                                },
+                            },
+                        },
+                        "Mark_source_readable": {
+                            "type": "OpenApiConnection",
+                            "runAfter": {"Read_source_transcripts": ["Succeeded"]},
+                            "inputs": {
+                                "host": {
+                                    "apiId": DATAVERSE_CONNECTOR,
+                                    "connectionName": COLLECTOR_REFERENCE,
+                                    "operationId": "UpdateOnlyRecord",
+                                },
+                                "parameters": {
+                                    "entityName": "pvci_environmentinventories",
+                                    "recordId": "@items('Process_transcript_sources')?['pvci_environmentinventoryid']",
+                                    "item/pvci_transcriptaccessstatus": (
+                                        "@if(empty(body('Read_source_transcripts')?['value']),"
+                                        "'readable_empty','readable_with_rows')"
+                                    ),
+                                    "item/pvci_transcriptaccessreason": "",
+                                    "item/pvci_transcriptprobeon": "@utcNow()",
+                                    "item/pvci_transcriptsamplecount": "@length(body('Read_source_transcripts')?['value'])",
+                                },
+                            },
+                        },
+                        "Import_source_batch": {
+                            "type": "OpenApiConnection",
+                            "runAfter": {"Mark_source_readable": ["Succeeded"]},
                             "inputs": {
                                 "host": {
                                     "apiId": DATAVERSE_CONNECTOR,
@@ -139,33 +156,48 @@ def build_definition(frequency: str = "Hour", interval: int = 1) -> dict[str, An
                                     "item/Reprocess": False,
                                 },
                             },
-                        }
+                        },
                     },
-                    "else": {"actions": {}},
                 },
-                "Mark_source_unavailable": {
-                    "type": "OpenApiConnection",
-                    "runAfter": {"Read_source_transcripts": ["Failed", "TimedOut"]},
-                    "inputs": {
-                        "host": {
-                            "apiId": DATAVERSE_CONNECTOR,
-                            "connectionName": COLLECTOR_REFERENCE,
-                            "operationId": "UpdateOnlyRecord",
-                        },
-                        "parameters": {
-                            "entityName": "pvci_environmentinventories",
-                            "recordId": "@items('Process_transcript_sources')?['pvci_environmentinventoryid']",
-                            "item/pvci_transcriptaccessstatus": "access_denied",
-                            "item/pvci_transcriptaccessreason": "dataverse_read_not_available",
-                            "item/pvci_transcriptprobeon": "@utcNow()",
-                            "item/pvci_transcriptsamplecount": 0,
-                            "item/pvci_transcriptlastcollectionstatus": "failed",
-                            "item/pvci_transcriptlastcollectionerror": (
-                                "Selected-environment Dataverse read failed or timed out. "
-                                "Verify source access, tenant isolation, DLP, and connection state."
-                            ),
+                "Handle_source_access_failure": {
+                    "type": "Scope",
+                    "runAfter": {"Probe_source_access": ["Failed", "TimedOut"]},
+                    "actions": {
+                        "Mark_source_unavailable": {
+                            "type": "OpenApiConnection",
+                            "runAfter": {},
+                            "inputs": {
+                                "host": {
+                                    "apiId": DATAVERSE_CONNECTOR,
+                                    "connectionName": COLLECTOR_REFERENCE,
+                                    "operationId": "UpdateOnlyRecord",
+                                },
+                                "parameters": {
+                                    "entityName": "pvci_environmentinventories",
+                                    "recordId": "@items('Process_transcript_sources')?['pvci_environmentinventoryid']",
+                                    "item/pvci_transcriptaccessstatus": "access_denied",
+                                    "item/pvci_transcriptaccessreason": "dataverse_read_not_available",
+                                    "item/pvci_transcriptprobeon": "@utcNow()",
+                                    "item/pvci_transcriptsamplecount": 0,
+                                    "item/pvci_transcriptcollectorenabled": False,
+                                    "item/pvci_transcriptlastcollectionstatus": "skipped_access_denied",
+                                    "item/pvci_transcriptlastcollectionerror": (
+                                        "Source access probe failed or timed out. Collection was disabled. "
+                                        "Verify source access, tenant isolation, DLP, and connection state, "
+                                        "then re-enable the source."
+                                    ),
+                                },
+                            },
                         },
                     },
+                },
+                "Complete_source_iteration": {
+                    "type": "Compose",
+                    "runAfter": {
+                        "Collect_source_transcripts": ["Succeeded", "Skipped"],
+                        "Handle_source_access_failure": ["Succeeded", "Skipped"],
+                    },
+                    "inputs": "@items('Process_transcript_sources')?['pvci_environmentid']",
                 },
             },
         },
@@ -190,6 +222,17 @@ def build_definition(frequency: str = "Hour", interval: int = 1) -> dict[str, An
         "schemaVersion": SCHEMA_VERSION,
         "references": references,
         "definition": definition,
+    }
+
+
+def build_solution_workflow(result: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "properties": {
+            "connectionReferences": result["references"],
+            "definition": result["definition"],
+            "templateName": None,
+        },
+        "schemaVersion": "1.0.0.0",
     }
 
 
@@ -234,6 +277,7 @@ def ensure_flow_in_core_solution(dv: Dv, flow_id: str) -> bool:
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", default="output/central-transcript-flow.json")
+    parser.add_argument("--solution-output", help="Also write the core solution workflow artifact")
     parser.add_argument("--frequency", choices=["Minute", "Hour", "Day"], default="Hour")
     parser.add_argument("--interval", type=int, default=1)
     parser.add_argument("--config", default="config/transcript_solution_config.dev.json")
@@ -247,6 +291,14 @@ def main() -> None:
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8")
     response: dict[str, Any] = {"status": "ok", "output": str(output)}
+    if args.solution_output:
+        solution_output = Path(args.solution_output)
+        solution_output.parent.mkdir(parents=True, exist_ok=True)
+        solution_output.write_text(
+            json.dumps(build_solution_workflow(result), indent=2) + "\n",
+            encoding="utf-8",
+        )
+        response["solutionOutput"] = str(solution_output)
 
     if args.deploy:
         token, dv_url = get_token_from_config(args.config)

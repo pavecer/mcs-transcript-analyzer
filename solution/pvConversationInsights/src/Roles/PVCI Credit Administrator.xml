@@ -7,9 +7,11 @@
     <RolePrivilege name="prvActivateSynchronousWorkflow" level="Basic" />
     <RolePrivilege name="prvAppendNewProcess" level="Global" />
     <RolePrivilege name="prvAppendpvci_ThresholdChangeRequest" level="Global" />
+    <RolePrivilege name="prvAppendpvci_TranscriptAccessRequest" level="Global" />
     <RolePrivilege name="prvAppendToAsyncOperation" level="Basic" />
     <RolePrivilege name="prvAppendToNewProcess" level="Global" />
     <RolePrivilege name="prvAppendTopvci_AgentInventory" level="Global" />
+    <RolePrivilege name="prvAppendTopvci_EnvironmentInventory" level="Global" />
     <RolePrivilege name="prvAppendToTranslationProcess" level="Global" />
     <RolePrivilege name="prvAppendToWorkflow" level="Global" />
     <RolePrivilege name="prvAppendToWorkflowSession" level="Basic" />
@@ -21,6 +23,7 @@
     <RolePrivilege name="prvAssignWorkflowSession" level="Basic" />
     <RolePrivilege name="prvCreateNewProcess" level="Global" />
     <RolePrivilege name="prvCreatepvci_ThresholdChangeRequest" level="Global" />
+    <RolePrivilege name="prvCreatepvci_TranscriptAccessRequest" level="Global" />
     <RolePrivilege name="prvCreateSharePointData" level="Global" />
     <RolePrivilege name="prvCreateTranslationProcess" level="Global" />
     <RolePrivilege name="prvCreateUserApplicationMetadata" level="Basic" />
@@ -65,6 +68,7 @@
     <RolePrivilege name="prvReadpvci_InventorySyncRun" level="Global" />
     <RolePrivilege name="prvReadpvci_SyncState" level="Global" />
     <RolePrivilege name="prvReadpvci_ThresholdChangeRequest" level="Global" />
+    <RolePrivilege name="prvReadpvci_TranscriptAccessRequest" level="Global" />
     <RolePrivilege name="prvReadpvci_TranscriptIdentityMap" level="Global" />
     <RolePrivilege name="prvReadpvci_TranscriptSession" level="Global" />
     <RolePrivilege name="prvReadpvci_TranscriptTurn" level="Global" />
@@ -98,6 +102,7 @@
     <RolePrivilege name="prvWorkflowExecution" level="Global" />
     <RolePrivilege name="prvWriteAsyncOperation" level="Basic" />
     <RolePrivilege name="prvWriteNewProcess" level="Global" />
+    <RolePrivilege name="prvWritepvci_EnvironmentInventory" level="Global" />
     <RolePrivilege name="prvWriteSharePointData" level="Global" />
     <RolePrivilege name="prvWriteTranslationProcess" level="Global" />
     <RolePrivilege name="prvWriteUserApplicationMetadata" level="Basic" />

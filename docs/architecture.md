@@ -20,8 +20,9 @@
 | `ThresholdChangeRequestGuard` | Dataverse synchronous plugin | Forces Pending/server time, validates request shape, and strips caller-supplied outcomes |
 | `pvci_ImportCentralTranscriptBatch` | Dataverse sandbox plugin | Imports bounded source-environment transcript batches with composite tenant/environment/transcript idempotency |
 | `PVCI Collect Central Transcripts` | Packaged Power Automate flow in the core solution | Iterates Environment Inventory and uses Dataverse List rows from selected environment with a dynamic source URL before sending bounded batches to the collector API |
+| `PVCI Verify Transcript Source Access` | Packaged Power Automate flow in the core solution | Processes only pending Source-managed `Verify` requests, performs one ID-only selected-environment read, and projects verified or denied access without claiming exact-role proof |
 | Credit reporting surfaces | Model-driven app + code app | Agent/resource contribution, source periods, capacity, freshness, and data quality |
-| `PVCI Analyst` / `PVCI Privacy Approver` / `PVCI Credit Administrator` | Dataverse security | Read-only analysis, separately authorized name disclosure, and audited threshold request submission |
+| `PVCI Analyst` / `PVCI Privacy Approver` / `PVCI Credit Administrator` / `PVCI Source Access Processor` | Dataverse security | Read-only analysis, separately authorized name disclosure, audited request submission, collector enablement after verification, and processor-only request outcome updates |
 
 ## Data model
 
@@ -222,7 +223,10 @@ as interleaving messages and reasoning in one chronological replay.
 
 The code app supports ESS-scoped cross-environment diagnostics through an environment filter.
 There is no tenant picker because one installed solution serves one tenant. New records use the
-first-class environment columns; legacy source stamps remain a read fallback.
+first-class environment columns; legacy source stamps remain a read fallback. Sessions, Trends,
+Inventory, and Credits share one persistent top-level navigation bar so destinations do not move
+between workspaces. The sidebar is contextual: Sessions and Credits use it for dense filters and
+selection, while Trends and Inventory retain the full workspace width.
 
 Central collection begins with a read-only source registry. Power Platform Admins V2 can enumerate
 tenant environments, but Dataverse table access is still evaluated in each source organization.
@@ -241,17 +245,37 @@ The existing sync plugin remains source-local. It uses the executing organizatio
 uses one selected-environment Dataverse connection and imports through
 `pvci_ImportCentralTranscriptBatch`. The API enforces a 25-row maximum and keys sessions by tenant,
 environment, and source transcript ID; a transcript GUID alone is not the cross-organization
-contract. Environment inventory stores probe status, collector enablement, watermark, last batch,
-status, and bounded error fields used by both apps.
+contract. Operators manage tenant discovery health, source readiness, and collector enablement from
+the code app's dedicated Inventory Management workspace. For every enabled row, the flow first
+performs a one-row ID-only transcript probe, then reads and imports the bounded content batch.
+A failed probe updates and disables only that inventory row through a handled branch; collection or
+import failures after a successful probe remain unhandled. Environment inventory stores probe
+status, collector enablement, watermark, last batch, status, and bounded error fields used by both
+apps.
 
-The scalable authorization design is a central reconciler, not manual onboarding. It provisions a
-dedicated application user in each eligible environment, creates or verifies a custom security role
-whose only data privilege is organization-level `prvReadconversationtranscript`, assigns that role,
-removes any bootstrap System Administrator role, verifies access, and continually reconciles new
-environments. Selected-environment Dataverse actions support the role/action/association work. The
-remaining product decision is supportability: Microsoft's tenant-admin `addAppUser` endpoint is
-preview and grants System Administrator initially; the GA `pac admin assign-user --application-user`
-route requires an external worker rather than a solution-only cloud flow.
+Source authorization has two supported policy modes that converge on the same permanent state: a
+dedicated collector identity with a custom role whose only data privilege is organization-level
+`prvReadconversationtranscript`, and no retained System Administrator role. In **Source-managed**
+mode, a restricted environment's owner creates or approves the role and assigns the collector
+identity; PVCI only verifies the one-row read. In **Administrator bootstrap** mode, an audited
+external reconciler may temporarily elevate, create or repair the role, assign the collector
+identity, remove elevation, prove cleanup, and verify access. **Excluded** is an explicit policy
+state rather than a failure.
+
+All onboarding controls belong to the code app's **Inventory Management** workspace. Each
+environment exposes mode, lifecycle state, probe result, role/cleanup evidence, bounded errors, and
+request history. The six readiness summaries are buttons that filter the environment list and stay
+synchronized with the adjacent filter menu. Source-managed mode offers setup guidance and **Verify access** through the
+user-owned `pvci_transcriptaccessrequest` audit table. The packaged verifier processes only
+`Pending` + `Verify`; it never consumes `Provision`, `Repair`, or `Remove`. Administrator bootstrap
+is visibly unavailable until an external reconciler is configured. Excluded environments cannot
+enable collection. Collector enablement remains separate and is available only when onboarding is
+`Verified` and access is `readable_with_rows` or `readable_empty`.
+
+Microsoft's tenant-admin `addAppUser` endpoint is preview and grants System Administrator initially;
+the GA `pac admin assign-user --application-user` route requires an external worker rather than a
+solution-only cloud flow. Therefore, source-managed verification is the baseline for restricted
+organizations and administrator bootstrap is an optional capability, never a prerequisite.
 
 The public core solution is tenant-neutral and packages the importer, schema, model-driven app,
 single Dataverse connection reference, and generic central flow. Environment identity and

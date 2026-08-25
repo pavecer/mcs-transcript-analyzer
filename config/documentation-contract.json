@@ -1,10 +1,11 @@
 {
   "schemaVersion": 1,
-  "productSourceDigest": "890a9fd515187472ab77057da5f8d91e12df44c3be3439ccdbcbd2d2a8a8f5d7",
+  "productSourceDigest": "a4c8f6a2b3065c3272c445e27568f3a7e7d33d96d32b6337b365a0e0cb17084f",
   "productInputs": [
     "config/release-packages.json",
     "solution/pvConversationInsights/solution-definition.json",
     "codeapp/src/components/Credits.tsx",
+    "codeapp/src/components/InventoryManagement.tsx",
     "codeapp/src/lib/thresholdRequestState.ts",
     "plugin/ImportCreditUsageBatch.cs",
     "plugin/ThresholdChangeRequestGuard.cs",
@@ -13,7 +14,9 @@
     "scripts/transcript_insights/create_inventory_sync_flow.py",
     "scripts/transcript_insights/create_credit_governance_flow.py",
     "scripts/transcript_insights/create_credit_governance_processor_flow.py",
-    "scripts/transcript_insights/create_central_transcript_flow.py"
+    "scripts/transcript_insights/create_central_transcript_flow.py",
+    "scripts/transcript_insights/create_transcript_access_verification_flow.py",
+    "codeapp/src/lib/transcriptAccessState.ts"
   ],
   "indexedSurfaces": [
     "CHANGELOG.md",
@@ -61,8 +64,9 @@
     "README.md": [
       "{customTableCount} custom tables",
       "{roleCount} application roles",
-      "6 packaged scheduled flows",
+      "7 packaged scheduled flows",
       "PVCI Credit Administrator",
+      "PVCI Source Access Processor",
       "create_credit_governance_flow.py",
       "create_credit_governance_processor_flow.py",
       "pvci_thresholdchangerequest"
@@ -179,7 +183,7 @@
     "site/README.md": [
       "scripts/validate_documentation.py --list-surfaces",
       "scripts/validate_documentation.py --print-digest",
-      "smoke-test all six flows",
+      "smoke-test all {workflowCount} flows",
       ".github/skills/release-documentation/SKILL.md"
     ],
     "site/index.html": [

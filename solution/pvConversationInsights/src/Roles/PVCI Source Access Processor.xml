@@ -1,13 +1,15 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Role id="{735f0f92-b795-f111-8076-7ced8d95b46e}" name="PVCI Privacy Approver" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+<Role id="{464f169f-6e9d-f111-b8de-7ced8d95b46e}" name="PVCI Source Access Processor" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
   <IsCustomizable>1</IsCustomizable>
   <IsAutoAssigned>0</IsAutoAssigned>
-  <Description>PVCI Analyst access plus audited reveal and revocation of stored credit user names.</Description>
+  <Description>Process audited transcript source access requests and project verified onboarding state into Environment Inventory.</Description>
   <RolePrivileges>
     <RolePrivilege name="prvActivateSynchronousWorkflow" level="Basic" />
     <RolePrivilege name="prvAppendNewProcess" level="Global" />
+    <RolePrivilege name="prvAppendpvci_TranscriptAccessRequest" level="Global" />
     <RolePrivilege name="prvAppendToAsyncOperation" level="Basic" />
     <RolePrivilege name="prvAppendToNewProcess" level="Global" />
+    <RolePrivilege name="prvAppendTopvci_EnvironmentInventory" level="Global" />
     <RolePrivilege name="prvAppendToTranslationProcess" level="Global" />
     <RolePrivilege name="prvAppendToWorkflow" level="Global" />
     <RolePrivilege name="prvAppendToWorkflowSession" level="Basic" />
@@ -49,23 +51,8 @@
     <RolePrivilege name="prvReadPluginAssembly" level="Global" />
     <RolePrivilege name="prvReadPluginTraceLog" level="Global" />
     <RolePrivilege name="prvReadPluginType" level="Global" />
-    <RolePrivilege name="prvReadpvci_AgentInventory" level="Global" />
-    <RolePrivilege name="prvReadpvci_AgentThresholdSnapshot" level="Global" />
-    <RolePrivilege name="prvReadpvci_CreditCapacitySnapshot" level="Global" />
-    <RolePrivilege name="prvReadpvci_CreditPrivacySetting" level="Global" />
-    <RolePrivilege name="prvReadpvci_CreditSyncRun" level="Global" />
-    <RolePrivilege name="prvReadpvci_CreditUsage" level="Global" />
-    <RolePrivilege name="prvReadpvci_CreditUserUsage" level="Global" />
     <RolePrivilege name="prvReadpvci_EnvironmentInventory" level="Global" />
-    <RolePrivilege name="prvReadpvci_FlowRunDetail" level="Global" />
-    <RolePrivilege name="prvReadpvci_GovernanceSyncRun" level="Global" />
-    <RolePrivilege name="prvReadpvci_InventorySyncRun" level="Global" />
-    <RolePrivilege name="prvReadpvci_SyncState" level="Global" />
-    <RolePrivilege name="prvReadpvci_ThresholdChangeRequest" level="Global" />
     <RolePrivilege name="prvReadpvci_TranscriptAccessRequest" level="Global" />
-    <RolePrivilege name="prvReadpvci_TranscriptIdentityMap" level="Global" />
-    <RolePrivilege name="prvReadpvci_TranscriptSession" level="Global" />
-    <RolePrivilege name="prvReadpvci_TranscriptTurn" level="Global" />
     <RolePrivilege name="prvReadQuery" level="Global" />
     <RolePrivilege name="prvReadRelationship" level="Global" />
     <RolePrivilege name="prvReadReport" level="Basic" />
@@ -96,8 +83,8 @@
     <RolePrivilege name="prvWorkflowExecution" level="Global" />
     <RolePrivilege name="prvWriteAsyncOperation" level="Basic" />
     <RolePrivilege name="prvWriteNewProcess" level="Global" />
-    <RolePrivilege name="prvWritepvci_CreditPrivacySetting" level="Global" />
-    <RolePrivilege name="prvWritepvci_CreditUserUsage" level="Global" />
+    <RolePrivilege name="prvWritepvci_EnvironmentInventory" level="Global" />
+    <RolePrivilege name="prvWritepvci_TranscriptAccessRequest" level="Global" />
     <RolePrivilege name="prvWriteSharePointData" level="Global" />
     <RolePrivilege name="prvWriteTranslationProcess" level="Global" />
     <RolePrivilege name="prvWriteUserApplicationMetadata" level="Basic" />

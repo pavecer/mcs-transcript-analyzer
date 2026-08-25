@@ -350,18 +350,48 @@ the same source row skipped it through the composite key. During import, map the
 `pvci_centralcollector` connection reference to one Microsoft Dataverse connection whose identity
 has read access in supported sources. The packaged flow dynamically supplies each inventory row's
 `pvci_environmenturl` to `ListRecordsWithOrganization`; no per-source connection is required.
-Keep `pvci_transcriptcollectorenabled` false until a source is reviewed. The scheduled flow queries
-only rows where that flag is true; environment discovery and access probing remain separate. Enable
-selected rows only after the connection identity can read `conversationtranscripts`, then turn on
-`PVCI Collect Central Transcripts (scheduled)`.
+Keep `pvci_transcriptcollectorenabled` false until a source is reviewed. Run **Tenant Agent
+Inventory** first. In the code app's **Inventory Management** page, open the source, select
+**Source-managed**, assign the least-privilege source role to the `pvci_centralcollector` identity,
+and choose **Verify access**. Use the readiness summary buttons or the synchronized filter menu to
+limit the environment list to ready, enabled, readable, denied, or not-ready sources. `PVCI Verify Transcript Source Access (scheduled)` processes only
+pending `Verify` requests and writes the ID-only probe result to the request and Environment
+Inventory. It does not claim that a successful data read proves the exact assigned role. Only a
+source with onboarding `Verified` and readable access can be enabled. The central collector still
+probes before each content read; a later failed or timed-out probe records `access_denied`, disables
+that source, and continues with other sources. After repairing source access, submit a new
+verification request before enabling collection again.
+
+Create or update the verification processor during core development, initially stopped:
+
+```powershell
+python scripts/transcript_insights/create_transcript_access_verification_flow.py `
+    --output output/transcript-access-verification-flow.json `
+    --deploy
+```
+
+Map `pvci_centralcollector`, assign **PVCI Source Access Processor** to the flow owner, activate the
+flow, and use the smoke utility to queue and inspect one audited request:
+
+```powershell
+python scripts/transcript_insights/smoke_test_transcript_access_verification.py
+python scripts/transcript_insights/smoke_test_transcript_access_verification.py `
+    --request-key <request-key>
+```
+
+Expected success is request and inventory status `Verified`, access `readable_with_rows` or
+`readable_empty`, collector still disabled, and role/cleanup flags false unless an external
+reconciler supplied independent evidence. Administrator bootstrap remains unavailable until that
+reconciler can provision access and prove removal of temporary elevation.
 
 If **Read source transcripts** fails with `ThrowCrmSecurityException` and
 `prvReadconversationtranscript`, the user behind `pvci_centralcollector` has no applicable security
 role in that source environment. In TPM, correct this manually: identify the connection owner, add
 that user to the source environment, and assign a least-privilege role with organization-level Read
 on **Conversation Transcript** (or System Administrator for a temporary test). Reauthenticate the
-connection if its token predates the assignment, then resubmit the run. Do not enable inaccessible
-source rows merely to make discovery results appear complete.
+connection if its token predates the assignment, then re-enable the source. Import or
+collector-side failures after a successful probe remain visible as failed runs; they are not
+classified as source permission denials.
 
 Or invoke the Custom API directly:
 
@@ -484,9 +514,9 @@ Afterwards, in the target environment:
 5. Bind `pvci_powerplatformapi` to a target-local HTTP with Microsoft Entra ID connection whose
     Base Resource URL and resource audience are `https://licensing.powerplatform.microsoft.com/`.
 6. Assign **PVCI Analyst** to readers, **PVCI Privacy Approver** only to approved disclosure
-    operators, and **PVCI Credit Administrator** only to threshold-change operators. Share the code
-    app separately with the same users/groups.
-7. Save and smoke-test all six flows, including a no-op governance request, then activate the
+    operators, and **PVCI Credit Administrator** only to transcript-collection and threshold-change
+    operators. Share the code app separately with the same users/groups.
+7. Save and smoke-test all 7 flows, including a no-op governance request, then activate the
     intended schedules and processor.
 8. Run the initial `--full` transcript load.
 9. Redeploy the code app (`npx power-apps init` + `push`) — it lives outside the core solution.

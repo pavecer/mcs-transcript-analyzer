@@ -7,6 +7,7 @@ from scripts.transcript_insights.create_central_transcript_flow import (
     FLOW_NAME,
     IMPORT_API,
     build_definition,
+    build_solution_workflow,
     ensure_flow_in_core_solution,
 )
 
@@ -18,6 +19,9 @@ class CentralTranscriptFlowTests(unittest.TestCase):
         self.actions = self.definition["actions"]
         self.loop = self.actions["Process_transcript_sources"]
         self.loop_actions = self.loop["actions"]
+        self.probe_actions = self.loop_actions["Probe_source_access"]["actions"]
+        self.collection_actions = self.loop_actions["Collect_source_transcripts"]["actions"]
+        self.failure_actions = self.loop_actions["Handle_source_access_failure"]["actions"]
 
     def test_is_one_generic_packaged_flow_with_one_dataverse_reference(self):
         self.assertEqual(FLOW_NAME, self.result["name"])
@@ -36,7 +40,7 @@ class CentralTranscriptFlowTests(unittest.TestCase):
             "pvci_environmentinventories",
             inventory["inputs"]["parameters"]["entityName"],
         )
-        remote = self.loop_actions["Read_source_transcripts"]
+        remote = self.collection_actions["Read_source_transcripts"]
         self.assertEqual(
             "ListRecordsWithOrganization",
             remote["inputs"]["host"]["operationId"],
@@ -49,10 +53,21 @@ class CentralTranscriptFlowTests(unittest.TestCase):
         inventory_filter = self.actions["List_transcript_sources"]["inputs"]["parameters"]["$filter"]
         self.assertIn("pvci_transcriptcollectorenabled eq true", inventory_filter)
 
-    def test_imports_only_explicitly_enabled_sources(self):
-        condition = self.loop_actions["If_collection_enabled"]
-        self.assertIn("pvci_transcriptcollectorenabled", str(condition["expression"]))
-        import_action = condition["actions"]["Import_source_batch"]
+    def test_probes_source_access_before_reading_content(self):
+        probe = self.probe_actions["Probe_source_transcript_access"]
+        self.assertEqual("conversationtranscriptid", probe["inputs"]["parameters"]["$select"])
+        self.assertEqual(1, probe["inputs"]["parameters"]["$top"])
+        self.assertEqual(
+            {"Probe_source_access": ["Succeeded"]},
+            self.loop_actions["Collect_source_transcripts"]["runAfter"],
+        )
+
+    def test_imports_after_successful_read_and_readable_update(self):
+        import_action = self.collection_actions["Import_source_batch"]
+        self.assertEqual(
+            {"Mark_source_readable": ["Succeeded"]},
+            import_action["runAfter"],
+        )
         parameters = import_action["inputs"]["parameters"]
         self.assertEqual(IMPORT_API, parameters["actionName"])
         self.assertIn("pvci_environmentid", parameters["item/SourceEnvironmentId"])
@@ -61,17 +76,35 @@ class CentralTranscriptFlowTests(unittest.TestCase):
     def test_records_probe_success_and_failure_in_inventory(self):
         self.assertEqual(
             "UpdateOnlyRecord",
-            self.loop_actions["Mark_source_readable"]["inputs"]["host"]["operationId"],
+            self.collection_actions["Mark_source_readable"]["inputs"]["host"]["operationId"],
         )
-        unavailable = self.loop_actions["Mark_source_unavailable"]
+        unavailable = self.failure_actions["Mark_source_unavailable"]
         self.assertEqual(
             ["Failed", "TimedOut"],
-            unavailable["runAfter"]["Read_source_transcripts"],
+            self.loop_actions["Handle_source_access_failure"]["runAfter"]["Probe_source_access"],
         )
         self.assertEqual(
             "access_denied",
             unavailable["inputs"]["parameters"]["item/pvci_transcriptaccessstatus"],
         )
+        self.assertFalse(
+            unavailable["inputs"]["parameters"]["item/pvci_transcriptcollectorenabled"]
+        )
+
+    def test_handled_probe_failure_can_complete_without_hiding_collection_failures(self):
+        completion = self.loop_actions["Complete_source_iteration"]["runAfter"]
+        self.assertEqual(["Succeeded", "Skipped"], completion["Collect_source_transcripts"])
+        self.assertEqual(["Succeeded", "Skipped"], completion["Handle_source_access_failure"])
+        self.assertNotIn("Failed", completion["Collect_source_transcripts"])
+
+    def test_solution_workflow_wraps_the_tested_definition(self):
+        artifact = build_solution_workflow(self.result)
+        self.assertIs(artifact["properties"]["definition"], self.definition)
+        self.assertEqual(
+            self.result["references"],
+            artifact["properties"]["connectionReferences"],
+        )
+        self.assertIsNone(artifact["properties"]["templateName"])
 
     def test_adds_existing_flow_to_core_solution_when_membership_is_missing(self):
         dv = Mock()

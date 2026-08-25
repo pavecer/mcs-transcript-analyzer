@@ -22,6 +22,7 @@ EXPECTED_CORE_FLOWS = {
     "PVCI Collect Credit Governance (scheduled)",
     "PVCI Collect Tenant Agent Inventory (scheduled)",
     "PVCI Sync Conversation Transcripts (scheduled)",
+    "PVCI Verify Transcript Source Access (scheduled)",
 }
 EXPECTED_CUSTOM_APIS = {
     "pvci_ImportCentralTranscriptBatch",

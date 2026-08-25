@@ -2,7 +2,7 @@
 
 ## What the managed solution includes
 
-Version `1.3.0.0` includes three least-privilege Dataverse application roles. All are mapped
+The current source contract includes four least-privilege Dataverse application roles. All are mapped
 to the model-driven app and apply to the same Dataverse data sources used by the code app:
 
 - **PVCI Analyst** provides organization-level read access to transcript, flow, inventory, credit,
@@ -12,9 +12,13 @@ to the model-driven app and apply to the same Dataverse data sources used by the
    `pvci_creditprivacysetting` and `pvci_credituserusage`, and read on `systemuser`. These privileges
    let the synchronous disclosure plug-in record the initiating user/time and resolve or revoke all
    stored names.
-- **PVCI Credit Administrator** has Analyst read access plus create/read and the narrow append
-   privileges required to bind audited requests to Agent Inventory. It cannot update outcomes or
-   call licensing APIs directly.
+- **PVCI Credit Administrator** has Analyst read access plus organization-level write on
+   `pvci_environmentinventory` for collector enablement, and create/read with the narrow append
+   privileges required to bind audited threshold and transcript-access requests. It cannot update
+   request outcomes or call licensing APIs directly.
+- **PVCI Source Access Processor** has only the app-opening baseline plus read/write/append on
+   `pvci_transcriptaccessrequest` and read/write on Environment Inventory. Assign it to the
+   verification flow owner, not to ordinary report viewers.
 
 The preview code app must still be shared with users or groups through **Manage access**. App
 sharing grants the app shell; one of the packaged Dataverse roles grants its additional data
@@ -31,6 +35,9 @@ There are three independent permission boundaries:
 | Enumerate tenant environments and base agents | Owner of `pvci_powerplatformadminv2` with **Power Platform Administrator** tenant role | Flow and reference packaged; target connection/role external |
 | Probe source `conversationtranscripts` tables | Probe identity with a Dataverse-scoped token and Read privilege in each source organization | No source solution installation required |
 | Collect enabled source transcripts | Owner of `pvci_centralcollector`, present in each enabled source with organization-level Read on Conversation Transcript | Flow/reference packaged; source role assignment external |
+| Enable or disable a reviewed transcript source | **PVCI Credit Administrator** plus code-app sharing | Role and Environment Inventory table packaged; assignment external |
+| Submit and inspect source verification | **PVCI Credit Administrator** plus code-app sharing | Request table and stopped-by-default verifier packaged; source role assignment external |
+| Process source verification results | Owner of `PVCI Verify Transcript Source Access (scheduled)` with **PVCI Source Access Processor** and the mapped `pvci_centralcollector` connection | Flow and processor role packaged; target connection/assignment external |
 | Read agent credit threshold controls | Owner of `pvci_powerplatformapi` with Power Platform licensing administration access | Read-only collector/reference packaged; target connection/role external |
 | Submit agent threshold changes | **PVCI Credit Administrator** plus app sharing | Role/request table/processor packaged; privileged flow connection external |
 | Read detailed agent configuration in every environment | Inventory identity with appropriate Dataverse access in every source environment | Detailed enrichment not implemented in `1.3.0.0` |
@@ -79,12 +86,29 @@ organization's `conversationtranscripts` table. Phase 1 records an explicit `acc
 for those environments so an empty result is never mistaken for missing activity.
 
 The scheduled central collector uses the identity behind `pvci_centralcollector`, which may differ
-from the identity used by the probe. Before setting `pvci_transcriptcollectorenabled=true`, add that
-connection owner to the source environment and assign a least-privilege role with organization-level
-Read on **Conversation Transcript**. `ThrowCrmSecurityException` naming
+from the identity used by other inventory tooling. Add that connection owner to the source
+environment and assign a least-privilege role with organization-level Read on **Conversation
+Transcript**. In the code app's **Inventory Management** page, choose **Source-managed** and submit
+**Verify access**. The packaged verification flow performs a one-row ID-only source probe and writes
+the audited result. A failed probe records `access_denied` and keeps collection disabled; repair the
+source assignment and submit a new verification request. `ThrowCrmSecurityException` naming
 `prvReadconversationtranscript` proves that this source role is missing; it is not fixed by changing
 the collector-environment PVCI roles. In the TPM upgrade-test tenant, the user performs this role
 assignment and connection refresh manually.
+
+Restricted environments do not require System Administrator onboarding. In **Source-managed** mode,
+the source owner creates or approves a `PVCI Transcript Collector` role, assigns it to the dedicated
+collector identity, and returns to **Inventory Management** to verify access. Where organizational
+policy permits temporary elevation, **Administrator bootstrap** can instead submit an audited
+provisioning request to an external reconciler. That control is disabled in the current UI until
+the reconciler exists. Both modes must finish with the same least-privilege role and no retained
+System Administrator. **Excluded** records a deliberate policy decision and turns collection off.
+
+Inventory Management is the sole configuration surface for these choices. It must show onboarding
+mode and lifecycle state independently from transcript probe state and collector enablement. A
+successful role assignment does not enable collection automatically; the operator reviews the
+verification result and enables collection separately. Ordinary users of the code app are never
+added to source environments merely because they can view collector data.
 
 See the Copilot Agent Kit references for its
 [inventory architecture](https://github.com/microsoft/Power-CAT-Copilot-Studio-Kit/blob/main/AGENT_INVENTORY.md)
@@ -172,8 +196,9 @@ the required role. Power Automate runs with the identities bound to its connecti
    is not the security boundary; Dataverse write privilege is.
 4. Verify the Privacy Approval record after every reveal/revoke. `Approved By`, `Approved On`, and
    `Revoked On` are stamped by the server-side plug-in, not trusted from the browser.
-5. Give **PVCI Credit Administrator** only to threshold-change operators. The role can create and
-   read requests but cannot update processor outcomes or call the licensing API from the browser.
+5. Give **PVCI Credit Administrator** only to collection and threshold-change operators. The role
+   can enable reviewed Environment Inventory rows and create/read threshold requests, but cannot
+   update processor outcomes or call the licensing API from the browser.
 
 Tenant Power Platform Administrator and future per-environment detailed-enrichment access remain
 external because a managed Dataverse solution cannot grant tenant or other-environment roles.

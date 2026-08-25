@@ -11,6 +11,7 @@ import { FlowRuns } from "./components/FlowRuns";
 import { EssOps } from "./components/EssOps";
 import { Trends } from "./components/Trends";
 import { Credits } from "./components/Credits";
+import { InventoryManagement } from "./components/InventoryManagement";
 import {
   fmtDuration,
   fmtMs,
@@ -61,6 +62,7 @@ const TURN_FIELDS = [
 
 type Tab = "essops" | "replay" | "tools" | "knowledge" | "flows" | "conversation" | "reasoning" | "raw";
 type Theme = "light" | "dark";
+type View = "sessions" | "trends" | "inventory" | "credits";
 
 const THEME_STORAGE_KEY = "pvci-theme";
 
@@ -99,7 +101,7 @@ export default function App() {
   const [environmentFilter, setEnvironmentFilter] = useState("*");
   const [tab, setTab] = useState<Tab>("essops");
   const [jsonFilter, setJsonFilter] = useState("");
-  const [view, setView] = useState<"sessions" | "trends" | "credits">("sessions");
+  const [view, setView] = useState<View>("sessions");
   const [creditsSidebarTarget, setCreditsSidebarTarget] = useState<HTMLDivElement | null>(null);
   const [theme, setTheme] = useState<Theme>(initialTheme);
 
@@ -223,31 +225,37 @@ export default function App() {
   }, [sessions]);
 
   return (
-    <div className="app">
-      {view !== "trends" && <aside className="sidebar">
-        <div className="brand">
-          <div>
-            <h1>Conversation Insights</h1>
-            <span className="muted small">{sessions.length} sessions</span>
-          </div>
-          <button
-            className="theme-toggle"
-            type="button"
-            title={`Use ${theme === "dark" ? "light" : "dark"} mode`}
-            aria-label={`Use ${theme === "dark" ? "light" : "dark"} mode`}
-            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-          >
-            <span aria-hidden="true">{theme === "dark" ? "☀" : "☾"}</span>
-          </button>
+    <div className={`app ${view}-view`}>
+      <header className="app-header">
+        <div className="app-brand">
+          <strong>Conversation Insights</strong>
+          <span>{sessions.length} sessions</span>
         </div>
-        <div className="viewswitch">
-          <button className={view === "sessions" ? "on" : ""} onClick={() => setView("sessions")}>Sessions</button>
-          <button onClick={() => setView("trends")}>Trends</button>
-          <button className={view === "credits" ? "on" : ""} onClick={() => setView("credits")}>Credits</button>
-        </div>
-        {view === "credits" && <div ref={setCreditsSidebarTarget} className="credits-sidebar-host" />}
+        <nav className="viewswitch app-navigation" aria-label="Primary navigation">
+          <button type="button" className={view === "sessions" ? "on" : ""} aria-current={view === "sessions" ? "page" : undefined} onClick={() => setView("sessions")}>Sessions</button>
+          <button type="button" className={view === "trends" ? "on" : ""} aria-current={view === "trends" ? "page" : undefined} onClick={() => setView("trends")}>Trends</button>
+          <button type="button" className={view === "inventory" ? "on" : ""} aria-current={view === "inventory" ? "page" : undefined} onClick={() => setView("inventory")}>Inventory</button>
+          <button type="button" className={view === "credits" ? "on" : ""} aria-current={view === "credits" ? "page" : undefined} onClick={() => setView("credits")}>Credits</button>
+        </nav>
+        <button
+          className="theme-toggle"
+          type="button"
+          title={`Use ${theme === "dark" ? "light" : "dark"} mode`}
+          aria-label={`Use ${theme === "dark" ? "light" : "dark"} mode`}
+          onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+        >
+          <span aria-hidden="true">{theme === "dark" ? "☀" : "☾"}</span>
+        </button>
+      </header>
+
+      <div className="app-workspace">
+      {(view === "sessions" || view === "credits") && <aside className="sidebar">
         {view === "sessions" && (
           <>
+            <div className="sidebar-heading">
+              <strong>Sessions</strong>
+              <span>{filtered.length} shown</span>
+            </div>
             <input
               className="search"
               placeholder="Search user, channel, first message…"
@@ -310,6 +318,7 @@ export default function App() {
             </div>
           </>
         )}
+        {view === "credits" && <div ref={setCreditsSidebarTarget} className="credits-sidebar-host" />}
       </aside>}
 
       <main className={`main${view === "trends" ? " trends-main" : ""}`}>
@@ -317,31 +326,13 @@ export default function App() {
 
         {view === "trends" && (
           <>
-            <header className="workspace-head">
-              <div className="workspace-brand">
-                <strong>Conversation Insights</strong>
-                <span>Conversation trends</span>
-              </div>
-              <div className="viewswitch workspace-switch">
-                <button onClick={() => setView("sessions")}>Sessions</button>
-                <button className="on">Trends</button>
-                <button onClick={() => setView("credits")}>Credits</button>
-              </div>
-              <button
-                className="theme-toggle"
-                type="button"
-                title={`Use ${theme === "dark" ? "light" : "dark"} mode`}
-                aria-label={`Use ${theme === "dark" ? "light" : "dark"} mode`}
-                onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-              >
-                <span aria-hidden="true">{theme === "dark" ? "☀" : "☾"}</span>
-              </button>
-            </header>
             <Trends sessions={sessions} loading={loadingSessions} />
           </>
         )}
 
         {view === "credits" && <Credits sidebarTarget={creditsSidebarTarget} />}
+
+        {view === "inventory" && <InventoryManagement />}
 
         {view === "sessions" && !activeSession && !loadingSessions && <div className="muted pad">No sessions match the current filters.</div>}
 
@@ -434,6 +425,7 @@ export default function App() {
           </>
         )}
       </main>
+      </div>
     </div>
   );
 }

@@ -41,16 +41,18 @@ tenant. The user performs TPM solution imports and upgrades manually.
    Dataverse identity can query the source. Keep `pvci_transcriptcollectorenabled=false` until the
    source is reviewed and explicitly selected.
 5. Deploy model-driven views/forms and push the code app. Both apps read the same environment
-   inventory rows.
+   inventory rows; the code app's dedicated Inventory Management page is the operator surface for
+   discovery health, source readiness, and collector enablement.
 6. Run `invoke_central_transcript_import.py --limit 1` against a readable source before activating
    the flow. Run it twice: the first call must create/update, and the second must skip through the
    composite tenant/environment/transcript key.
 7. Create/update `PVCI Collect Central Transcripts (scheduled)` stopped inside
    `pvConversationInsights`. It must use the packaged `pvci_centralcollector` Microsoft Dataverse
    reference and `ListRecordsWithOrganization` with the dynamic inventory URL.
-8. Map the one packaged Dataverse reference, mark only reviewed sources collector-enabled,
-   activate the packaged flow, and verify the first run plus environment watermark/status/error
-   fields.
+8. Map the one packaged Dataverse reference, mark only reviewed sources collector-enabled in the
+   code app, activate the packaged flow, and verify the first run plus environment
+   watermark/status/error fields. The flow must probe one ID-only row before collection. Failed
+   probes must disable and skip only that source; collection/import failures must remain visible.
 9. Export the live unmanaged solution, unpack into `solution/pvConversationInsights/src`, remove
    unrelated tenant drift, then run all tests, builds, documentation validators, and solution pack.
 
@@ -84,7 +86,16 @@ every source environment. The built-in `Bot Transcript Viewer` role grants user-
 Read and does not provide an unattended collector organization-wide access to every agent's rows.
 Do not present manual per-environment user/role assignment as the scalable product design.
 
-For zero-touch tenant scale, use a central access reconciler that:
+Support two source-authorization modes, both controlled from the code app's Inventory Management
+workspace:
+
+- **Source-managed** for restricted environments: the source owner creates/approves the limited
+   role and assigns the dedicated collector identity; PVCI performs verification only.
+- **Administrator bootstrap** where policy permits temporary elevation: an audited external
+   reconciler provisions access and must prove elevation cleanup.
+- **Excluded** for environments intentionally outside collection scope.
+
+For administrator bootstrap, use a central access reconciler that:
 
 1. discovers Dataverse environments through the tenant inventory;
 2. provisions one dedicated application user in each eligible source;
@@ -93,6 +104,11 @@ For zero-touch tenant scale, use a central access reconciler that:
 4. associates the application user to that role and removes temporary System Administrator;
 5. verifies a one-row transcript read and records health/drift in Environment Inventory; and
 6. repeats for newly discovered environments and repairs role drift.
+
+Do not grant source roles to ordinary code-app users. The principal requiring source access is the
+identity behind `pvci_centralcollector`. Keep onboarding mode/status, probe status, and collector
+enablement separate. Do not render provisioning controls unless the corresponding request processor
+or reconciler is deployed; source-managed verification must remain usable without that automation.
 
 Microsoft documents `pac admin assign-user --application-user` for external automation. The BAP
 `addAppUser` endpoint that can be called by a packaged HTTP flow is preview and initially grants
