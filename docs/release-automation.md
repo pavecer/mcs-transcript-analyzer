@@ -76,6 +76,19 @@ Agents should load the checked-in `.github/skills/release-documentation/SKILL.md
 README, docs, release-package, or public Pages changes. The skill is guidance; the CI `site` job and
 Pages workflow run the deterministic gate and are the enforcement boundary.
 
+## npm dependency reliability
+
+The code app and PCF lockfiles must contain canonical `https://registry.npmjs.org/` tarball URLs.
+Developer workstations may use a local or enterprise npm proxy, but that proxy must not be serialized
+into a committed lockfile. Run `python scripts/validate_npm_lockfiles.py` after every dependency or
+lockfile update. The build workflow runs the same gate before the Node jobs and uses cached `npm ci`
+so CI installs exactly the reviewed dependency graph.
+
+If a Node job fails during package download, inspect the failed URL and step before changing source.
+An HTTP 5xx from a registry is an external install failure, not evidence of an application defect.
+Validate the lockfile hosts, run the affected build locally, and retry the failed job once the
+registry responds. Do not bypass a real compile, test, typecheck, or lint failure as an outage.
+
 ## LinkedIn release publication
 
 Stable GitHub Releases can publish a LinkedIn announcement through
@@ -120,6 +133,11 @@ from the default branch with the stable tag and `update_post_urn` set to the exa
 the release marker. The workflow validates that match before using LinkedIn's partial-update API,
 does not create a new post, and preserves the original marker. Review the concise generated copy
 with `dry_run=true` before the live update.
+
+After an update, reload the public post and verify the rendered commentary, CTA, and post URL.
+LinkedIn can retain old commentary in hidden hydration data, so raw DOM text matches or element
+counts are not proof that the visible post is stale. Confirm the visible post text and that no
+duplicate announcement was created.
 
 The repository can automate publication after configuration, but it cannot grant LinkedIn API
 products or renew an expired OAuth authorization. Keep the token only in GitHub Secrets, rotate it

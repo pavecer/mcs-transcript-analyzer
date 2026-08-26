@@ -69,3 +69,6 @@ To shorten or correct an existing announcement, dispatch the workflow from the d
 the stable tag and `update_post_urn` set to the exact URN in that release's hidden marker. The
 workflow refuses any mismatch, updates commentary in place, creates no second post, and leaves the
 original publication marker unchanged. Use `dry_run=true` first to review the corrected copy.
+After the live update, reload the public post and inspect the rendered commentary and CTA. LinkedIn
+may retain old commentary in hidden hydration data, so raw DOM text counts are not sufficient
+verification. Confirm the visible text, unchanged post URL, and absence of a duplicate post.

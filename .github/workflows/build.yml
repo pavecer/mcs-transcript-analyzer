@@ -22,6 +22,8 @@ jobs:
         run: python -m compileall -q scripts
       - name: Validate LinkedIn release automation
         run: python -m unittest scripts.test_generate_linkedin_post scripts.test_publish_linkedin_post
+      - name: Validate npm lockfile registries
+        run: python scripts/validate_npm_lockfiles.py
       - name: Enforce shared VS Code browser policy
         run: python3 scripts/validate_browser_policy.py
 
@@ -46,7 +48,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
-      - run: npm install
+          cache: npm
+          cache-dependency-path: pcf/JsonViewer/package-lock.json
+      - run: npm ci
       - run: npm run build
 
   codeapp:
@@ -59,7 +63,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
-      - run: npm install
+          cache: npm
+          cache-dependency-path: codeapp/package-lock.json
+      - run: npm ci
       - run: npm test
       - run: npx tsc -b
       - run: npx eslint .
