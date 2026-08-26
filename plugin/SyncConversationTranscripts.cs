@@ -138,17 +138,6 @@ namespace PvciTranscripts
             public string OrganizationName;
         }
 
-        internal class TranscriptDiagnostics
-        {
-            public string TopicId;
-            public string TopicName;
-            public int UserErrorCount;
-            public string PrimaryErrorCode;
-            public string PrimaryErrorMessage;
-            public string PrimaryErrorTopic;
-            public string ErrorCategory;
-        }
-
         internal static SyncResult ImportCentralRow(
             IOrganizationService service,
             ITracingService tracing,
@@ -314,7 +303,7 @@ namespace PvciTranscripts
 
             DateTime? start = stamps.Count > 0 ? EpochUtc(stamps.Min()) : (DateTime?)null;
             DateTime? end = stamps.Count > 0 ? EpochUtc(stamps.Max()) : (DateTime?)null;
-            TranscriptDiagnostics diagnostics = ExtractDiagnostics(activities);
+            TranscriptDiagnostics diagnostics = TranscriptAnalysis.ExtractDiagnostics(activities);
 
             var userMessages = messages.Where(m => IsUser(m)).ToList();
             var agentMessages = messages.Where(m => !IsUser(m)).ToList();
@@ -348,7 +337,7 @@ namespace PvciTranscripts
             List<long> latencies = ResponseLatencies(messages);
             List<object> toolCalls = ExtractToolCalls(activities);
             string toolsJson = WriteLimited(toolCalls, out ignore);
-            List<object> knowledgeCalls = ExtractKnowledgeCalls(activities);
+            List<object> knowledgeCalls = TranscriptAnalysis.ExtractKnowledgeCalls(activities);
             string knowledgeJson = WriteLimited(knowledgeCalls, out ignore);
             int knowledgeSources = 0, knowledgeFailures = 0;
             foreach (object knowledgeCall in knowledgeCalls)
@@ -440,7 +429,9 @@ namespace PvciTranscripts
             session["pvci_flowrunfailurecount"] = failedRuns;
             if (maxRunMs > 0) session["pvci_flowrunmaxms"] = (int)maxRunMs;
             session["pvci_sessionoutcome"] = Trim(Json.Str(sessionInfo, "outcome"), TextLimit);
-            string userErrorReason = ErrorReason(diagnostics.PrimaryErrorCode, diagnostics.PrimaryErrorMessage);
+            string userErrorReason = TranscriptAnalysis.ErrorReason(
+                diagnostics.PrimaryErrorCode,
+                diagnostics.PrimaryErrorMessage);
             session["pvci_outcomereason"] = Trim(userErrorReason ?? Json.Str(sessionInfo, "outcomeReason"), TextLimit);
             session["pvci_usererrorcount"] = diagnostics.UserErrorCount;
             session["pvci_primaryerrorcode"] = Trim(diagnostics.PrimaryErrorCode, TextLimit);
@@ -496,7 +487,7 @@ namespace PvciTranscripts
             {
                 string type = Json.Str(a, "type");
                 string name = Json.Str(a, "name");
-                if (!includeTraces && !IsUserErrorTrace(a)
+                if (!includeTraces && !TranscriptAnalysis.IsUserErrorTrace(a)
                     && ((type != null && NoiseTypes.Contains(type)) || (name != null && NoiseEvents.Contains(name))))
                     continue;
 
@@ -590,65 +581,9 @@ namespace PvciTranscripts
             return role.HasValue && role.Value == 1;
         }
 
-        private static bool IsUserErrorTrace(object activity)
-        {
-            if (!string.Equals(Json.Str(activity, "valueType"), "ErrorTraceData", StringComparison.Ordinal)) return false;
-            object isUserError = Json.Get(Json.Get(activity, "value"), "isUserError");
-            return isUserError is bool && (bool)isUserError;
-        }
-
         private static long? Ms(object activity)
         {
             return Json.Long(activity, "timestampMs");
-        }
-
-        private static TranscriptDiagnostics ExtractDiagnostics(List<object> activities)
-        {
-            var diagnostics = new TranscriptDiagnostics();
-            string currentTopic = null;
-            foreach (object activity in activities)
-            {
-                if (string.Equals(Json.Str(activity, "name"), "DynamicPlanStepTriggered", StringComparison.OrdinalIgnoreCase))
-                {
-                    string topicId = Json.Str(Json.Get(activity, "value"), "taskDialogId");
-                    if (!string.IsNullOrWhiteSpace(topicId))
-                    {
-                        currentTopic = LastSegment(topicId.Trim());
-                        if (string.IsNullOrEmpty(diagnostics.TopicId)) diagnostics.TopicId = topicId.Trim();
-                        if (string.IsNullOrEmpty(diagnostics.TopicName)) diagnostics.TopicName = currentTopic;
-                    }
-                }
-
-                if (!string.Equals(Json.Str(activity, "valueType"), "ErrorTraceData", StringComparison.Ordinal)) continue;
-                object value = Json.Get(activity, "value");
-                object isUserError = Json.Get(value, "isUserError");
-                if (!(isUserError is bool) || !(bool)isUserError) continue;
-
-                diagnostics.UserErrorCount++;
-                diagnostics.PrimaryErrorCode = TrimOrNull(Json.Str(value, "errorCode"));
-                diagnostics.PrimaryErrorMessage = TrimOrNull(Json.Str(value, "errorMessage"));
-                diagnostics.PrimaryErrorTopic = currentTopic;
-                diagnostics.ErrorCategory = ErrorCategory(diagnostics.PrimaryErrorCode, diagnostics.PrimaryErrorMessage);
-            }
-            return diagnostics;
-        }
-
-        private static string ErrorReason(string errorCode, string errorMessage)
-        {
-            if (!string.IsNullOrEmpty(errorCode) && !string.IsNullOrEmpty(errorMessage)) return errorCode + ": " + errorMessage;
-            return errorCode ?? errorMessage;
-        }
-
-        private static string ErrorCategory(string errorCode, string errorMessage)
-        {
-            string text = ((errorCode ?? string.Empty) + " " + (errorMessage ?? string.Empty)).ToLowerInvariant();
-            if (text.Contains("authentication") || text.Contains("unauthorized") || text.Contains("forbidden") || text.Contains("consent"))
-                return "Authentication";
-            if (text.Contains("connector") || text.Contains("connection") || text.Contains("reference id"))
-                return "Connector";
-            if (text.Contains("expression") || text.Contains("contentvalidation"))
-                return "Topic expression";
-            return "Topic runtime";
         }
 
         private static string TrimOrNull(string value)
@@ -733,57 +668,6 @@ namespace PvciTranscripts
                         { "output", null },
                     });
                 }
-            }
-            return calls;
-        }
-
-        private static List<object> ExtractKnowledgeCalls(List<object> activities)
-        {
-            var calls = new List<object>();
-            string stepId = null, task = null, startedUtc = null;
-            long? startedMs = null;
-
-            foreach (object activity in activities)
-            {
-                string name = Json.Str(activity, "name") ?? string.Empty;
-                object value = Json.Get(activity, "value");
-                if (name.Equals("DynamicPlanStepTriggered", StringComparison.OrdinalIgnoreCase))
-                {
-                    string candidateTask = Json.Str(value, "taskDialogId");
-                    if (!string.IsNullOrEmpty(candidateTask)
-                        && candidateTask.IndexOf("search", StringComparison.OrdinalIgnoreCase) >= 0)
-                    {
-                        stepId = Json.Str(value, "stepId");
-                        task = candidateTask;
-                        startedMs = Ms(activity);
-                        startedUtc = startedMs.HasValue ? FormatIso(EpochUtc(startedMs.Value / 1000)) : null;
-                    }
-                    continue;
-                }
-
-                if (!string.Equals(Json.Str(activity, "valueType"), "KnowledgeTraceData", StringComparison.Ordinal)) continue;
-                List<object> cited = Json.Arr(Json.Get(value, "citedKnowledgeSources")) ?? new List<object>();
-                List<object> failedSources = Json.Arr(Json.Get(value, "failedKnowledgeSourcesTypes")) ?? new List<object>();
-                string completion = Json.Str(value, "completionState");
-                bool completionFailed = !string.Equals(completion, "Answered", StringComparison.OrdinalIgnoreCase)
-                    && !string.Equals(completion, "Completed", StringComparison.OrdinalIgnoreCase)
-                    && !string.Equals(completion, "Complete", StringComparison.OrdinalIgnoreCase)
-                    && !string.Equals(completion, "Succeeded", StringComparison.OrdinalIgnoreCase);
-                long? finishedMs = Ms(activity);
-                object searchedValue = Json.Get(value, "isKnowledgeSearched");
-
-                calls.Add(new Dictionary<string, object>(StringComparer.Ordinal)
-                {
-                    { "step_id", stepId },
-                    { "task", task ?? "Knowledge search" },
-                    { "started_utc", startedUtc },
-                    { "duration_ms", startedMs.HasValue && finishedMs.HasValue ? (object)(double)(finishedMs.Value - startedMs.Value) : null },
-                    { "completion_state", completion },
-                    { "searched", searchedValue is bool && (bool)searchedValue },
-                    { "cited_sources", cited },
-                    { "failed_source_types", failedSources },
-                    { "failed", failedSources.Count > 0 || completionFailed },
-                });
             }
             return calls;
         }

@@ -14,6 +14,7 @@ from xml.etree import ElementTree as ET
 from zipfile import ZipFile
 
 from update_release_manifest import FULL_COMMIT_PATTERN, MANIFEST_PATH
+from validate_release_evidence import main as validate_release_evidence
 from validate_solution_ownership import main as validate_solution_ownership
 
 
@@ -163,6 +164,7 @@ def main() -> None:
     if not INDEX.is_file():
         fail("site/index.html is missing")
     validate_solution_ownership()
+    validate_release_evidence()
     manifest = validate_packages()
     validate_preview()
     html = INDEX.read_text(encoding="utf-8")

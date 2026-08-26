@@ -173,7 +173,9 @@ jobs:
         if: steps.changes.outputs.changed == 'true'
         run: |
           version=$(python3 -c 'import json; print(json.load(open("config/release-packages.json"))["core"]["version"])')
-          python3 scripts/validate_candidate_packages.py --version "$version"
+          python3 scripts/validate_candidate_packages.py \
+            --version "$version" \
+            --source-commit "${{ steps.changes.outputs.source_sha }}"
 
       - name: Upload synchronized candidate set
         if: steps.changes.outputs.changed == 'true'

@@ -1,0 +1,61 @@
+name: validate release promotion
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Stable four-part solution version
+        required: true
+        type: string
+      candidate_run_id:
+        description: Refresh release packages workflow run containing the approved candidate
+        required: true
+        type: string
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Download candidate artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_ID: ${{ inputs.candidate_run_id }}
+        run: |
+          if [[ ! "$RUN_ID" =~ ^[0-9]+$ ]]; then
+            echo "::error::candidate_run_id must be a numeric workflow run ID."
+            exit 1
+          fi
+          artifact_name=$(gh api \
+            "repos/${GITHUB_REPOSITORY}/actions/runs/${RUN_ID}/artifacts" \
+            --jq '[.artifacts[] | select(.expired == false and (.name | startswith("managed-candidate-")))] | if length == 1 then .[0].name else empty end')
+          if [[ -z "$artifact_name" ]]; then
+            echo "::error::Expected exactly one unexpired managed-candidate artifact in workflow run ${RUN_ID}."
+            exit 1
+          fi
+          gh run download "$RUN_ID" \
+            --repo "$GITHUB_REPOSITORY" \
+            --name "$artifact_name" \
+            --dir output/candidate
+
+      - name: Validate byte-identical promotion and evidence
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::version must be a four-part numeric solution version."
+            exit 1
+          fi
+          python scripts/validate_release_promotion.py --version "$VERSION"
+          python scripts/validate_release_evidence.py

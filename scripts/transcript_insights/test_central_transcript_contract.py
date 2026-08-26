@@ -9,6 +9,7 @@ SOLUTION = json.loads(
 )
 PLUGIN = (ROOT / "plugin" / "ImportCentralTranscriptBatch.cs").read_text(encoding="utf-8")
 SYNC_PLUGIN = (ROOT / "plugin" / "SyncConversationTranscripts.cs").read_text(encoding="utf-8")
+TRANSCRIPT_ANALYSIS = (ROOT / "plugin" / "TranscriptAnalysis.cs").read_text(encoding="utf-8")
 
 
 class CentralTranscriptContractTests(unittest.TestCase):
@@ -60,8 +61,8 @@ class CentralTranscriptContractTests(unittest.TestCase):
             self.assertIn(column, table["columns"])
 
     def test_default_sync_retains_user_error_traces(self):
-        self.assertIn("IsUserErrorTrace(a)", SYNC_PLUGIN)
-        self.assertIn('"ErrorTraceData"', SYNC_PLUGIN)
+        self.assertIn("TranscriptAnalysis.IsUserErrorTrace(a)", SYNC_PLUGIN)
+        self.assertIn('"ErrorTraceData"', TRANSCRIPT_ANALYSIS)
         self.assertIn('turn["pvci_eventname"] = Trim(name ?? Json.Str(a, "valueType")', SYNC_PLUGIN)
 
     def test_local_sync_prefers_inventory_environment_display_name(self):

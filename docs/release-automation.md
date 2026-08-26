@@ -28,7 +28,7 @@ manually. It uses the following sequence:
 5. Build the committed code app and deploy it to `pvConversationInsightsCodeApp`.
 6. Export all three source solutions as managed ZIPs.
 7. Verify solution identity, version, managed state, embedded JSON Viewer PCF, embedded code app,
-   ZIP integrity, and SHA-256 hashes.
+   ZIP integrity, SHA-256 hashes, and the exact package-input source commit.
 8. Upload the synchronized `output/candidate/` set as a retained workflow artifact. Do not modify
    `site/downloads/` or deploy Pages from the candidate refresh.
 
@@ -53,6 +53,9 @@ This issue-fix workflow intentionally builds one patched core package from an im
 base. It is not the three-package feature-candidate pipeline and must not be used to publish or
 promote `2.0.0.5`. Three-package candidates are exported together to `output/candidate/`, validated
 with `scripts/validate_candidate_packages.py`, and handed to the user for manual TPM testing.
+Every candidate manifest contains `sourceCommit`. The refresh workflow passes the exact
+package-input commit detected before deployment; local validation derives the same commit from Git
+when `--source-commit` is omitted.
 
 ## Release documentation gate
 
@@ -75,6 +78,33 @@ and update `productSourceDigest` in the contract. Do not update the digest merel
 Agents should load the checked-in `.github/skills/release-documentation/SKILL.md` workflow for
 README, docs, release-package, or public Pages changes. The skill is guidance; the CI `site` job and
 Pages workflow run the deterministic gate and are the enforcement boundary.
+
+## Release evidence and promotion gate
+
+`config/release-evidence.json` records the candidate source commit and hashes that became the
+published packages, plus explicit PVE package/runtime, hosted UI, and manual TPM upgrade gates.
+Each passed gate requires an ISO-8601 completion timestamp and a checked-in evidence reference.
+
+Run:
+
+```bash
+python3 scripts/validate_release_evidence.py
+```
+
+The validator requires the evidence version, source commit, filenames, and hashes to match
+`site/downloads/release-manifest.json`.
+
+Before merging a stable release PR, dispatch **validate release promotion** with the version and
+the approved `refresh release packages` workflow `candidate_run_id`. The workflow downloads the single retained
+`managed-candidate-*` artifact from that run and executes:
+
+```bash
+python3 scripts/validate_release_promotion.py --version <version>
+python3 scripts/validate_release_evidence.py
+```
+
+This makes candidate/stable byte identity and release evidence reproducible from a new session
+without access to the original developer workstation.
 
 ## npm dependency reliability
 
@@ -235,14 +265,15 @@ The workflow has `id-token: write` solely to request the short-lived federated t
 2. Export core, credits, and code app to `output/candidate/` with synchronized versions and unique
   filenames; never place unapproved candidates in `site/downloads/`.
 3. Run `scripts/validate_solution_ownership.py` and
-  `scripts/validate_candidate_packages.py --version <version>`.
+  `scripts/validate_candidate_packages.py --version <version> --source-commit <implementation-sha>`.
 4. For a clean install, test core, optional credits, then optional code app. For an upgrade from
   `1.4.0.15`, manually test credits first, core managed upgrade second, and code app last.
-5. Record PVE and TPM evidence separately. PVE success does not imply TPM validation.
+5. Record PVE package/runtime, hosted UI, and TPM manual-upgrade evidence separately in
+  `config/release-evidence.json`. PVE success does not imply TPM validation.
 6. After manual target approval, commit package inputs first. Copy the exact validated candidate
   bytes into `site/downloads/`; do not rebuild them.
 7. Generate the stable manifest with the implementation commit, commit publication surfaces
-  separately, and run `scripts/validate_release_promotion.py --version <version>`.
+  separately, and dispatch **validate release promotion** against the approved candidate run.
 8. Merge only after required checks pass, then verify Pages, the public manifest, and all three
   public downloads.
 

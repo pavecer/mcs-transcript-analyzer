@@ -92,6 +92,7 @@ class TranscriptOutcomeTests(unittest.TestCase):
         self.assertEqual(1, parsed["knowledge_source_count"])
         self.assertEqual(0, parsed["knowledge_failure_count"])
         self.assertEqual("P:UniversalSearchTool", parsed["knowledge_calls"][0]["task"])
+        self.assertEqual("1970-01-01T00:01:40Z", parsed["knowledge_calls"][0]["started_utc"])
         self.assertEqual("Answered", parsed["knowledge_calls"][0]["completion_state"])
         self.assertEqual(2500, parsed["knowledge_calls"][0]["duration_ms"])
         self.assertEqual(["agent.topic.ServiceNowKB_source"], parsed["knowledge_calls"][0]["cited_sources"])

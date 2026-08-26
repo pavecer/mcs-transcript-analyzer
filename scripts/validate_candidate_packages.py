@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import json
 import re
+import subprocess
 from pathlib import Path
 from zipfile import ZipFile
 
@@ -15,6 +16,14 @@ import update_release_manifest as release
 ROOT = Path(__file__).resolve().parents[1]
 CONFIG_PATH = ROOT / "config" / "release-packages.json"
 FULL_COMMIT_PATTERN = re.compile(r"^[0-9a-f]{40}$")
+PACKAGE_INPUTS = (
+    "codeapp",
+    "plugin",
+    "pcf",
+    "solution",
+    "scripts/transcript_insights",
+    "config/release-packages.json",
+)
 
 FORBIDDEN_MARKERS = (
     "pvci_transcript_http_",
@@ -37,13 +46,25 @@ def package_text(path: Path) -> str:
     return "\n".join(parts)
 
 
+def package_source_commit() -> str:
+    result = subprocess.run(
+        ["git", "log", "-1", "--format=%H", "--", *PACKAGE_INPUTS],
+        cwd=ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    return result.stdout.strip()
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--version", required=True)
     parser.add_argument("--directory", type=Path, default=Path("output/candidate"))
     parser.add_argument("--source-commit")
     args = parser.parse_args()
-    if args.source_commit and not FULL_COMMIT_PATTERN.fullmatch(args.source_commit):
+    source_commit = args.source_commit or package_source_commit()
+    if not FULL_COMMIT_PATTERN.fullmatch(source_commit):
         raise SystemExit("--source-commit must be a full 40-character lowercase Git commit SHA")
 
     directory = args.directory.resolve()
@@ -92,8 +113,7 @@ def main() -> None:
         "tenantNeutral": True,
         "artifacts": artifacts,
     }
-    if args.source_commit:
-        manifest["sourceCommit"] = args.source_commit
+    manifest["sourceCommit"] = source_commit
     manifest_path = directory / f"candidate-manifest-{args.version}.json"
     manifest_path.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
     print(json.dumps(manifest, indent=2))

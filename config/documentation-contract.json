@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "productSourceDigest": "94499c56eb100c13e467ed02e4d66e8f3a6be0f68df5ccd9c7a5b8f1ce9c1b4b",
+  "productSourceDigest": "fac17bbf0d1c870d60b95a77e4e2b0fe93f663059c887d8a7a7b53502937cf5d",
   "productInputs": [
     "config/release-packages.json",
     "solution/pvConversationInsights/solution-definition.json",
@@ -10,13 +10,22 @@
     "codeapp/src/lib/transcriptScope.ts",
     "codeapp/src/lib/thresholdRequestState.ts",
     "codeapp/src/lib/creditCapability.ts",
+    "codeapp/src/components/EssOps.tsx",
+    "codeapp/src/components/KnowledgeCalls.tsx",
+    "codeapp/src/components/ReasoningFlow.tsx",
+    "codeapp/src/components/Trends.tsx",
     "plugin/ImportCreditUsageBatch.cs",
+    "plugin/CreditUserDisclosure.cs",
+    "plugin/SyncConversationTranscripts.cs",
+    "plugin/TranscriptAnalysis.cs",
     "plugin/ThresholdChangeRequestGuard.cs",
     "plugin/ImportCentralTranscriptBatch.cs",
     "scripts/transcript_insights/create_credit_sync_flow.py",
     "scripts/transcript_insights/create_inventory_sync_flow.py",
     "scripts/transcript_insights/create_credit_governance_flow.py",
     "scripts/transcript_insights/create_credit_governance_processor_flow.py",
+    "scripts/transcript_insights/create_security_roles.py",
+    "scripts/transcript_insights/create_sync_flow.py",
     "scripts/transcript_insights/create_central_transcript_flow.py",
     "scripts/transcript_insights/create_transcript_access_verification_flow.py",
     "codeapp/src/lib/transcriptAccessState.ts"
@@ -39,6 +48,7 @@
     ".github/workflows/linkedin-release.yml",
     ".github/workflows/pages.yml",
     ".github/workflows/refresh-packages.yml",
+    ".github/workflows/release-promotion.yml",
     "CONTRIBUTING.md",
     "README.md",
     "docs/api-reference.md",
@@ -159,6 +169,9 @@
       "exactly three managed Power Platform solutions",
       "validate_candidate_packages.py",
       "validate_release_promotion.py",
+      "validate_release_evidence.py",
+      "candidate_run_id",
+      "config/release-evidence.json",
       "config/documentation-contract.json",
       "scripts/validate_documentation.py",
       ".github/skills/release-documentation/SKILL.md",
@@ -172,11 +185,15 @@
     ],
     "CONTRIBUTING.md": [
       "scripts/validate_documentation.py",
+      "scripts/validate_parser_parity.py",
+      "scripts/validate_release_evidence.py",
       "config/documentation-contract.json",
       ".github/skills/release-documentation/SKILL.md"
     ],
     ".github/pull_request_template.md": [
       "python3 scripts/validate_documentation.py",
+      "python3 scripts/validate_parser_parity.py",
+      "python3 scripts/validate_release_evidence.py",
       "Documentation contract reviewed"
     ],
     ".github/skills/release-documentation/SKILL.md": [
@@ -190,6 +207,8 @@
       "CHANGELOG.md",
       "ROADMAP.md",
       "site/index.html",
+      "config/release-evidence.json",
+      "validate release promotion",
       "python3 scripts/validate_documentation.py",
       "publish LinkedIn release"
     ],
@@ -224,7 +243,9 @@
       "HTTP 5xx failure during dependency download"
     ],
     ".github/workflows/build.yml": [
-      "python3 scripts/validate_documentation.py"
+      "python3 scripts/validate_documentation.py",
+      "python scripts/validate_parser_parity.py",
+      "python scripts/validate_release_evidence.py"
     ],
     ".github/workflows/candidate-release.yml": [
       "build_candidate_package.py",
@@ -241,6 +262,11 @@
     ],
     ".github/workflows/pages.yml": [
       "python3 scripts/validate_documentation.py"
+    ],
+    ".github/workflows/release-promotion.yml": [
+      "candidate_run_id",
+      "validate_release_promotion.py",
+      "validate_release_evidence.py"
     ],
     "site/README.md": [
       "scripts/validate_documentation.py --list-surfaces",

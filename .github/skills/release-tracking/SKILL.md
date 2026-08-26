@@ -14,6 +14,8 @@ roadmap review.
 - `ROADMAP.md` records prioritized work, status, exit criteria, and explicit out-of-scope items.
 - `config/release-packages.json` defines synchronized solution versions and package contracts.
 - `site/downloads/release-manifest.json` records the exact published ZIP checksums and provenance.
+- `config/release-evidence.json` records candidate identity and the independent PVE, hosted UI,
+  and manual TPM gates for the published release.
 - `site/index.html` presents the public release history and roadmap.
 
 Do not infer shipped capabilities from a branch name or memory. Verify them against the solution
@@ -39,8 +41,9 @@ override the tenant-ID boundary.
    page changes.
 9. For a candidate promotion, commit package inputs before generating the stable manifest. Copy
    the exact target-tenant-tested candidate ZIPs into `site/downloads/`; do not rebuild them.
-10. Generate the manifest with the implementation commit, commit release surfaces separately, and
-    run `python3 scripts/validate_release_promotion.py --version <version>`.
+10. Generate the manifest and release evidence with the implementation commit, commit release
+    surfaces separately, and dispatch **validate release promotion** with the approved candidate
+    workflow run ID.
 11. Open a PR, wait for every required check, merge, and verify Pages plus the public manifest.
 12. Publish the stable GitHub Release. The `publish LinkedIn release` workflow then generates the
    announcement from the matching changelog section and publishes it when the
