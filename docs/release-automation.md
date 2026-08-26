@@ -80,9 +80,12 @@ Pages workflow run the deterministic gate and are the enforcement boundary.
 
 Stable GitHub Releases can publish a LinkedIn announcement through
 `.github/workflows/linkedin-release.yml`. The workflow does not use generative AI. It derives the
-copy from the exact version section in `CHANGELOG.md`, verifies that version against
-`site/downloads/release-manifest.json`, includes the public Pages and GitHub Release links, and
-enforces LinkedIn's 3,000-character limit. Prereleases are excluded.
+release identity from the exact version section in `CHANGELOG.md`, verifies that version against
+`site/downloads/release-manifest.json`, and generates a short awareness announcement with one
+audience-focused value statement and one public Pages call to action. Detailed capabilities,
+boundaries, validation evidence, package inventories, checksums, and setup instructions remain on
+the public site and GitHub Release. The generator enforces a 600-character marketing limit, well
+below LinkedIn's technical 3,000-character limit. Prereleases are excluded.
 
 Create a GitHub environment named `linkedin-production` and configure:
 
@@ -111,6 +114,12 @@ that LinkedIn publication occurred unless the hidden release marker contains the
 To recover from an unconfigured run, configure `LINKEDIN_ACCESS_TOKEN`, `LINKEDIN_AUTHOR_URN`, and
 `LINKEDIN_API_VERSION`, dispatch the same stable tag with `dry_run=true`, and review the generated
 copy. Make a separate intentional dispatch with `dry_run=false` only after that dry run succeeds.
+
+To correct an already published announcement without creating a duplicate, dispatch the workflow
+from the default branch with the stable tag and `update_post_urn` set to the exact post URN stored in
+the release marker. The workflow validates that match before using LinkedIn's partial-update API,
+does not create a new post, and preserves the original marker. Review the concise generated copy
+with `dry_run=true` before the live update.
 
 The repository can automate publication after configuration, but it cannot grant LinkedIn API
 products or renew an expired OAuth authorization. Keep the token only in GitHub Secrets, rotate it

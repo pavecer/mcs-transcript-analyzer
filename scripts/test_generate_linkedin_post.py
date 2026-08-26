@@ -3,7 +3,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from scripts.generate_linkedin_post import LINKEDIN_CHARACTER_LIMIT, generate_post
+from scripts.generate_linkedin_post import LINKEDIN_MARKETING_LIMIT, generate_post
 
 
 class GenerateLinkedInPostTests(unittest.TestCase):
@@ -44,7 +44,7 @@ class GenerateLinkedInPostTests(unittest.TestCase):
     def tearDown(self):
         self.temp_dir.cleanup()
 
-    def test_generates_release_details_and_public_links(self):
+    def test_generates_short_marketing_announcement(self):
         post = generate_post(
             "1.4.0.15",
             "pavecer/mcs-transcript-analyzer",
@@ -53,22 +53,21 @@ class GenerateLinkedInPostTests(unittest.TestCase):
             self.manifest,
         )
 
-        self.assertIn("MCS Transcript Analyzer 1.4.0.15 is now available.", post)
-        self.assertIn("Cross-environment transcript operations release.", post)
-        self.assertIn("- Added central transcript collection.", post)
+        self.assertIn("MCS Transcript Analyzer 1.4.0.15 is here.", post)
+        self.assertIn("Copilot Studio conversation insights", post)
+        self.assertIn("optional Copilot Credit reporting", post)
+        self.assertNotIn("Cross-environment transcript operations release.", post)
+        self.assertNotIn("- Added central transcript collection.", post)
         self.assertNotIn("Additional implementation detail", post)
-        self.assertIn("- Kept administrator bootstrap unavailable.", post)
-        self.assertIn("Remote copying requires explicit administrator consent.", post)
-        self.assertIn("Resource reporting is scoped to the host environment.", post)
-        self.assertIn("User usage and request history remain tenant-wide.", post)
+        self.assertNotIn("administrator bootstrap", post)
+        self.assertNotIn("explicit administrator consent", post)
+        self.assertNotIn("scoped to the host environment", post)
+        self.assertNotIn("remain tenant-wide", post)
         self.assertNotIn("Validated in the development environment", post)
         self.assertNotIn("core.zip", post)
         self.assertIn("https://pavecer.github.io/mcs-transcript-analyzer/", post)
-        self.assertIn(
-            "https://github.com/pavecer/mcs-transcript-analyzer/releases/tag/v1.4.0.15",
-            post,
-        )
-        self.assertLessEqual(len(post), LINKEDIN_CHARACTER_LIMIT)
+        self.assertNotIn("github.com", post)
+        self.assertLessEqual(len(post), LINKEDIN_MARKETING_LIMIT)
 
     def test_rejects_version_not_in_release_manifest(self):
         with self.assertRaisesRegex(ValueError, "does not match release manifest"):

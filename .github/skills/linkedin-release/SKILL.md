@@ -18,8 +18,11 @@ Use the deterministic repository scripts and workflow. Do not compose release cl
    python scripts/generate_linkedin_post.py --version <version>
    ```
 
-3. Verify the post retains shipped capabilities, explicit boundaries, the public Pages link, and
-   the GitHub Release link. The generator enforces LinkedIn's 3,000-character limit.
+3. Verify the post is a short awareness announcement: release name, one audience-focused value
+   statement, one public Pages call to action, and a small relevant hashtag set. Do not copy package
+   inventories, validation evidence, checksums, setup instructions, or detailed product boundaries
+   into LinkedIn; those remain on the public site and GitHub Release. The generator enforces a
+   600-character marketing limit, well below LinkedIn's technical 3,000-character limit.
 4. Run:
 
    ```text
@@ -61,3 +64,8 @@ the same tag with `dry_run=true`, review the generated copy, and only then make 
 run with `dry_run=false`. If publication fails, correct credentials, permission, author URN, or API
 version and repeat that recovery sequence. Never claim publication without the hidden release marker.
 Do not edit the release marker unless LinkedIn confirms no post was created.
+
+To shorten or correct an existing announcement, dispatch the workflow from the default branch with
+the stable tag and `update_post_urn` set to the exact URN in that release's hidden marker. The
+workflow refuses any mismatch, updates commentary in place, creates no second post, and leaves the
+original publication marker unchanged. Use `dry_run=true` first to review the corrected copy.
