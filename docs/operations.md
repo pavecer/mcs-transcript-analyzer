@@ -493,6 +493,8 @@ Use these interpretation rules when investigating a session:
 
 - `0` means the relevant telemetry was available and no event was observed. **Unavailable** means
     the transcript cannot prove zero; exact `DialogTracing` tool telemetry is normally test-only.
+    The code-app Overview and ESS KPI cards preserve this distinction for turns, errors, knowledge,
+    exact tool traces, and candidate flow matches instead of defaulting absent counters to zero.
 - Reply wait, plan-step elapsed, knowledge-step elapsed, exact invoke span, and Power Automate run
     duration are separate clocks. Do not add them together.
 - Flow matches are time-based **candidates**, not proven attribution. **Closest start** identifies

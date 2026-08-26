@@ -1,4 +1,5 @@
 import { fmtClock, fmtMs, safeParse, sourceEnvironmentLabel, type SessionRow, type TurnRow } from "../lib/model";
+import { formatObservedMetric } from "../lib/telemetryAvailability";
 
 interface TopicStep {
   id: string;
@@ -53,12 +54,20 @@ export function EssOps({ session, turns, loading }: { session: SessionRow; turns
         <Kpi label="Topic steps" value={String(topicSteps.length)} />
         <Kpi
           label="Knowledge calls"
-          value={String(session.pvci_knowledgecallcount ?? 0)}
-          hint={`${session.pvci_knowledgesourcecount ?? 0} cited source(s)`}
+          value={formatObservedMetric(
+            session.pvci_knowledgecallcount,
+            { singular: "retrieval", plural: "retrievals" },
+          )}
+          hint={formatObservedMetric(
+            session.pvci_knowledgesourcecount,
+            { singular: "cited source", plural: "cited sources" },
+          )}
         />
         <Kpi
           label="User errors"
-          value={String(session.pvci_usererrorcount ?? errorEvents.length)}
+          value={session.pvci_usererrorcount == null
+            ? "Unavailable"
+            : String(session.pvci_usererrorcount)}
           hint={session.pvci_errorcategory ?? undefined}
         />
       </div>

@@ -16,6 +16,7 @@ import { Trends } from "./components/Trends";
 import { Credits } from "./components/Credits";
 import { InventoryManagement } from "./components/InventoryManagement";
 import { classifyCreditCapability, withTimeout, type CreditCapability } from "./lib/creditCapability";
+import { formatObservedPair } from "./lib/telemetryAvailability";
 import { isCrossEnvironmentCollectionEnabled, scopeRowsToHost } from "./lib/transcriptScope";
 import {
   fmtDuration,
@@ -463,29 +464,57 @@ export default function App() {
                 <Fact k="Session topic" v={activeSession.pvci_topicname ?? activeSession.pvci_topicid} />
                 <Fact k="Started (UTC)" v={fmtTime(activeSession.pvci_startdatetimeutc)} />
                 <Fact k="Duration" v={fmtDuration(activeSession.pvci_durationseconds)} />
-                <Fact k="Turns" v={`${activeSession.pvci_userturncount ?? 0} user / ${activeSession.pvci_agentturncount ?? 0} agent`} />
+                <Fact
+                  k="Turns"
+                  v={formatObservedPair(
+                    activeSession.pvci_userturncount,
+                    { singular: "user turn", plural: "user turns" },
+                    activeSession.pvci_agentturncount,
+                    { singular: "agent turn", plural: "agent turns" },
+                  )}
+                />
                 <Fact k="Source outcome" v={activeSession.pvci_sessionoutcome} />
                 <Fact k="Outcome detail" v={activeSession.pvci_outcomereason} />
                 <Fact k="Implied resolved" v={activeSession.pvci_isresolvedimplied} />
                 <Fact
                   k="User errors"
-                  v={activeSession.pvci_usererrorcount
-                    ? `${activeSession.pvci_usererrorcount} · ${activeSession.pvci_errorcategory ?? activeSession.pvci_primaryerrorcode ?? "user error"}`
-                    : "0"}
+                  v={activeSession.pvci_usererrorcount == null
+                    ? "Unavailable in this transcript"
+                    : activeSession.pvci_usererrorcount > 0
+                      ? `${activeSession.pvci_usererrorcount} · ${activeSession.pvci_errorcategory ?? activeSession.pvci_primaryerrorcode ?? "user error"}`
+                      : "0"}
                 />
                 <Fact k="First reply" v={fmtMs(activeSession.pvci_firstresponsems)} />
                 <Fact k="Slowest reply" v={fmtMs(activeSession.pvci_maxresponsems)} />
                 <Fact
                   k="Exact tool traces"
                   v={activeSession.pvci_istestmode
-                    ? `${activeSession.pvci_toolcallcount ?? 0}${activeSession.pvci_toolerrorcount ? ` (${activeSession.pvci_toolerrorcount} failed)` : ""}`
+                    ? formatObservedPair(
+                        activeSession.pvci_toolcallcount,
+                        { singular: "tool call", plural: "tool calls" },
+                        activeSession.pvci_toolerrorcount,
+                        { singular: "failed call", plural: "failed calls" },
+                      )
                     : "Unavailable in this transcript"}
                 />
-                <Fact k="Knowledge" v={`${activeSession.pvci_knowledgecallcount ?? 0} retrievals / ${activeSession.pvci_knowledgesourcecount ?? 0} source IDs`} />
+                <Fact
+                  k="Knowledge"
+                  v={formatObservedPair(
+                    activeSession.pvci_knowledgecallcount,
+                    { singular: "retrieval", plural: "retrievals" },
+                    activeSession.pvci_knowledgesourcecount,
+                    { singular: "source ID", plural: "source IDs" },
+                  )}
+                />
                 <Fact k="Slowest exact tool" v={fmtMs(activeSession.pvci_maxtoolms)} />
                 <Fact
                   k="Candidate flow matches"
-                  v={`${activeSession.pvci_flowruncount ?? 0}${activeSession.pvci_flowrunfailurecount ? ` (${activeSession.pvci_flowrunfailurecount} failed)` : ""}`}
+                  v={formatObservedPair(
+                    activeSession.pvci_flowruncount,
+                    { singular: "candidate match", plural: "candidate matches" },
+                    activeSession.pvci_flowrunfailurecount,
+                    { singular: "failed run", plural: "failed runs" },
+                  )}
                 />
               </dl>
             </header>

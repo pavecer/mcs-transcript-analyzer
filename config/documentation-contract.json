@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "productSourceDigest": "fac17bbf0d1c870d60b95a77e4e2b0fe93f663059c887d8a7a7b53502937cf5d",
+  "productSourceDigest": "ea2cb3b9cc3cfbda371a59fdff65f1959a415216cc2a29b75243453bad884c60",
   "productInputs": [
     "config/release-packages.json",
     "solution/pvConversationInsights/solution-definition.json",
@@ -10,6 +10,7 @@
     "codeapp/src/lib/transcriptScope.ts",
     "codeapp/src/lib/thresholdRequestState.ts",
     "codeapp/src/lib/creditCapability.ts",
+    "codeapp/src/lib/telemetryAvailability.ts",
     "codeapp/src/components/EssOps.tsx",
     "codeapp/src/components/KnowledgeCalls.tsx",
     "codeapp/src/components/ReasoningFlow.tsx",
@@ -77,6 +78,7 @@
     ],
     "ROADMAP.md": [
       "Replace pre-authorized collection with zero-touch onboarding",
+      "availability-aware telemetry labels",
       "Detailed cross-environment agent enrichment",
       "Explicitly out of scope for the current product boundary",
       "CHANGELOG.md"
@@ -144,6 +146,7 @@
       "AppliedUnverified"
       ,"status never imply this consent"
       ,"Credits resource reporting to the host environment"
+      ,"instead of defaulting absent counters to zero"
     ],
     "docs/permissions-and-inventory.md": [
       "Optional `pvConversationInsightsCredits`",
@@ -297,6 +300,7 @@
       ,"Discovery and verification are not consent"
       ,"disabling it stops future imports but does not delete records already copied"
       ,"Credits resource reporting stay host-scoped"
+      ,"observed zero and telemetry that the transcript could not provide"
     ]
   }
 }

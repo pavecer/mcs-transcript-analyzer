@@ -40,7 +40,7 @@ Last reviewed: 2026-08-25
 
 ### Conversation investigation usability
 
-- **Status:** First-time-reader clarity, full-width Trends, and inventory-backed environment names implemented for candidate `1.4.0.9`; PVE Dev visual smoke pending
+- **Status:** First-time-reader clarity, full-width Trends, inventory-backed environment names, and availability-aware telemetry labels implemented; PVE Dev visual smoke pending
 - **Goal:** Let an operator understand context, outcome, routing, knowledge, tools, candidate flows, errors, and timing before opening technical payloads.
 - **Exit criteria:** Overview is the default; filter and detail selections cannot disagree; zero is distinguished from unavailable telemetry; timing and correlation labels avoid false attribution; unknown flow states remain unknown; representative simple, knowledge, expression-failure, connector-failure, no-flow, and multiple-candidate sessions pass a signed-in visual smoke.
 - **Tracking:** [Operations interpretation guide](docs/operations.md) and the [code app](codeapp/)
