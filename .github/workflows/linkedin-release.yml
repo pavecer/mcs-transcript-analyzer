@@ -13,6 +13,10 @@ on:
         required: true
         type: boolean
         default: true
+      update_post_urn:
+        description: Existing recorded LinkedIn post URN to update instead of creating a post
+        required: false
+        type: string
 
 permissions:
   contents: write
@@ -33,10 +37,11 @@ jobs:
       LINKEDIN_API_VERSION: ${{ vars.LINKEDIN_API_VERSION }}
       RELEASE_TAG: ${{ github.event.release.tag_name || inputs.tag }}
       DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run || false }}
+      UPDATE_POST_URN: ${{ inputs.update_post_urn || '' }}
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ env.RELEASE_TAG }}
+          ref: ${{ env.UPDATE_POST_URN != '' && github.ref || env.RELEASE_TAG }}
 
       - name: Validate stable release and publication state
         id: release
@@ -45,20 +50,28 @@ jobs:
           set -euo pipefail
           release_json=$(gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" \
             --json isDraft,isPrerelease,body,url)
-          python3 - "$RELEASE_TAG" "$release_json" <<'PY'
+          python3 - "$RELEASE_TAG" "$release_json" "$UPDATE_POST_URN" <<'PY'
           import json
+          import re
           import sys
           from pathlib import Path
 
           tag = sys.argv[1]
           release = json.loads(sys.argv[2])
+          update_post_urn = sys.argv[3]
           manifest = json.loads(Path("site/downloads/release-manifest.json").read_text())
           versions = {item["version"] for item in manifest["artifacts"].values()}
           if release["isDraft"] or release["isPrerelease"]:
               raise SystemExit("LinkedIn publishing requires a non-draft stable release")
           if len(versions) != 1 or tag != f"v{versions.pop()}":
               raise SystemExit("Release tag does not match the synchronized release manifest")
-          if f"<!-- linkedin-release:{tag}:published:" in release["body"]:
+            marker = re.search(
+              rf"<!-- linkedin-release:{re.escape(tag)}:published:([^>]+) -->",
+              release["body"],
+            )
+            if update_post_urn and (not marker or marker.group(1) != update_post_urn):
+              raise SystemExit("Update post URN does not match the recorded release marker")
+            if not update_post_urn and marker:
               raise SystemExit(f"LinkedIn publication is already recorded for {tag}")
           PY
 
@@ -98,6 +111,9 @@ jobs:
         run: |
           set -euo pipefail
           args=(--post-file "$RUNNER_TEMP/linkedin-post.txt")
+          if [[ -n "$UPDATE_POST_URN" ]]; then
+            args+=(--post-urn "$UPDATE_POST_URN")
+          fi
           if [[ "$DRY_RUN" == "true" ]]; then
             args+=(--dry-run)
           fi
@@ -107,7 +123,7 @@ jobs:
           fi
 
       - name: Record LinkedIn publication on GitHub Release
-        if: ${{ env.DRY_RUN != 'true' && steps.configuration.outputs.configured == 'true' }}
+        if: ${{ env.DRY_RUN != 'true' && env.UPDATE_POST_URN == '' && steps.configuration.outputs.configured == 'true' }}
         shell: bash
         run: |
           set -euo pipefail
