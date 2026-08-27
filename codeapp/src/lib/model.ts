@@ -80,6 +80,7 @@ export interface ToolCall {
   started_utc?: string;
   duration_ms?: number | null;
   failed?: boolean;
+  completion_observed?: boolean;
   exception?: string;
   output?: unknown;
 }
@@ -87,6 +88,7 @@ export interface ToolCall {
 export interface KnowledgeCall {
   step_id?: string;
   task?: string;
+  correlation?: string;
   started_utc?: string;
   duration_ms?: number | null;
   completion_state?: string;

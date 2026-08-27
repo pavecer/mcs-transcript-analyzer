@@ -5,6 +5,8 @@ The stable managed solution ZIPs are release artifacts, not generic source archi
 exported from their deployed Dataverse solutions and pass `scripts/validate_site.py`. The current
 public release is the three-package `2.0.0.5` set. Its managed packages passed PVE validation and
 the user-performed manual Contoso TPM upgrade before exact-byte promotion from `output/candidate/`.
+The core artifact version defines the stable release tag and LinkedIn announcement version. Credits
+and code app versions remain independent, so mixed-version stable manifests are valid.
 Product capabilities, setup, and public copy must also pass `scripts/validate_documentation.py`.
 The root [CHANGELOG.md](../CHANGELOG.md) records shipped versions and [ROADMAP.md](../ROADMAP.md)
 records prioritized work and explicit product boundaries; update both with the public page.
@@ -13,15 +15,15 @@ records prioritized work and explicit product boundaries; update both with the p
 
 1. Update `index.html` so the capability, screenshot, limitations, and install steps still
    describe the product accurately.
-2. Increase all three live solution versions and package versions together. Backward-compatible features
-   increase the second component (`1.0.0.0` to `1.1.0.0`), fixes increase the third, and
-   packaging-only rebuilds increase the fourth. Never overwrite a published package at the same
-   version. Keep the core source files, page, filenames, and `config/release-packages.json` aligned.
+2. Increase only changed live solution and package versions. Backward-compatible features increase
+   the second component (`1.0.0.0` to `1.1.0.0`), fixes increase the third, and packaging-only
+   rebuilds increase the fourth. Preserve unchanged package versions, ZIPs, hashes, and provenance.
+   Never overwrite a published package at the same version.
 3. Ensure every new core component is a root component of `pvConversationInsights`. In
    particular, do not leave forms depending on a PCF control from the Active solution.
 4. Keep the preview code app in `pvConversationInsightsCodeApp`; do not add it to the core
    package.
-5. Export fresh **managed** candidates from the approved development environment into
+5. Export fresh **managed** candidates only for changed artifacts from the approved development environment into
    `output/candidate/`:
 
    ```bash
@@ -48,15 +50,20 @@ records prioritized work and explicit product boundaries; update both with the p
    python3 scripts/validate_documentation.py --print-digest
    ```
 
-7. Validate all three candidates and documentation. Regenerate the stable manifest only after
+7. Validate changed candidates and documentation. Regenerate the stable manifest only after
    manual target approval and copying the exact candidate bytes into `site/downloads/`:
 
    ```bash
-   python3 scripts/validate_candidate_packages.py --version <version>
+   python3 scripts/validate_candidate_packages.py --artifact <core|credits|codeApp>
    python3 scripts/validate_documentation.py
-   python3 scripts/update_release_manifest.py --source-commit "$(git rev-parse HEAD)"
+   python3 scripts/update_release_manifest.py --artifact <core|credits|codeApp> --source-commit "$(git rev-parse HEAD)"
+   python3 scripts/validate_release_promotion.py --artifact <core|credits|codeApp> --version <version>
    python3 scripts/validate_site.py
    ```
+
+   Manifest generation and promotion process one explicit artifact at a time. Promotion requires
+   the candidate manifest's `artifactScope` and `artifacts` keys to contain exactly that artifact;
+   there is no `all` promotion path.
 
 8. Refresh `assets/conversation-insights-preview.png` when the visible product changes. Use
    anonymized sample data only; never capture a real tenant, transcript, user, or environment.
@@ -68,8 +75,8 @@ records prioritized work and explicit product boundaries; update both with the p
    and verify both apps open. Also test an upgrade over the previous public version when
    that package is available.
 
-The candidate validator checks that all three packages are managed, versions match the release config, the JSON
-Viewer PCF and code app are embedded in the correct package, checksums match the manifest, both
+The candidate validator checks selected packages are managed, versions match their artifact
+contracts, packaged components remain in the correct solution, checksums match the manifest, both
 risk gates are present, and local site links resolve.
 
 The documentation validator derives table/role/workflow/dependency counts, verifies required
@@ -84,4 +91,8 @@ The repository administrator must select **GitHub Actions** as the Pages source 
 **Settings > Pages**.
 
 Daily change-aware refresh is owned by `.github/workflows/refresh-packages.yml`. See
-`docs/release-automation.md` for OIDC setup, deployment boundaries, and recovery.
+`docs/release-automation.md` for OIDC setup, deployment boundaries, and recovery. Its fixed
+`core`, `credits`, and `codeApp` matrix evaluates provenance independently, skips unchanged
+artifacts unless forced, and uploads a separate candidate ZIP and scoped manifest for each changed
+leg. Manual `artifact=all` is only a fan-out request into those independent legs. Manual
+single-artifact requests run only the selected leg.

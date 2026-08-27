@@ -43,6 +43,17 @@ def fail(message: str) -> None:
     raise SystemExit(1)
 
 
+def expected_published_artifacts(
+    configured_artifacts: set[str],
+    published_artifacts: dict[str, object],
+    configured_core_version: str,
+) -> set[str]:
+    if "credits" in published_artifacts:
+        return configured_artifacts
+    published_core_version = published_artifacts.get("core", {}).get("version")
+    return LEGACY_ARTIFACT_KEYS if published_core_version != configured_core_version else configured_artifacts
+
+
 def validate_html(html: str, manifest: dict[str, object]) -> None:
     artifacts = manifest.get("artifacts", {})
     if not isinstance(artifacts, dict):
@@ -110,16 +121,19 @@ def validate_packages() -> dict[str, object]:
     if not MANIFEST_PATH.is_file():
         fail(f"missing release manifest: {MANIFEST_PATH.relative_to(ROOT)}")
     manifest = json.loads(MANIFEST_PATH.read_text(encoding="utf-8"))
-    if not FULL_COMMIT_PATTERN.fullmatch(manifest.get("sourceCommit", "")):
-        fail("release manifest sourceCommit must be a full 40-character lowercase Git commit SHA")
+    schema_version = manifest.get("schemaVersion", 1)
+    if schema_version == 1:
+        if not FULL_COMMIT_PATTERN.fullmatch(manifest.get("sourceCommit", "")):
+            fail("release manifest sourceCommit must be a full 40-character lowercase Git commit SHA")
+    elif schema_version != 2:
+        fail(f"unsupported release manifest schemaVersion: {schema_version}")
     artifacts = manifest.get("artifacts", {})
     release_config = json.loads(RELEASE_CONFIG.read_text(encoding="utf-8"))
     configured_artifacts = set(release_config)
-    core_version = artifacts.get("core", {}).get("version")
-    expected_artifacts = (
-        configured_artifacts
-        if core_version == release_config["core"]["version"]
-        else LEGACY_ARTIFACT_KEYS
+    expected_artifacts = expected_published_artifacts(
+        configured_artifacts,
+        artifacts,
+        release_config["core"]["version"],
     )
     if set(artifacts) != expected_artifacts:
         fail(
@@ -127,6 +141,10 @@ def validate_packages() -> dict[str, object]:
             f"expected={sorted(expected_artifacts)}, actual={sorted(artifacts)}"
         )
     for key, published in artifacts.items():
+        if schema_version == 2 and not FULL_COMMIT_PATTERN.fullmatch(
+            published.get("sourceCommit", "")
+        ):
+            fail(f"published {key} sourceCommit must be a full lowercase Git SHA")
         path = SITE / "downloads" / published["filename"]
         if not path.is_file():
             fail(f"missing published {key} package: {path.relative_to(ROOT)}")

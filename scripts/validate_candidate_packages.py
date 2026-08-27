@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate synchronized tenant-neutral managed solution candidates."""
+"""Validate one or more tenant-neutral managed solution candidates."""
 
 from __future__ import annotations
 
@@ -24,6 +24,21 @@ PACKAGE_INPUTS = (
     "scripts/transcript_insights",
     "config/release-packages.json",
 )
+ARTIFACT_PACKAGE_INPUTS = {
+    "core": (
+        "plugin",
+        "pcf",
+        "solution/pvConversationInsights",
+        "scripts/transcript_insights",
+    ),
+    "credits": (
+        "solution/pvConversationInsightsCredits",
+        ":(glob)scripts/transcript_insights/*credit*.py",
+    ),
+    "codeApp": (
+        "codeapp",
+    ),
+}
 
 FORBIDDEN_MARKERS = (
     "pvci_transcript_http_",
@@ -46,9 +61,14 @@ def package_text(path: Path) -> str:
     return "\n".join(parts)
 
 
-def package_source_commit() -> str:
+def artifact_keys(artifact: str) -> tuple[str, ...]:
+    return release.ARTIFACT_KEYS if artifact == "all" else (artifact,)
+
+
+def package_source_commit(artifact: str = "all") -> str:
+    inputs = PACKAGE_INPUTS if artifact == "all" else ARTIFACT_PACKAGE_INPUTS[artifact]
     result = subprocess.run(
-        ["git", "log", "-1", "--format=%H", "--", *PACKAGE_INPUTS],
+        ["git", "log", "-1", "--format=%H", "--", *inputs],
         cwd=ROOT,
         check=True,
         capture_output=True,
@@ -57,23 +77,34 @@ def package_source_commit() -> str:
     return result.stdout.strip()
 
 
+def candidate_manifest_name(artifact: str, versions: dict[str, str]) -> str:
+    unique_versions = set(versions.values())
+    if artifact == "all" and len(unique_versions) == 1:
+        return f"candidate-manifest-{next(iter(unique_versions))}.json"
+    if artifact == "all":
+        return "candidate-manifest-all.json"
+    return f"candidate-manifest-{artifact}-{versions[artifact]}.json"
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--version", required=True)
+    parser.add_argument("--artifact", choices=("all", *release.ARTIFACT_KEYS), default="all")
+    parser.add_argument("--version")
     parser.add_argument("--directory", type=Path, default=Path("output/candidate"))
     parser.add_argument("--source-commit")
     args = parser.parse_args()
-    source_commit = args.source_commit or package_source_commit()
+    selected_keys = artifact_keys(args.artifact)
+    source_commit = args.source_commit or package_source_commit(args.artifact)
     if not FULL_COMMIT_PATTERN.fullmatch(source_commit):
         raise SystemExit("--source-commit must be a full 40-character lowercase Git commit SHA")
 
     directory = args.directory.resolve()
-    base_config = json.loads(CONFIG_PATH.read_text(encoding="utf-8"))
-    config = json.loads(json.dumps(base_config))
-    for key in release.ARTIFACT_KEYS:
-        solution_name = config[key]["solutionUniqueName"]
-        config[key]["version"] = args.version
-        config[key]["filename"] = f"{solution_name}-managed-{args.version}.zip"
+    config = json.loads(CONFIG_PATH.read_text(encoding="utf-8"))
+    versions = {key: config[key]["version"] for key in selected_keys}
+    if args.version and set(versions.values()) != {args.version}:
+        raise SystemExit(
+            f"--version {args.version} does not match selected artifact versions: {versions}"
+        )
     central_flow = "PVCI Collect Central Transcripts (scheduled)"
     if central_flow not in config["core"]["requiredWorkflows"]:
         config["core"]["requiredWorkflows"].append(central_flow)
@@ -82,39 +113,44 @@ def main() -> None:
     release.DOWNLOADS = directory
     try:
         artifacts = {
-            key: release.inspect_package(key, config[key]) for key in release.ARTIFACT_KEYS
+            key: release.inspect_package(key, config[key]) for key in selected_keys
         }
     finally:
         release.DOWNLOADS = previous_downloads
 
-    core_path = directory / config["core"]["filename"]
-    core_text = package_text(core_path)
-    leaked = [marker for marker in FORBIDDEN_MARKERS if marker in core_text]
-    if leaked:
-        raise RuntimeError(f"Core candidate contains tenant-specific runtime markers: {leaked}")
-    if "pvci_ImportCentralTranscriptBatch" not in core_text:
-        raise RuntimeError("Core candidate does not contain pvci_ImportCentralTranscriptBatch")
-    if "PvciTranscripts.ImportCentralTranscriptBatch" not in core_text:
-        raise RuntimeError("Core candidate does not contain the central transcript plugin type")
-    for marker in (
-        "PVCI Collect Central Transcripts (scheduled)",
-        "ListRecordsWithOrganization",
-        "pvci_environmenturl",
-        "pvci_transcriptcollectorenabled eq true",
-        "pvci_centralcollector",
-    ):
-        if marker not in core_text:
-            raise RuntimeError(f"Core candidate does not contain packaged collector marker: {marker}")
+    if "core" in selected_keys:
+        core_path = directory / config["core"]["filename"]
+        core_text = package_text(core_path)
+        leaked = [marker for marker in FORBIDDEN_MARKERS if marker in core_text]
+        if leaked:
+            raise RuntimeError(f"Core candidate contains tenant-specific runtime markers: {leaked}")
+        if "pvci_ImportCentralTranscriptBatch" not in core_text:
+            raise RuntimeError("Core candidate does not contain pvci_ImportCentralTranscriptBatch")
+        if "PvciTranscripts.ImportCentralTranscriptBatch" not in core_text:
+            raise RuntimeError("Core candidate does not contain the central transcript plugin type")
+        for marker in (
+            "PVCI Collect Central Transcripts (scheduled)",
+            "ListRecordsWithOrganization",
+            "pvci_environmenturl",
+            "pvci_transcriptcollectorenabled eq true",
+            "pvci_centralcollector",
+        ):
+            if marker not in core_text:
+                raise RuntimeError(f"Core candidate does not contain packaged collector marker: {marker}")
 
     manifest = {
+        "schemaVersion": 2,
         "status": "ok",
-        "version": args.version,
+        "artifactScope": list(selected_keys),
+        "versions": versions,
         "directory": str(directory),
         "tenantNeutral": True,
         "artifacts": artifacts,
+        "sourceCommit": source_commit,
     }
-    manifest["sourceCommit"] = source_commit
-    manifest_path = directory / f"candidate-manifest-{args.version}.json"
+    if len(set(versions.values())) == 1:
+        manifest["version"] = next(iter(versions.values()))
+    manifest_path = directory / candidate_manifest_name(args.artifact, versions)
     manifest_path.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
     print(json.dumps(manifest, indent=2))
     print(f"Wrote {manifest_path}")

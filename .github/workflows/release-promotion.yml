@@ -7,6 +7,14 @@ on:
         description: Stable four-part solution version
         required: true
         type: string
+      artifact:
+        description: Solution artifact being promoted
+        required: true
+        type: choice
+        options:
+          - core
+          - credits
+          - codeApp
       candidate_run_id:
         description: Refresh release packages workflow run containing the approved candidate
         required: true
@@ -32,6 +40,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           RUN_ID: ${{ inputs.candidate_run_id }}
+          ARTIFACT: ${{ inputs.artifact }}
         run: |
           if [[ ! "$RUN_ID" =~ ^[0-9]+$ ]]; then
             echo "::error::candidate_run_id must be a numeric workflow run ID."
@@ -39,9 +48,9 @@ jobs:
           fi
           artifact_name=$(gh api \
             "repos/${GITHUB_REPOSITORY}/actions/runs/${RUN_ID}/artifacts" \
-            --jq '[.artifacts[] | select(.expired == false and (.name | startswith("managed-candidate-")))] | if length == 1 then .[0].name else empty end')
+            --jq "[.artifacts[] | select(.expired == false and (.name | startswith(\"managed-candidate-${ARTIFACT}-\")))] | if length == 1 then .[0].name else empty end")
           if [[ -z "$artifact_name" ]]; then
-            echo "::error::Expected exactly one unexpired managed-candidate artifact in workflow run ${RUN_ID}."
+            echo "::error::Expected exactly one unexpired managed-candidate-${ARTIFACT} artifact in workflow run ${RUN_ID}."
             exit 1
           fi
           gh run download "$RUN_ID" \
@@ -52,10 +61,11 @@ jobs:
       - name: Validate byte-identical promotion and evidence
         env:
           VERSION: ${{ inputs.version }}
+          ARTIFACT: ${{ inputs.artifact }}
         run: |
           if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
             echo "::error::version must be a four-part numeric solution version."
             exit 1
           fi
-          python scripts/validate_release_promotion.py --version "$VERSION"
+          python scripts/validate_release_promotion.py --artifact "$ARTIFACT" --version "$VERSION"
           python scripts/validate_release_evidence.py

@@ -14,10 +14,10 @@ LINKEDIN_MARKETING_LIMIT = 600
 
 def release_version(manifest_path: Path) -> str:
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-    versions = {artifact["version"] for artifact in manifest["artifacts"].values()}
-    if len(versions) != 1:
-        raise ValueError(f"Release manifest versions are not synchronized: {sorted(versions)}")
-    return versions.pop()
+    core = manifest.get("artifacts", {}).get("core")
+    if not isinstance(core, dict) or not core.get("version"):
+        raise ValueError("Release manifest has no core artifact version")
+    return str(core["version"])
 
 
 def changelog_release(changelog_path: Path, version: str) -> tuple[str, list[str]]:

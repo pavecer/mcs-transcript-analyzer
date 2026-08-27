@@ -283,98 +283,6 @@ export function InventoryManagement({ hostEnvironmentId, onCollectorStateChange 
         <InventoryKpi label="Not ready" value={metrics.notReady} tone={metrics.notReady ? "warn" : "good"} filter="not-ready" activeFilter={filter} onSelect={setFilter} />
       </section>
 
-      <div className="inventory-toolbar">
-        <input
-          className="search"
-          type="search"
-          placeholder="Search environment, ID, type, region, or access state…"
-          value={search}
-          onChange={(event) => setSearch(event.target.value)}
-        />
-        <select className="search" value={filter} onChange={(event) => setFilter(event.target.value as InventoryFilter)}>
-          <option value="all">All environments</option>
-          <option value="ready">Dataverse ready</option>
-          <option value="enabled">Collector enabled</option>
-          <option value="readable">Transcript readable</option>
-          <option value="denied">Access denied</option>
-          <option value="not-ready">Dataverse not ready</option>
-        </select>
-        <span className="muted small">{filtered.length} of {environments.length}</span>
-      </div>
-
-      <div className="inventory-table-wrap">
-        <table className="runtable inventory-table">
-          <thead>
-            <tr>
-              <th>Environment</th>
-              <th>Platform</th>
-              <th>Dataverse</th>
-              <th>Detailed access</th>
-              <th>Transcript access</th>
-              <th>Onboarding</th>
-              <th>Collector</th>
-              <th>Last probe</th>
-              <th>Watermark</th>
-              <th>Last batch</th>
-              <th>Result</th>
-            </tr>
-          </thead>
-          <tbody>
-            {loading && !environments.length && <tr><td colSpan={11} className="muted">Loading inventory…</td></tr>}
-            {!loading && !filtered.length && <tr><td colSpan={11} className="muted">No environments match the current filter.</td></tr>}
-            {filtered.map((row) => (
-              <tr key={row.pvci_environmentinventoryid}>
-                <td title={row.pvci_environmentid}>
-                  <strong>{environmentLabel(row)}</strong>
-                  <span className="inventory-row-id">{row.pvci_environmentid}</span>
-                </td>
-                <td>
-                  <span>{row.pvci_environmenttype ?? "Unknown"}</span>
-                  <span className="inventory-row-id">{row.pvci_geo ?? row.pvci_state ?? "Region unknown"}</span>
-                </td>
-                <td title={row.pvci_environmenturl}>
-                  <span className={`conf ${row.pvci_hasdataverse && row.pvci_environmenturl ? "high" : "multiple"}`}>
-                    {row.pvci_hasdataverse && row.pvci_environmenturl ? "Ready" : row.pvci_hasdataverse ? "URL missing" : "Unavailable"}
-                  </span>
-                </td>
-                <td><span className={`conf ${row.pvci_hasdetailedaccess ? "high" : "multiple"}`}>{row.pvci_hasdetailedaccess ? "Available" : "Limited"}</span></td>
-                <td title={row.pvci_transcriptaccessreason}>
-                  <span className={`conf ${transcriptAccessClass(row.pvci_transcriptaccessstatus)}`}>{transcriptAccessLabel(row.pvci_transcriptaccessstatus)}</span>
-                </td>
-                <td>
-                  <button type="button" className="onboarding-link" onClick={() => openOnboarding(row)}>
-                    {transcriptOnboardingStatusLabel(row.pvci_transcriptonboardingstatus)}
-                  </button>
-                  <span className="inventory-row-id">{onboardingModeLabel(row.pvci_transcriptonboardingmode)}</span>
-                </td>
-                <td>
-                  {row.pvci_environmentid?.toLowerCase() === hostEnvironmentId?.toLowerCase() ? (
-                    <span className="conf high">Local automatic</span>
-                  ) : <label className="collector-toggle" title={!canEnableTranscriptCollector(row.pvci_transcriptonboardingstatus, row.pvci_transcriptaccessstatus) ? "Complete transcript source verification before enabling collection." : undefined}>
-                    <input
-                      type="checkbox"
-                      checked={row.pvci_transcriptcollectorenabled ?? false}
-                      disabled={collectorBusyId !== null || (!row.pvci_transcriptcollectorenabled && !canEnableTranscriptCollector(row.pvci_transcriptonboardingstatus, row.pvci_transcriptaccessstatus))}
-                      onChange={(event) => void setCollectorEnabled(row, event.target.checked)}
-                      aria-label={`${row.pvci_transcriptcollectorenabled ? "Disable" : "Enable"} transcript collection for ${environmentLabel(row)}`}
-                    />
-                    <span>{collectorBusyId === row.pvci_environmentinventoryid ? "Saving" : row.pvci_transcriptcollectorenabled ? "Enabled" : "Off"}</span>
-                  </label>}
-                </td>
-                <td>{fmtDateTime(row.pvci_transcriptprobeon)}</td>
-                <td>{fmtDateTime(row.pvci_transcriptlastcollectedon)}</td>
-                <td className="mono">{row.pvci_transcriptlastbatchcount ?? 0}</td>
-                <td title={row.pvci_transcriptlastcollectionerror}>
-                  {row.pvci_transcriptlastcollectionstatus
-                    ? <span className={`conf ${row.pvci_transcriptlastcollectionstatus === "success" ? "high" : "multiple"}`}>{row.pvci_transcriptlastcollectionstatus}</span>
-                    : <span className="muted">Not run</span>}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
       {selectedEnvironment && <section className="onboarding-workspace" aria-label={`Transcript onboarding for ${environmentLabel(selectedEnvironment)}`}>
         <div className="onboarding-head">
           <div>
@@ -424,6 +332,99 @@ export function InventoryManagement({ hostEnvironmentId, onCollectorStateChange 
           </table>
         </div>
       </section>}
+
+      <div className="inventory-toolbar">
+        <input
+          className="search"
+          type="search"
+          placeholder="Search environment, ID, type, region, or access state…"
+          value={search}
+          onChange={(event) => setSearch(event.target.value)}
+        />
+        <select className="search" value={filter} onChange={(event) => setFilter(event.target.value as InventoryFilter)}>
+          <option value="all">All environments</option>
+          <option value="ready">Dataverse ready</option>
+          <option value="enabled">Collector enabled</option>
+          <option value="readable">Transcript readable</option>
+          <option value="denied">Access denied</option>
+          <option value="not-ready">Dataverse not ready</option>
+        </select>
+        <span className="muted small">{filtered.length} of {environments.length}</span>
+      </div>
+
+      <div className="inventory-table-wrap">
+        <table className="runtable inventory-table">
+          <thead>
+            <tr>
+              <th>Environment</th>
+              <th>Result</th>
+              <th>Platform</th>
+              <th>Dataverse</th>
+              <th>Detailed access</th>
+              <th>Transcript access</th>
+              <th>Onboarding</th>
+              <th>Collector</th>
+              <th>Last probe</th>
+              <th>Watermark</th>
+              <th>Last batch</th>
+            </tr>
+          </thead>
+          <tbody>
+            {loading && !environments.length && <tr><td colSpan={11} className="muted">Loading inventory…</td></tr>}
+            {!loading && !filtered.length && <tr><td colSpan={11} className="muted">No environments match the current filter.</td></tr>}
+            {filtered.map((row) => (
+              <tr key={row.pvci_environmentinventoryid}>
+                <td title={row.pvci_environmentid}>
+                  <strong>{environmentLabel(row)}</strong>
+                  <span className="inventory-row-id">{row.pvci_environmentid}</span>
+                </td>
+                <td title={row.pvci_transcriptlastcollectionerror}>
+                  {row.pvci_transcriptlastcollectionstatus
+                    ? <span className={`conf ${row.pvci_transcriptlastcollectionstatus === "success" ? "high" : "multiple"}`}>{row.pvci_transcriptlastcollectionstatus}</span>
+                    : <span className="muted">Not run</span>}
+                </td>
+                <td>
+                  <span>{row.pvci_environmenttype ?? "Unknown"}</span>
+                  <span className="inventory-row-id">{row.pvci_geo ?? row.pvci_state ?? "Region unknown"}</span>
+                </td>
+                <td title={row.pvci_environmenturl}>
+                  <span className={`conf ${row.pvci_hasdataverse && row.pvci_environmenturl ? "high" : "multiple"}`}>
+                    {row.pvci_hasdataverse && row.pvci_environmenturl ? "Ready" : row.pvci_hasdataverse ? "URL missing" : "Unavailable"}
+                  </span>
+                </td>
+                <td><span className={`conf ${row.pvci_hasdetailedaccess ? "high" : "multiple"}`}>{row.pvci_hasdetailedaccess ? "Available" : "Limited"}</span></td>
+                <td title={row.pvci_transcriptaccessreason}>
+                  <span className={`conf ${transcriptAccessClass(row.pvci_transcriptaccessstatus)}`}>{transcriptAccessLabel(row.pvci_transcriptaccessstatus)}</span>
+                </td>
+                <td>
+                  <button type="button" className="onboarding-link" onClick={() => openOnboarding(row)}>
+                    {transcriptOnboardingStatusLabel(row.pvci_transcriptonboardingstatus)}
+                  </button>
+                  <span className="inventory-row-id">{onboardingModeLabel(row.pvci_transcriptonboardingmode)}</span>
+                </td>
+                <td>
+                  {row.pvci_environmentid?.toLowerCase() === hostEnvironmentId?.toLowerCase() ? (
+                    <span className="conf high">Local automatic</span>
+                  ) : <label className="collector-toggle" title={!canEnableTranscriptCollector(row.pvci_transcriptonboardingstatus, row.pvci_transcriptaccessstatus) ? "Complete transcript source verification before enabling collection." : undefined}>
+                    <input
+                      type="checkbox"
+                      checked={row.pvci_transcriptcollectorenabled ?? false}
+                      disabled={collectorBusyId !== null || (!row.pvci_transcriptcollectorenabled && !canEnableTranscriptCollector(row.pvci_transcriptonboardingstatus, row.pvci_transcriptaccessstatus))}
+                      onChange={(event) => void setCollectorEnabled(row, event.target.checked)}
+                      aria-label={`${row.pvci_transcriptcollectorenabled ? "Disable" : "Enable"} transcript collection for ${environmentLabel(row)}`}
+                    />
+                    <span>{collectorBusyId === row.pvci_environmentinventoryid ? "Saving" : row.pvci_transcriptcollectorenabled ? "Enabled" : "Off"}</span>
+                  </label>}
+                </td>
+                <td>{fmtDateTime(row.pvci_transcriptprobeon)}</td>
+                <td>{fmtDateTime(row.pvci_transcriptlastcollectedon)}</td>
+                <td className="mono">{row.pvci_transcriptlastbatchcount ?? 0}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
     </div>
   );
 }

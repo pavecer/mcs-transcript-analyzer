@@ -27,6 +27,7 @@ import type { SessionRow } from "../lib/model";
 import { loadAllPages } from "../lib/paging";
 import { isActiveThresholdRequest, thresholdRequestStatusLabel } from "../lib/thresholdRequestState";
 import { parseWholeNumberInput } from "../lib/wholeNumberInput";
+import { resourceIdentityKey, scopedResourceIds, shouldShowResourceIdentity } from "../lib/creditResourceIdentity";
 
 const USAGE_FIELDS = [
   "pvci_creditusageid", "pvci_usagedate", "pvci_environmentid", "pvci_resourceid",
@@ -247,6 +248,13 @@ export function Credits({ sidebarTarget, allowEnvironmentSelection, hostEnvironm
     ),
     [environmentScopedAgents, harness]
   );
+  const navigableScopedResourceIds = useMemo(
+    () => scopedResourceIds(environmentScopedAgents.map((row) => ({
+      environmentId: row.pvci_environmentid,
+      resourceId: row.pvci_resourceid ?? row.pvci_agentinventoryid,
+    }))),
+    [environmentScopedAgents]
+  );
   const environmentUsage = useMemo(
     () => environmentScopedUsage.filter((row) => {
       if (harness === "*") return true;
@@ -292,6 +300,7 @@ export function Credits({ sidebarTarget, allowEnvironmentSelection, hostEnvironm
     const summaries = new Map<string, ResourceSummary>();
     environmentAgents.forEach((row) => {
       const resourceId = row.pvci_resourceid ?? row.pvci_agentinventoryid;
+      if (!shouldShowResourceIdentity(row.pvci_environmentid, resourceId, navigableScopedResourceIds)) return;
       const key = resourceIdentityKey(row.pvci_environmentid, resourceId);
       summaries.set(key, {
         label: row.pvci_displayname ?? row.pvci_resourceid ?? "Unknown agent",
@@ -305,10 +314,12 @@ export function Credits({ sidebarTarget, allowEnvironmentSelection, hostEnvironm
       });
     });
     environmentUsage.forEach((row) => {
+      const resourceId = row.pvci_resourceid ?? row.pvci_agentname ?? "unknown";
+      if (!shouldShowResourceIdentity(row.pvci_environmentid, resourceId, navigableScopedResourceIds)) return;
       const key = resourceKey(row);
       const current = summaries.get(key) ?? {
         label: row.pvci_agentname ?? row.pvci_resourceid ?? "Unknown resource",
-        resourceId: row.pvci_resourceid ?? row.pvci_agentname ?? "unknown",
+        resourceId,
         environmentId: row.pvci_environmentid,
         harness: agentHarnessByKey.get(key) ?? normalizeHarness(row.pvci_harness),
         threshold: latestThresholdByKey.get(key),
@@ -324,7 +335,7 @@ export function Credits({ sidebarTarget, allowEnvironmentSelection, hostEnvironm
     return [...summaries.entries()].sort((left, right) =>
       (right[1].billed + right[1].nonbilled) - (left[1].billed + left[1].nonbilled)
     );
-  }, [agentHarnessByKey, environmentAgents, environmentUsage, latestThresholdByKey]);
+  }, [agentHarnessByKey, environmentAgents, environmentUsage, latestThresholdByKey, navigableScopedResourceIds]);
   const scopedThresholds = useMemo(
     () => [...latestThresholdByKey.values()].filter((row) => {
       if (activeEnvironment !== "*" && !sameId(row.pvci_environmentid, activeEnvironment)) return false;
@@ -366,9 +377,12 @@ export function Credits({ sidebarTarget, allowEnvironmentSelection, hostEnvironm
   const visibleResourceSummaries = useMemo(() => {
     const query = navigatorSearch.trim().toLowerCase();
     return query
-      ? resourceSummaries.filter(([key, summary]) => `${summary.label} ${key}`.toLowerCase().includes(query))
+      ? resourceSummaries.filter(([key, summary]) => {
+          const environmentLabel = environmentNameById.get(summary.environmentId?.toLowerCase() ?? "") ?? summary.environmentId ?? "";
+          return `${summary.label} ${environmentLabel} ${key}`.toLowerCase().includes(query);
+        })
       : resourceSummaries;
-  }, [resourceSummaries, navigatorSearch]);
+  }, [environmentNameById, resourceSummaries, navigatorSearch]);
   const visibleUserSummaries = useMemo(() => {
     const query = navigatorSearch.trim().toLowerCase();
     return query
@@ -648,7 +662,9 @@ export function Credits({ sidebarTarget, allowEnvironmentSelection, hostEnvironm
               <span className="si-user" title={summary.label}>{summary.label}</span>
               <span className="chip">{fmtCredits(summary.billed + summary.nonbilled)}</span>
             </div>
-            <div className="si-sub muted small">{fmtFacts(summary.facts)} · {harnessLabel(summary.harness)} · {thresholdLabel(summary.threshold)}</div>
+            <div className="si-sub muted small credit-resource-context">
+              {environmentNameById.get(summary.environmentId?.toLowerCase() ?? "") ?? "Unlisted environment"} · {fmtFacts(summary.facts)} · {harnessLabel(summary.harness)} · {thresholdLabel(summary.threshold)}
+            </div>
           </button>
         ))}
       </div>
@@ -679,6 +695,56 @@ export function Credits({ sidebarTarget, allowEnvironmentSelection, hostEnvironm
   return (
     <div className="credits">
       {sidebar}
+      <details className="credit-mobile-navigator">
+        <summary>
+          <span>Filter and select</span>
+          <strong>{resource === "*" ? "All resources" : selectedResourceLabel ?? "Selected resource"}</strong>
+        </summary>
+        <div className="credit-mobile-controls">
+          <input
+            className="search"
+            placeholder="Search agents and users…"
+            value={navigatorSearch}
+            onChange={(event) => setNavigatorSearch(event.target.value)}
+          />
+          {allowEnvironmentSelection && <label>
+            Environment
+            <select className="search" value={environment} onChange={(event) => { setEnvironment(event.target.value); setResource("*"); }}>
+              <option value="*">All environments</option>
+              {environmentOptions.map(([id, label]) => <option key={id} value={id}>{label}</option>)}
+            </select>
+          </label>}
+          <label>
+            Spend risk
+            <select className="search" value={risk} onChange={(event) => { setRisk(event.target.value as RiskFilter); setResource("*"); }}>
+              <option value="*">All spend risk</option>
+              <option value="critical">Critical · at limit or stopped</option>
+              <option value="high">High · alert threshold reached</option>
+              <option value="watch">Watch · at least 60% used</option>
+              <option value="healthy">Healthy</option>
+              <option value="unconfigured">No usable limit</option>
+            </select>
+          </label>
+          <label>
+            Agent or resource
+            <select className="search" value={resource} onChange={(event) => setResource(event.target.value)}>
+              <option value="*">All agents and resources</option>
+              {visibleResourceSummaries.map(([key, summary]) => (
+                <option key={key} value={key}>
+                  {summary.label} · {environmentNameById.get(summary.environmentId?.toLowerCase() ?? "") ?? "Unlisted environment"}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            User
+            <select className="search" value={selectedUser} onChange={(event) => setSelectedUser(event.target.value)}>
+              <option value="*">All users</option>
+              {visibleUserSummaries.map(([key, summary]) => <option key={key} value={key}>{summary.label}</option>)}
+            </select>
+          </label>
+        </div>
+      </details>
       <div className="credit-title">
         <div>
           <h2>Copilot credit reporting</h2>
@@ -727,6 +793,15 @@ export function Credits({ sidebarTarget, allowEnvironmentSelection, hostEnvironm
           <CreditKpi label="Unresolved resources" value={String(globalTotals.unresolved)} tone={globalTotals.unresolved ? "warn" : undefined} />
           <CreditKpi label="Unknown harness" value={String(globalTotals.unknownHarness)} tone={globalTotals.unknownHarness ? "warn" : undefined} />
         </div>
+
+        {(globalTotals.unresolved > 0 || globalTotals.unknownHarness > 0) && (
+          <div className="credit-attention" role="status">
+            <strong>Attribution needs review</strong>
+            <span>
+              {globalTotals.unresolved} resources are unresolved and {globalTotals.unknownHarness} have unknown harness evidence. Filter the navigator to identify affected resources before using these totals for governance decisions.
+            </span>
+          </div>
+        )}
 
         <div className="global-chart-grid">
           <div className="global-period-chart">
@@ -1154,10 +1229,6 @@ function groupSessionsByPeriod(rows: SessionRow[], grain: PeriodGrain) {
 
 function resourceKey(row: Pvci_creditusages) {
   return resourceIdentityKey(row.pvci_environmentid, row.pvci_resourceid ?? row.pvci_agentname ?? "unknown");
-}
-
-function resourceIdentityKey(environmentId: string | undefined, resourceId: string) {
-  return `${environmentId?.toLowerCase() ?? ""}|${resourceId.toLowerCase()}`;
 }
 
 function periodKey(value: string | undefined, grain: PeriodGrain) {

@@ -31,7 +31,8 @@ GitHub Pages release history, or roadmap status.
 
 ## Release checklist
 
-1. Confirm package versions and artifact filenames match.
+1. Confirm each changed package version and filename match; unchanged artifacts retain their
+  published version, bytes, hash, and provenance.
 2. Add the dated `CHANGELOG.md` entry.
 3. Update `ROADMAP.md` statuses and move completed items only when evidence exists.
 4. Update the public release-history and roadmap sections.
@@ -39,7 +40,7 @@ GitHub Pages release history, or roadmap status.
 6. Run `python3 scripts/validate_documentation.py`.
 7. Run `python3 scripts/validate_site.py`.
 8. Report package, tenant-smoke-test, and public-page validation status separately.
-9. For cross-tenant feature candidates, keep synchronized candidate ZIPs under `output/candidate/`
+9. For cross-tenant feature candidates, keep changed candidate ZIPs under `output/candidate/`
   and leave published `site/downloads/` artifacts and release history unchanged until validation
   succeeds. Enforce that the generic `PVCI Collect Central Transcripts (scheduled)` flow is in
   core, uses `ListRecordsWithOrganization`, and contains no hardcoded source topology or
@@ -48,8 +49,8 @@ GitHub Pages release history, or roadmap status.
   candidate bytes into `site/downloads/`, generate the stable manifest with that implementation
   commit, and commit publication surfaces separately.
 11. Run `python3 scripts/validate_release_evidence.py`, then dispatch **validate release promotion**
-  with the approved candidate run ID before merging the release PR. This must prove
-  candidate/stable byte identity, source provenance, and all three tenant/UI evidence gates.
+  with the artifact scope and approved candidate run ID before merging the release PR. This must
+  prove candidate/stable byte identity, artifact provenance, and the applicable tenant/UI gates.
 12. Wait for every required PR check before merge, then verify the Pages deployment and public
   manifest after merge. Do not create a second release-writing agent; CI jobs and validators are
   independent gates while this agent remains the single release owner.

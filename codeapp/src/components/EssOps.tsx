@@ -4,6 +4,7 @@ import { formatObservedMetric } from "../lib/telemetryAvailability";
 interface TopicStep {
   id: string;
   topic: string;
+  type?: string;
   startedUtc?: string;
   durationMs?: number | null;
   thought?: string;
@@ -24,7 +25,7 @@ interface ErrorEvent {
   category: string;
 }
 
-export function EssOps({ session, turns, loading }: { session: SessionRow; turns: TurnRow[]; loading: boolean }) {
+export function EssOps({ session, turns, loading, flowTelemetryAvailable = true }: { session: SessionRow; turns: TurnRow[]; loading: boolean; flowTelemetryAvailable?: boolean }) {
   if (loading) return <div className="muted pad">Loading ESS operations view…</div>;
 
   const topicSteps = deriveTopicSteps(turns, session.pvci_planeventsjson);
@@ -34,10 +35,11 @@ export function EssOps({ session, turns, loading }: { session: SessionRow; turns
   const errorEvents = deriveErrorEvents(turns);
 
   const firstReplyMs = session.pvci_firstresponsems ?? firstReplyLatency(turns) ?? null;
-  const sessionTopic = session.pvci_topicname ?? topicSteps[0]?.topic ?? "—";
-  const firstTopicAt = topicSteps[0]?.startedUtc;
+  const primaryTopicStep = topicSteps.find((step) => step.type === "CustomTopic");
+  const sessionTopic = session.pvci_topicname ?? primaryTopicStep?.topic ?? "—";
+  const firstTopicAt = primaryTopicStep?.startedUtc;
 
-  const hints = buildHints(session, firstReplyMs, maxGap, unansweredUserTurns);
+  const hints = buildHints(session, firstReplyMs, maxGap, unansweredUserTurns, flowTelemetryAvailable);
 
   return (
     <div className="ess-ops">
@@ -51,7 +53,7 @@ export function EssOps({ session, turns, loading }: { session: SessionRow; turns
         <Kpi label="First reply" value={fmtMs(firstReplyMs)} />
         <Kpi label="Largest retained-event gap" value={fmtMs(maxGap?.ms ?? null)} hint={maxGap ? `${fmtClock(maxGap.fromUtc)} → ${fmtClock(maxGap.toUtc)}` : undefined} />
         <Kpi label="Unanswered user turns" value={String(unansweredUserTurns)} hint={unansweredUserTurns > 0 ? "candidate stale handoff" : undefined} />
-        <Kpi label="Topic steps" value={String(topicSteps.length)} />
+        <Kpi label="Plan steps" value={String(topicSteps.length)} />
         <Kpi
           label="Knowledge calls"
           value={formatObservedMetric(
@@ -72,6 +74,17 @@ export function EssOps({ session, turns, loading }: { session: SessionRow; turns
         />
       </div>
 
+      <h3 className="sub decision-heading">Assessment and next step</h3>
+      <div className="ess-hints decision-summary">
+        {hints.map((hint) => (
+          <div key={hint.title} className={`ess-hint ${hint.band}`}>
+            <strong>{hint.title}</strong>
+            <span>{hint.detail}</span>
+            <small>{hint.where}</small>
+          </div>
+        ))}
+      </div>
+
       <h3 className="sub">Failure timeline</h3>
       {!errorEvents.length ? (
         <div className="muted small pad-sm">No user-facing runtime failure trace was retained.</div>
@@ -81,7 +94,7 @@ export function EssOps({ session, turns, loading }: { session: SessionRow; turns
             <tr>
               <th>at</th>
               <th>category</th>
-              <th>topic</th>
+              <th>nearest prior plan step</th>
               <th>error</th>
             </tr>
           </thead>
@@ -111,7 +124,8 @@ export function EssOps({ session, turns, loading }: { session: SessionRow; turns
           <thead>
             <tr>
               <th>at</th>
-              <th>topic</th>
+              <th>kind</th>
+              <th>selected plan step</th>
               <th>step time</th>
               <th>thought</th>
             </tr>
@@ -120,6 +134,7 @@ export function EssOps({ session, turns, loading }: { session: SessionRow; turns
             {topicSteps.map((step) => (
               <tr key={step.id}>
                 <td className="mono">{step.startedUtc ? fmtClock(step.startedUtc) : "—"}</td>
+                <td><span className="conf none">{stepTypeLabel(step.type)}</span></td>
                 <td className="mono">{step.topic}</td>
                 <td className="mono">{fmtMs(step.durationMs)}</td>
                 <td className="muted">{step.thought ?? "—"}</td>
@@ -153,16 +168,6 @@ export function EssOps({ session, turns, loading }: { session: SessionRow; turns
         </table>
       )}
 
-      <h3 className="sub">Where to look when it breaks</h3>
-      <div className="ess-hints">
-        {hints.map((hint) => (
-          <div key={hint.title} className={`ess-hint ${hint.band}`}>
-            <strong>{hint.title}</strong>
-            <span>{hint.detail}</span>
-            <small>{hint.where}</small>
-          </div>
-        ))}
-      </div>
     </div>
   );
 }
@@ -246,6 +251,7 @@ function deriveTopicSteps(turns: TurnRow[], planEventsJson?: string): TopicStep[
     const rec = steps.get(stepId) ?? {
       id: stepId,
       topic: "?",
+      type: undefined,
       thought: undefined,
       startMs: undefined,
       endMs: undefined,
@@ -256,6 +262,7 @@ function deriveTopicSteps(turns: TurnRow[], planEventsJson?: string): TopicStep[
     if (name === "DynamicPlanStepTriggered") {
       const topicRaw = typeof payload?.taskDialogId === "string" ? payload.taskDialogId : undefined;
       rec.topic = topicRaw ? topicRaw.split(".").pop() ?? topicRaw : rec.topic;
+      rec.type = typeof payload?.type === "string" ? payload.type : rec.type;
       rec.thought = typeof payload?.thought === "string" ? payload.thought : rec.thought;
       if (turn.pvci_timestamputc) {
         const ms = Date.parse(turn.pvci_timestamputc);
@@ -285,6 +292,7 @@ function deriveTopicSteps(turns: TurnRow[], planEventsJson?: string): TopicStep[
         const rec = steps.get(stepId) ?? {
           id: stepId,
           topic: "?",
+          type: undefined,
           thought: undefined,
           startMs: undefined,
           endMs: undefined,
@@ -294,6 +302,7 @@ function deriveTopicSteps(turns: TurnRow[], planEventsJson?: string): TopicStep[
         if (name === "DynamicPlanStepTriggered") {
           const topicRaw = typeof value.taskDialogId === "string" ? value.taskDialogId : undefined;
           rec.topic = topicRaw ? topicRaw.split(".").pop() ?? topicRaw : rec.topic;
+          rec.type = typeof value.type === "string" ? value.type : rec.type;
           rec.thought = typeof value.thought === "string" ? value.thought : rec.thought;
           if (typeof ev.at === "string") {
             rec.startedUtc = ev.at;
@@ -314,11 +323,19 @@ function deriveTopicSteps(turns: TurnRow[], planEventsJson?: string): TopicStep[
     .map((step) => ({
       id: step.id,
       topic: step.topic,
+      type: step.type,
       startedUtc: step.startedUtc,
       durationMs: typeof step.startMs === "number" && typeof step.endMs === "number" ? step.endMs - step.startMs : null,
       thought: step.thought,
     }))
     .sort((left, right) => (Date.parse(left.startedUtc ?? "") || 0) - (Date.parse(right.startedUtc ?? "") || 0));
+}
+
+function stepTypeLabel(type?: string): string {
+  if (type === "CustomTopic") return "Topic";
+  if (type === "KnowledgeSource") return "Knowledge";
+  if (type === "LlmSkill") return "MCP / tool";
+  return type || "Plan step";
 }
 
 function largestGap(turns: TurnRow[]): Gap | null {
@@ -377,14 +394,14 @@ function countUnansweredUserTurns(turns: TurnRow[]): number {
   return unanswered;
 }
 
-function buildHints(session: SessionRow, firstReplyMs: number | null, maxGap: Gap | null, unansweredUserTurns: number) {
+function buildHints(session: SessionRow, firstReplyMs: number | null, maxGap: Gap | null, unansweredUserTurns: number, flowTelemetryAvailable: boolean) {
   const hints: Array<{ title: string; detail: string; where: string; band: "good" | "warn" | "bad" }> = [];
 
   if ((session.pvci_usererrorcount ?? 0) > 0) {
     hints.push({
       title: session.pvci_errorcategory ?? "Topic runtime failure",
       detail: `${session.pvci_usererrorcount} user-facing error(s). ${session.pvci_primaryerrorcode ?? "No error code recorded"}.`,
-      where: `Inspect Failure timeline at ${session.pvci_primaryerrortopic ?? "the active topic"}. ${session.pvci_primaryerrormessage ?? ""}`.trim(),
+      where: `Inspect Failure timeline near the prior plan step ${session.pvci_primaryerrortopic ?? "shown in sequence"}. This is sequence context, not exact error attribution. ${session.pvci_primaryerrormessage ?? ""}`.trim(),
       band: "bad",
     });
   }
@@ -407,10 +424,10 @@ function buildHints(session: SessionRow, firstReplyMs: number | null, maxGap: Ga
     });
   }
 
-  if ((session.pvci_flowrunfailurecount ?? 0) > 0) {
+  if (flowTelemetryAvailable && (session.pvci_flowrunfailurecount ?? 0) > 0) {
     hints.push({
-      title: "Flow execution failure",
-      detail: `${session.pvci_flowrunfailurecount} matched flow run(s) failed.`,
+      title: "Candidate flow failure",
+      detail: `${session.pvci_flowrunfailurecount} time-correlated candidate flow run(s) failed.`,
       where: "Open Flow Runs, analyze the failed run map, and inspect root-failure node plus technical summary.",
       band: "bad",
     });
@@ -430,6 +447,15 @@ function buildHints(session: SessionRow, firstReplyMs: number | null, maxGap: Ga
       title: "Conversation may have gone stale",
       detail: `${unansweredUserTurns} unanswered user turn(s); max silence ${fmtMs(maxGap?.ms ?? null)}.`,
       where: "Check Topic pick timeline and stale segments above, then inspect DynamicPlan step transitions for missing completion.",
+      band: "warn",
+    });
+  }
+
+  if (!flowTelemetryAvailable) {
+    hints.push({
+      title: "Source flow telemetry unavailable",
+      detail: "This transcript cannot prove whether a Power Automate run occurred.",
+      where: "Use Tool Calls and Agent Reasoning for retained evidence; do not interpret this as zero flows.",
       band: "warn",
     });
   }

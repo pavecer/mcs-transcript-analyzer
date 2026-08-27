@@ -11,6 +11,9 @@ applyTo: "**"
 - Use `open_browser_page`, `read_page`, `click_element`, `type_in_page`, `screenshot_page`, or
   `run_playwright_code` with the shared page ID. `run_playwright_code` is allowed only when it
   targets that existing page ID.
+- Browser validation is agent-run work. Ask the user to authenticate the embedded browser when
+  necessary, then continue navigation, assertions, responsive checks, and screenshots yourself; do
+  not delegate the validation matrix to the user.
 - Do not call any tool whose name starts with `mcp_playwright`, `mcp_playwright2`, or
   `mcp_puppeteer`. Those tools
   control a separate browser session, even when the operation sounds harmless, such as resize.

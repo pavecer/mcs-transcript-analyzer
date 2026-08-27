@@ -267,6 +267,7 @@ def tool_calls(activities: list[dict[str, Any]]) -> list[dict[str, Any]]:
                 "started_utc": iso(datetime.fromtimestamp(start_ts / 1000, tz=timezone.utc)),
                 "duration_ms": end_ts - start_ts,
                 "failed": bool(exception),
+                "completion_observed": True,
                 "exception": exception,
                 "output": output,
             })
@@ -278,8 +279,9 @@ def tool_calls(activities: list[dict[str, Any]]) -> list[dict[str, Any]]:
                 "topic": (act.get("topicId") or "").split(".")[-1],
                 "started_utc": iso(datetime.fromtimestamp(ts / 1000, tz=timezone.utc)),
                 "duration_ms": None,
-                "failed": True,
-                "exception": "no completion trace - call did not finish",
+                "failed": False,
+                "completion_observed": False,
+                "exception": "completion trace was not retained; outcome is unknown",
                 "output": {},
             })
 
@@ -337,11 +339,15 @@ def flow_action_spans(activities: list[dict[str, Any]]) -> list[dict[str, Any]]:
 PLAN_STEP_FALLBACK_MS = 90_000
 
 
-def is_flow_candidate_task(task_dialog_id: Any) -> bool:
+def is_flow_candidate_task(task_dialog_id: Any, task_type: Any = None) -> bool:
     if not isinstance(task_dialog_id, str) or not task_dialog_id.strip():
         return False
     normalized = task_dialog_id.lower()
-    return "search" not in normalized and "knowledge" not in normalized
+    if "search" in normalized or "knowledge" in normalized or normalized.startswith("mcp:"):
+        return False
+    if isinstance(task_type, str) and task_type.strip():
+        return task_type.lower() == "customtopic"
+    return ".topic." in normalized
 
 
 def plan_step_spans(activities: list[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -357,7 +363,7 @@ def plan_step_spans(activities: list[dict[str, Any]]) -> list[dict[str, Any]]:
             continue
         rec = steps.setdefault(step_id, {})
         if name == "DynamicPlanStepTriggered":
-            if not is_flow_candidate_task(value.get("taskDialogId")):
+            if not is_flow_candidate_task(value.get("taskDialogId"), value.get("type")):
                 steps.pop(step_id, None)
                 continue
             rec["start_ms"] = ts
@@ -429,6 +435,9 @@ def correlate_flow_runs(spans: list[dict[str, Any]], runs: list[dict[str, Any]])
             m["rank"] = rank
             m["best"] = rank == 0
 
+        if span.get("source") == "plan_step" and not matches:
+            continue
+
         out.append({
             "action_id": span["action_id"],
             "topic": span["topic"],
@@ -488,7 +497,23 @@ def fetch_flow_runs(dv: Dv, since_iso: str | None) -> list[dict[str, Any]]:
             unparsed += 1
     if unparsed:
         print(f"  warning: {unparsed}/{len(rows)} flow runs had unparsable starttime", flush=True)
+    attach_workflow_names(
+        rows,
+        dv.get_all("workflows?$select=workflowid,name&$filter=category eq 5"),
+    )
     return rows
+
+
+def attach_workflow_names(runs: list[dict[str, Any]], workflows: list[dict[str, Any]]) -> None:
+    names = {
+        str(workflow.get("workflowid") or "").lower(): workflow.get("name")
+        for workflow in workflows
+        if workflow.get("workflowid") and workflow.get("name")
+    }
+    for run in runs:
+        workflow_id = str(run.get("workflowid") or "").lower()
+        if workflow_id in names:
+            run["workflowname"] = names[workflow_id]
 
 
 def error_category(error_code: str | None, error_message: str | None) -> str:
@@ -502,6 +527,10 @@ def error_category(error_code: str | None, error_message: str | None) -> str:
     return "Topic runtime"
 
 
+def session_payload_for_write(payload: dict[str, Any], updating: bool) -> dict[str, Any]:
+    return dict(payload) if updating else {key: value for key, value in payload.items() if value is not None}
+
+
 def transcript_diagnostics(activities: list[dict[str, Any]]) -> dict[str, Any]:
     current_topic_id: str | None = None
     current_topic_name: str | None = None
@@ -511,12 +540,21 @@ def transcript_diagnostics(activities: list[dict[str, Any]]) -> dict[str, Any]:
 
     for activity in activities:
         if activity.get("name") == "DynamicPlanStepTriggered" and isinstance(activity.get("value"), dict):
-            topic_id = activity["value"].get("taskDialogId")
-            if isinstance(topic_id, str) and topic_id.strip():
-                current_topic_id = topic_id.strip()
+            step_id = activity["value"].get("taskDialogId")
+            if isinstance(step_id, str) and step_id.strip():
+                current_topic_id = step_id.strip()
                 current_topic_name = current_topic_id.split(".")[-1]
-                first_topic_id = first_topic_id or current_topic_id
-                first_topic_name = first_topic_name or current_topic_name
+                step_type = str(activity["value"].get("type") or "").lower()
+                normalized_step_id = current_topic_id.lower()
+                legacy_topic = (
+                    not step_type
+                    and not normalized_step_id.startswith("mcp:")
+                    and "search" not in normalized_step_id
+                    and "knowledge" not in normalized_step_id
+                )
+                if step_type == "customtopic" or legacy_topic:
+                    first_topic_id = first_topic_id or current_topic_id
+                    first_topic_name = first_topic_name or current_topic_name
 
         if activity.get("valueType") != "ErrorTraceData":
             continue
@@ -558,7 +596,11 @@ def knowledge_calls(activities: list[dict[str, Any]]) -> list[dict[str, Any]]:
         if name == "DynamicPlanStepTriggered" and isinstance(value, dict):
             task_id = value.get("taskDialogId")
             step_id = value.get("stepId")
-            if isinstance(task_id, str) and "search" in task_id.lower() and isinstance(step_id, str):
+            step_type = value.get("type")
+            is_knowledge = (
+                isinstance(step_type, str) and step_type.lower() == "knowledgesource"
+            ) or (isinstance(task_id, str) and "search" in task_id.lower())
+            if is_knowledge and isinstance(task_id, str) and isinstance(step_id, str):
                 active_steps[step_id] = {
                     "step_id": step_id,
                     "task": task_id,
@@ -578,6 +620,7 @@ def knowledge_calls(activities: list[dict[str, Any]]) -> list[dict[str, Any]]:
         calls.append({
             "step_id": active.get("step_id"),
             "task": active.get("task") or "Knowledge search",
+            "correlation": "nearest_prior_knowledge_step",
             "started_utc": active.get("started_utc"),
             "duration_ms": finished_ms - started_ms
             if isinstance(finished_ms, int) and isinstance(started_ms, int) else None,
@@ -836,6 +879,7 @@ def _sync_one(
         "pvci_tenantid": s1000(p["tenant_id"]),
         **environment_payload(source_ctx),
         "pvci_useraadobjectid": s1000(p["user_aad"]),
+        "pvci_userid": None,
         "pvci_userupn": s1000((su or {}).get("domainname")),
         "pvci_userdisplayname": s1000((su or {}).get("fullname")),
         "pvci_channel": s1000(p["channel"]),
@@ -886,15 +930,15 @@ def _sync_one(
         "pvci_correlationstatus": "exact" if su else ("heuristic" if p["user_aad"] else "unmatched"),
     }
     if su:
+        payload.pop("pvci_userid")
         payload["pvci_UserId@odata.bind"] = f"/systemusers({su['systemuserid']})"
-    payload = {k: v for k, v in payload.items() if v is not None}
 
     existing = find_by(dv, SESSIONS, "pvci_transcriptid", p["transcript_id"], "pvci_transcriptsessionid")
 
     # Capture stale turns before writing new ones so the session is never left empty on failure.
     stale: list[str] = []
     if existing:
-        dv.patch(SESSIONS, existing, payload)
+        dv.patch(SESSIONS, existing, session_payload_for_write(payload, updating=True))
         session_id = existing
         stats["sessions_updated"] += 1
         stale = [
@@ -904,7 +948,7 @@ def _sync_one(
             )
         ]
     else:
-        session_id = dv.post(SESSIONS, payload)
+        session_id = dv.post(SESSIONS, session_payload_for_write(payload, updating=False))
         stats["sessions_created"] += 1
 
     ensure_flow_run_placeholders(dv, matched_runs, p["transcript_id"])

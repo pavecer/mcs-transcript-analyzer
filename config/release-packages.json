@@ -1,8 +1,8 @@
 {
   "core": {
     "solutionUniqueName": "pvConversationInsights",
-    "version": "2.0.0.5",
-    "filename": "pvConversationInsights-managed-2.0.0.5.zip",
+    "version": "2.1.0.0",
+    "filename": "pvConversationInsights-managed-2.1.0.0.zip",
     "requiredTables": [
       "pvci_agentinventory",
       "pvci_agentthresholdsnapshot",
@@ -58,8 +58,8 @@
   },
   "codeApp": {
     "solutionUniqueName": "pvConversationInsightsCodeApp",
-    "version": "2.0.0.5",
-    "filename": "pvConversationInsightsCodeApp-managed-2.0.0.5.zip",
+    "version": "2.1.0.0",
+    "filename": "pvConversationInsightsCodeApp-managed-2.1.0.0.zip",
     "dependsOn": [
       "core"
     ],

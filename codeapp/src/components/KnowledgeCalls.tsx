@@ -16,7 +16,7 @@ export function KnowledgeCalls({ json, loading }: { json?: string; loading?: boo
           <div className="knowledge-call-head">
             <span className={`conf ${call.failed ? "risk-critical" : "high"}`}>{call.completion_state ?? (call.failed ? "Failed" : "Completed")}</span>
             <strong>{knowledgeTaskLabel(call.task)}</strong>
-            <span className="mono muted" title="Elapsed time from the search plan-step trigger to its KnowledgeTraceData outcome.">Knowledge step elapsed: {fmtMs(call.duration_ms)}</span>
+            <span className="mono muted" title="Elapsed time from the nearest prior KnowledgeSource plan-step trigger to this KnowledgeTraceData outcome; the trace has no explicit step correlation ID.">Nearest prior knowledge step elapsed: {fmtMs(call.duration_ms)}</span>
           </div>
           <div className="knowledge-call-meta">
             <span>Search executed: {call.searched ? "Yes" : "No"}</span>

@@ -70,6 +70,28 @@ class CentralTranscriptContractTests(unittest.TestCase):
         self.assertIn('ColumnSet = new ColumnSet("pvci_displayname")', SYNC_PLUGIN)
         self.assertIn("Name = inventoryName ?? friendlyName", SYNC_PLUGIN)
 
+    def test_reprocess_explicitly_clears_conditional_session_values(self):
+        for field in (
+            "pvci_startdatetimeutc",
+            "pvci_enddatetimeutc",
+            "pvci_durationseconds",
+            "pvci_firstresponsems",
+            "pvci_avgresponsems",
+            "pvci_maxresponsems",
+            "pvci_tooltotalms",
+            "pvci_maxtoolms",
+            "pvci_isresolvedimplied",
+            "pvci_turncount",
+            "pvci_userid",
+            "pvci_userupn",
+            "pvci_userdisplayname",
+        ):
+            self.assertRegex(
+                SYNC_PLUGIN,
+                rf'session\["{field}"\]\s*=.*(?:\n.*){{0,3}}?: null;',
+                field,
+            )
+
 
 if __name__ == "__main__":
     unittest.main()

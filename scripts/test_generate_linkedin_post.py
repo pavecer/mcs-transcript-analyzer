@@ -79,6 +79,30 @@ class GenerateLinkedInPostTests(unittest.TestCase):
                 self.manifest,
             )
 
+    def test_uses_core_version_for_mixed_artifact_release(self):
+        self.manifest.write_text(
+            json.dumps(
+                {
+                    "artifacts": {
+                        "core": {"version": "1.4.0.15"},
+                        "credits": {"version": "1.3.0.0"},
+                        "codeApp": {"version": "1.4.0.15"},
+                    }
+                }
+            ),
+            encoding="utf-8",
+        )
+
+        post = generate_post(
+            "1.4.0.15",
+            "pavecer/mcs-transcript-analyzer",
+            "https://pavecer.github.io/mcs-transcript-analyzer",
+            self.changelog,
+            self.manifest,
+        )
+
+        self.assertIn("MCS Transcript Analyzer 1.4.0.15 is here.", post)
+
 
 if __name__ == "__main__":
     unittest.main()

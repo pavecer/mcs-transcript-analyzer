@@ -36,14 +36,23 @@ namespace PvciTranscripts
                     "DynamicPlanStepTriggered",
                     StringComparison.OrdinalIgnoreCase))
                 {
-                    string topicId = Json.Str(Json.Get(activity, "value"), "taskDialogId");
-                    if (!string.IsNullOrWhiteSpace(topicId))
+                    object step = Json.Get(activity, "value");
+                    string stepId = Json.Str(step, "taskDialogId");
+                    if (!string.IsNullOrWhiteSpace(stepId))
                     {
-                        currentTopic = LastSegment(topicId.Trim());
-                        if (string.IsNullOrEmpty(diagnostics.TopicId))
-                            diagnostics.TopicId = topicId.Trim();
-                        if (string.IsNullOrEmpty(diagnostics.TopicName))
-                            diagnostics.TopicName = currentTopic;
+                        currentTopic = LastSegment(stepId.Trim());
+                        string stepType = Json.Str(step, "type");
+                        if (string.Equals(stepType, "CustomTopic", StringComparison.OrdinalIgnoreCase)
+                            || (string.IsNullOrWhiteSpace(stepType)
+                                && !stepId.StartsWith("MCP:", StringComparison.OrdinalIgnoreCase)
+                                && stepId.IndexOf("search", StringComparison.OrdinalIgnoreCase) < 0
+                                && stepId.IndexOf("knowledge", StringComparison.OrdinalIgnoreCase) < 0))
+                        {
+                            if (string.IsNullOrEmpty(diagnostics.TopicId))
+                                diagnostics.TopicId = stepId.Trim();
+                            if (string.IsNullOrEmpty(diagnostics.TopicName))
+                                diagnostics.TopicName = currentTopic;
+                        }
                     }
                 }
 
@@ -84,8 +93,13 @@ namespace PvciTranscripts
                 if (name.Equals("DynamicPlanStepTriggered", StringComparison.OrdinalIgnoreCase))
                 {
                     string candidateTask = Json.Str(value, "taskDialogId");
-                    if (!string.IsNullOrEmpty(candidateTask)
-                        && candidateTask.IndexOf("search", StringComparison.OrdinalIgnoreCase) >= 0)
+                    bool isKnowledge = string.Equals(
+                        Json.Str(value, "type"),
+                        "KnowledgeSource",
+                        StringComparison.OrdinalIgnoreCase)
+                        || (!string.IsNullOrEmpty(candidateTask)
+                            && candidateTask.IndexOf("search", StringComparison.OrdinalIgnoreCase) >= 0);
+                    if (isKnowledge && !string.IsNullOrEmpty(candidateTask))
                     {
                         stepId = Json.Str(value, "stepId");
                         task = candidateTask;
@@ -121,6 +135,7 @@ namespace PvciTranscripts
                 {
                     { "step_id", stepId },
                     { "task", task ?? "Knowledge search" },
+                    { "correlation", "nearest_prior_knowledge_step" },
                     { "started_utc", startedUtc },
                     {
                         "duration_ms",

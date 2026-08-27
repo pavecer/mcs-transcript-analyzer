@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "productSourceDigest": "ea2cb3b9cc3cfbda371a59fdff65f1959a415216cc2a29b75243453bad884c60",
+  "productSourceDigest": "e7a392210f72cf970b22a56b02cb830843f5d2e51af4e27deecfef78eb8fbaff",
   "productInputs": [
     "config/release-packages.json",
     "solution/pvConversationInsights/solution-definition.json",
@@ -36,6 +36,7 @@
     "ROADMAP.md",
     ".github/ISSUE_TEMPLATE/bug_report.yml",
     ".github/ISSUE_TEMPLATE/feature_request.yml",
+    ".github/instructions/analyst-experience.instructions.md",
     ".github/instructions/browser-use.instructions.md",
     ".github/instructions/npm-dependencies.instructions.md",
     ".github/instructions/solution-boundaries.instructions.md",
@@ -79,6 +80,8 @@
     "ROADMAP.md": [
       "Replace pre-authorized collection with zero-touch onboarding",
       "availability-aware telemetry labels",
+      "mixed-version configuration is valid",
+      "clears stale nullable",
       "Detailed cross-environment agent enrichment",
       "Explicitly out of scope for the current product boundary",
       "CHANGELOG.md"
@@ -170,8 +173,11 @@
     ],
     "docs/release-automation.md": [
       "exactly three managed Power Platform solutions",
+      "core artifact version is the stable release identity",
       "validate_candidate_packages.py",
       "validate_release_promotion.py",
+      "There is no `all` promotion path",
+      "`artifactScope` and `artifacts` keys",
       "validate_release_evidence.py",
       "candidate_run_id",
       "config/release-evidence.json",
@@ -206,12 +212,14 @@
       "python3 scripts/validate_site.py"
     ],
     ".github/skills/release-tracking/SKILL.md": [
-      "all three package artifacts",
+      "changed package artifacts",
+      "Mixed-version stable manifests are valid",
       "CHANGELOG.md",
       "ROADMAP.md",
       "site/index.html",
       "config/release-evidence.json",
       "validate release promotion",
+      "No `all` candidate or promotion path",
       "python3 scripts/validate_documentation.py",
       "publish LinkedIn release"
     ],
@@ -227,6 +235,8 @@
       "three-solution ownership",
       "ListRecordsWithOrganization",
       "pvci_centralcollector",
+      "clear stale nullable projections",
+      "Dataverse user lookup",
       "validate_site.py",
       "must not package hardcoded source"
     ],
@@ -274,11 +284,15 @@
     "site/README.md": [
       "scripts/validate_documentation.py --list-surfaces",
       "scripts/validate_documentation.py --print-digest",
+      "mixed-version stable manifests are valid",
+      "there is no `all` promotion path",
       "smoke-test all 7 flows",
       ".github/skills/release-documentation/SKILL.md"
     ],
     "site/index.html": [
       "2.0.0.5 stable architecture",
+      "mixed-version configuration is valid",
+      "clears stale nullable session values",
       "pvConversationInsightsCredits",
       "Released 2026-08-25",
       "id=\"trust-credits\"",

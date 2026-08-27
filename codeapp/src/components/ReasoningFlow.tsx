@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { JsonTree } from "./JsonTree";
 import { fmtMs, safeParse, type Json, type KnowledgeCall } from "../lib/model";
-import { buildReasoningPlans, type PlanEvent, type ReasoningStep } from "../lib/reasoning";
+import { buildReasoningPlans, formatPlannedToolLabel, type PlanEvent, type ReasoningStep } from "../lib/reasoning";
 
 export function ReasoningFlow({ json, knowledgeJson, loading }: { json?: string; knowledgeJson?: string; loading?: boolean }) {
   const [showEvidence, setShowEvidence] = useState(false);
@@ -77,14 +77,17 @@ function ReasoningStepCard({ step }: { step: ReasoningStep }) {
   const status = step.knowledge
     ? step.knowledge.failed ? "Knowledge failed" : `Knowledge ${step.knowledge.completion_state ?? "answered"}`
     : step.state === "completed" ? "Step completed" : step.planFinished ? "Plan ended; step finish not retained" : "Step finish not retained";
+  const kind = step.type === "KnowledgeSource"
+    ? { className: "knowledge", label: "Knowledge" }
+    : step.type === "LlmSkill"
+      ? { className: "tool", label: "MCP / tool" }
+      : { className: "topic", label: "Topic" };
 
   return (
     <article className={`reasoning-step ${completed ? "completed" : "incomplete"}`}>
       <div className="reasoning-step-head">
-        <span className={`reasoning-kind ${step.type === "KnowledgeSource" ? "knowledge" : "topic"}`}>
-          {step.type === "KnowledgeSource" ? "Knowledge" : "Topic / action"}
-        </span>
-        <strong>{taskLabel(step.task)}</strong>
+        <span className={`reasoning-kind ${kind.className}`}>{kind.label}</span>
+        <strong>{step.type === "LlmSkill" ? formatPlannedToolLabel(step.task) : taskLabel(step.task)}</strong>
         <span className={`conf ${completed ? "high" : "none"}`}>{status}</span>
       </div>
       {step.rationale && (
@@ -114,7 +117,7 @@ function ReasoningStepCard({ step }: { step: ReasoningStep }) {
 }
 
 function taskLabel(value?: string): string {
-  const last = value?.split(".").pop()?.replace(/^P:/, "") ?? "Unknown step";
+  const last = value?.split(".").pop()?.replace(/^P:/, "").replace(/^MCP:/, "") ?? "Unknown step";
   return last.replace(/([a-z])([A-Z])/g, "$1 $2").replace(/[-_]+/g, " ");
 }
 

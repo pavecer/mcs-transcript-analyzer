@@ -4,7 +4,54 @@ This roadmap describes product direction, not a promise of delivery dates. The p
 this file must agree about supported behavior and boundaries. Use the status and exit criteria to
 keep work testable.
 
-Last reviewed: 2026-08-25
+Last reviewed: 2026-08-27
+
+## Candidate preparation (not shipped)
+
+The configured first feature-candidate versions are core `2.1.0.0` and code app `2.1.0.0`;
+Credits remains at stable `2.0.0.5`. This mixed-version configuration is valid; the core version
+defines the eventual stable release identity and announcement tag. The refresh workflow now evaluates the fixed three-artifact
+matrix independently, skips unchanged legs unless forced, and gives each changed artifact its own
+export, validation, candidate manifest, and upload. Credits provenance resolves from its solution
+and credit-specific scripts only, so unrelated core, parser, or configuration changes do not
+advance it; it currently remains at the published stable source commit
+`be33af99ae56ec4bf50e4334f94f47e96d918b31`. No `2.1.0.0` candidate package has been generated,
+exported, or target-tenant validated, so the work in this section is not shipped and the published
+three-package `2.0.0.5` manifest remains authoritative. In signed-in PVE Dev on 2026-08-27, the
+full parser parity and runtime suites passed, all 38 code-app tests passed, and code-app lint and
+build were green. Explicit local and alternate-source reprocessing now clears stale nullable
+session values and the Dataverse user lookup when the corresponding evidence disappears.
+
+Workday architecture is configured, but the available sessions are greeting-only. Representative
+substantive Workday evidence remains a known gap, not a Conversation Investigation exit criterion.
+
+### ESS structured runtime diagnostics
+
+- **Status:** PVE Dev parser/runtime validation and the signed-in hosted failure-timeline smoke passed without a Power Apps web-player host failure; `2.1.0.0` candidate package and target-tenant gates remain
+- **Goal:** Turn ESS topic/runtime failures into filterable session facts and an ordered operational timeline without requiring raw JSON inspection.
+- **Exit criteria:** Local and central ingestion produce identical topic/error summaries; user-facing error traces survive default retention; core form/views and code app display the failure; changed candidate packages pass package validation and the manual target-tenant upgrade; and the hosted app completes a signed-in failure-timeline smoke without a Power Apps web-player host error.
+- **Tracking:** [Architecture](docs/architecture.md), [data model](docs/data-model.md), and [operations](docs/operations.md)
+
+### Knowledge retrieval diagnostics
+
+- **Status:** The signed-in PVE Dev Knowledge-tab smoke passed without a Power Apps web-player host failure, including one `Answered` retrieval with one cited source; `2.1.0.0` candidate package and target-tenant gates remain
+- **Goal:** Make Universal Search and other knowledge retrievals visible independently from connector/tool calls, including completion, latency, cited sources, and failed source types.
+- **Exit criteria:** Local and central ingestion agree on observed `KnowledgeTraceData`; model-driven and code apps show the same counts; the representative knowledge session reports one successful `Answered` retrieval and one cited source; no query text or retrieved passage is duplicated into summary JSON; changed candidate packages pass package validation and the manual target-tenant upgrade; and the hosted app completes a signed-in Knowledge-tab smoke without the Power Apps web-player host error.
+- **Tracking:** [Architecture](docs/architecture.md), [data model](docs/data-model.md), and [operations](docs/operations.md)
+
+### Conversation investigation usability
+
+- **Status:** The signed-in PVE Dev visual matrix passed simple/sparse, one-source Knowledge Answered, connector failure, expression failure, production and central unavailable telemetry, ServiceNow exact-tool and multiple-candidate-flow cases, Jira MCP planned-versus-exact evidence, filter/detail consistency, and availability-aware telemetry labels; `2.1.0.0` candidate package and target-tenant gates remain
+- **Goal:** Let an operator understand context, outcome, routing, knowledge, tools, candidate flows, errors, and timing before opening technical payloads.
+- **Exit criteria:** Overview is the default; filter and detail selections cannot disagree; zero is distinguished from unavailable telemetry; timing and correlation labels avoid false attribution; unknown flow states remain unknown; representative simple, knowledge, expression-failure, connector-failure, no-flow, and multiple-candidate sessions pass a signed-in visual smoke; and changed candidate packages pass package validation and the manual target-tenant upgrade.
+- **Tracking:** [Operations interpretation guide](docs/operations.md) and the [code app](codeapp/)
+
+### Agent reasoning visualization
+
+- **Status:** Signed-in PVE Dev smokes passed for the Jira test plan and a production two-plan session at `1440x1000` and `390x844`, including geometry and screenshots; the `2.1.0.0` code-app candidate package and target-tenant gate remain
+- **Goal:** Replace raw-first DynamicPlan inspection with a human-readable plan and step lifecycle while retaining exact evidence on demand.
+- **Exit criteria:** Multi-plan and single-plan sessions group correctly; completed, incomplete, and Knowledge-answered steps are distinct; argument values remain behind raw evidence; representative test and production sessions pass signed-in desktop and mobile visual smokes; and the changed code-app candidate passes package validation and the manual target-tenant upgrade.
+- **Tracking:** [Architecture reasoning model](docs/architecture.md), [operations](docs/operations.md), and `codeapp/src/components/ReasoningFlow.tsx`
 
 ## Now
 
@@ -19,38 +66,10 @@ Last reviewed: 2026-08-25
 
 ### Central transcript batch collector
 
-- **Status:** Source-managed import, routing, and verified-only enablement shipped in `1.4.0.15` after cross-tenant upgrade validation; automated onboarding remains
+- **Status:** Source-managed import, routing, and verified-only enablement shipped in `1.4.0.15`; signed-in PVE Dev central unavailable and no-flow telemetry validation passed on 2026-08-27, but automated administrator bootstrap remains incomplete
 - **Goal:** Read transcripts from registry-approved source environments and import normalized sessions and turns into the collector environment through a bounded, idempotent Custom API.
 - **Exit criteria:** PVE Preview to PVE Dev import/idempotent replay and generic-flow runs pass. Completion additionally requires automated least-privilege source onboarding; manual role assignment in every environment is not accepted as completion.
 - **Tracking:** [Cross-environment design](docs/cross-environment-credit-consumption-design.md) and [architecture](docs/architecture.md)
-
-### ESS structured runtime diagnostics
-
-- **Status:** Phase 1 deployed and backend-smoke-tested in PVE Dev as candidate `1.4.0.3`; clean-sandbox upgrade and full hosted UI smoke pending
-- **Goal:** Turn ESS topic/runtime failures into filterable session facts and an ordered operational timeline without requiring raw JSON inspection.
-- **Exit criteria:** Both local and central ingestion produce identical topic/error summaries; user-facing error traces survive default retention; core form/views and code app display the failure; the candidate upgrades cleanly in a second environment; and the hosted app completes a signed-in failure-timeline smoke without a Power Apps web-player host error.
-- **Tracking:** [Architecture](docs/architecture.md), [data model](docs/data-model.md), and [operations](docs/operations.md)
-
-### Knowledge retrieval diagnostics
-
-- **Status:** Candidate `1.4.0.4` deployed and backend-smoke-tested in PVE Dev; full hosted Knowledge-tab smoke pending
-- **Goal:** Make Universal Search and other knowledge retrievals visible independently from connector/tool calls, including completion, latency, cited sources, and failed source types.
-- **Exit criteria:** Local and central ingestion agree on observed `KnowledgeTraceData`; model-driven and code apps show the same counts; the PVE Preview ServiceNow knowledge session reports one successful `Answered` retrieval and one cited source; no query text or retrieved passage is duplicated into summary JSON; and the hosted app completes a signed-in Knowledge-tab smoke without the Power Apps web-player host error.
-- **Tracking:** [Architecture](docs/architecture.md), [data model](docs/data-model.md), and [operations](docs/operations.md)
-
-### Conversation investigation usability
-
-- **Status:** First-time-reader clarity, full-width Trends, inventory-backed environment names, and availability-aware telemetry labels implemented; PVE Dev visual smoke pending
-- **Goal:** Let an operator understand context, outcome, routing, knowledge, tools, candidate flows, errors, and timing before opening technical payloads.
-- **Exit criteria:** Overview is the default; filter and detail selections cannot disagree; zero is distinguished from unavailable telemetry; timing and correlation labels avoid false attribution; unknown flow states remain unknown; representative simple, knowledge, expression-failure, connector-failure, no-flow, and multiple-candidate sessions pass a signed-in visual smoke.
-- **Tracking:** [Operations interpretation guide](docs/operations.md) and the [code app](codeapp/)
-
-### Agent reasoning visualization
-
-- **Status:** Validated against 23 stored plans and implemented for candidate `1.4.0.10`; PVE Dev visual smoke pending
-- **Goal:** Replace raw-first DynamicPlan inspection with a human-readable plan and step lifecycle while retaining exact evidence on demand.
-- **Exit criteria:** Multi-plan and single-plan sessions group correctly; completed, incomplete, and Knowledge-answered steps are distinct; argument values remain behind raw evidence; representative test and production sessions pass a signed-in visual smoke.
-- **Tracking:** [Architecture reasoning model](docs/architecture.md), [operations](docs/operations.md), and `codeapp/src/components/ReasoningFlow.tsx`
 
 ### Agent and user conversation behavior telemetry
 

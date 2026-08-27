@@ -60,19 +60,19 @@ jobs:
           release = json.loads(sys.argv[2])
           update_post_urn = sys.argv[3]
           manifest = json.loads(Path("site/downloads/release-manifest.json").read_text())
-          versions = {item["version"] for item in manifest["artifacts"].values()}
+          core_version = manifest.get("artifacts", {}).get("core", {}).get("version")
           if release["isDraft"] or release["isPrerelease"]:
               raise SystemExit("LinkedIn publishing requires a non-draft stable release")
-          if len(versions) != 1 or tag != f"v{versions.pop()}":
-              raise SystemExit("Release tag does not match the synchronized release manifest")
-            marker = re.search(
-              rf"<!-- linkedin-release:{re.escape(tag)}:published:([^>]+) -->",
-              release["body"],
-            )
-            if update_post_urn and (not marker or marker.group(1) != update_post_urn):
-              raise SystemExit("Update post URN does not match the recorded release marker")
-            if not update_post_urn and marker:
-              raise SystemExit(f"LinkedIn publication is already recorded for {tag}")
+          if not core_version or tag != f"v{core_version}":
+              raise SystemExit("Release tag does not match the core release manifest version")
+          marker = re.search(
+            rf"<!-- linkedin-release:{re.escape(tag)}:published:([^>]+) -->",
+            release["body"],
+          )
+          if update_post_urn and (not marker or marker.group(1) != update_post_urn):
+            raise SystemExit("Update post URN does not match the recorded release marker")
+          if not update_post_urn and marker:
+            raise SystemExit(f"LinkedIn publication is already recorded for {tag}")
           PY
 
       - name: Generate release post

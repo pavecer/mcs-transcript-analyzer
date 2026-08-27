@@ -106,6 +106,25 @@ export function buildReasoningPlans(events: PlanEvent[], knowledgeCalls: Knowled
   return order.map((id) => plans.get(id)!).filter((plan) => plan.steps.length || plan.request || plan.startedAt);
 }
 
+export function getPlannedToolSteps(events: PlanEvent[]): ReasoningStep[] {
+  return buildReasoningPlans(events, [])
+    .flatMap((plan) => plan.steps)
+    .filter((step) => step.type === "LlmSkill");
+}
+
+export function formatPlannedToolLabel(value?: string): string {
+  const task = value?.replace(/^MCP:/, "").split(".").pop() ?? "Unknown planned tool";
+  return task.split(":").map((part) => {
+    const words = part
+      .replace(/[-_]+/g, " ")
+      .replace(/([a-z0-9])([A-Z])/g, "$1 $2")
+      .replace(/([A-Z]+)([A-Z][a-z])/g, "$1 $2")
+      .split(/\s+/)
+      .filter(Boolean);
+    return words.filter((word, index) => index === 0 || word.toLowerCase() !== words[index - 1].toLowerCase()).join(" ");
+  }).join(" · ");
+}
+
 function eventTime(value?: string | number): string | undefined {
   if (typeof value === "number" || (typeof value === "string" && /^\d+$/.test(value))) {
     const numeric = Number(value);

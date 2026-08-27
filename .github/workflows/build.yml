@@ -24,7 +24,7 @@ jobs:
       - name: Compile
         run: python -m compileall -q scripts
       - name: Validate LinkedIn release automation
-        run: python -m unittest scripts.test_generate_linkedin_post scripts.test_publish_linkedin_post
+        run: python -m unittest scripts.test_generate_linkedin_post scripts.test_publish_linkedin_post scripts.test_component_release
       - name: Validate transcript and solution contracts
         run: python -m unittest discover -s scripts/transcript_insights -p "test_*.py" -v
       - name: Validate Python and C# transcript analysis parity

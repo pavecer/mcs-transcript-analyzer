@@ -6,7 +6,7 @@
       <LocalizedName description="PV Conversation Insights" languagecode="1033" />
     </LocalizedNames>
     <Descriptions />
-    <Version>2.0.0.5</Version>
+    <Version>2.1.0.0</Version>
     <Managed>0</Managed>
     <Publisher>
       <UniqueName>pvConversationInsightsPublisher</UniqueName>

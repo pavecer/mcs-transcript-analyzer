@@ -44,6 +44,19 @@ def source_is_enabled(source: dict[str, Any]) -> bool:
     }
 
 
+def central_flow_unavailable_payload() -> dict[str, None]:
+    return {
+        "pvci_flowrunsjson": None,
+        "pvci_flowruncount": None,
+        "pvci_flowrunfailurecount": None,
+        "pvci_flowrunmaxms": None,
+    }
+
+
+def session_payload_for_write(payload: dict[str, Any], updating: bool) -> dict[str, Any]:
+    return dict(payload) if updating else {key: value for key, value in payload.items() if value is not None}
+
+
 def source_since(collector: Dv, source_key: str) -> str | None:
     escaped = source_key.replace("'", "''")
     rows = collector.get_all(
@@ -85,6 +98,7 @@ def build_session_payload(
         "pvci_tenantid": s1000(parsed["tenant_id"] or source_ctx["tenant_id"]),
         **environment_payload(source_ctx),
         "pvci_useraadobjectid": s1000(parsed["user_aad"]),
+        "pvci_userid": None,
         "pvci_userupn": s1000((user or {}).get("domainname")),
         "pvci_userdisplayname": s1000((user or {}).get("fullname")),
         "pvci_channel": s1000(parsed["channel"]),
@@ -96,6 +110,7 @@ def build_session_payload(
         "pvci_eventcount": parsed["event_count"],
         "pvci_userturncount": parsed["user_turns"],
         "pvci_agentturncount": parsed["agent_turns"],
+        "pvci_initialusermessage": parsed["initial_user_message"],
         "pvci_lastagentmessage": parsed["last_agent_message"],
         "pvci_istestmode": bool(parsed["test_mode"]),
         "pvci_multiuseranomaly": bool(parsed["multi_user"]),
@@ -111,8 +126,7 @@ def build_session_payload(
         "pvci_knowledgesourcecount": parsed["knowledge_source_count"],
         "pvci_knowledgefailurecount": parsed["knowledge_failure_count"],
         "pvci_knowledgecallsjson": knowledge_json,
-        "pvci_flowruncount": 0,
-        "pvci_flowrunfailurecount": 0,
+        **central_flow_unavailable_payload(),
         "pvci_sessionoutcome": s1000(parsed["session_outcome"]),
         "pvci_outcomereason": s1000(parsed["outcome_reason"]),
         "pvci_usererrorcount": parsed["user_error_count"],
@@ -134,8 +148,9 @@ def build_session_payload(
         "pvci_correlationstatus": "exact" if user else ("heuristic" if parsed["user_aad"] else "unmatched"),
     }
     if user:
+        payload.pop("pvci_userid")
         payload["pvci_UserId@odata.bind"] = f"/systemusers({user['systemuserid']})"
-    return {key: value for key, value in payload.items() if value is not None}
+    return payload
 
 
 def build_turn_payload(activity: dict[str, Any], index: int, session_id: str, composite_id: str) -> dict[str, Any]:
@@ -152,6 +167,7 @@ def build_turn_payload(activity: dict[str, Any], index: int, session_id: str, co
         "pvci_aadobjectid": s1000(sender.get("aadObjectId")),
         "pvci_eventname": s1000(activity.get("name") or activity.get("valueType")),
         "pvci_channelid": s1000(activity.get("channelId")),
+        "pvci_turntext": activity.get("text") if isinstance(activity.get("text"), str) else None,
         "pvci_timestamputc": iso(datetime.fromtimestamp(int(activity["timestamp"]), tz=timezone.utc))
         if str(activity.get("timestamp", "")).isdigit() else None,
         "pvci_SessionId@odata.bind": f"/{SESSIONS}({session_id})",
@@ -179,7 +195,10 @@ def import_one(
         return "skipped", 0
     user_cache: dict[str, dict[str, Any] | None] = {}
     user = resolve_user(collector, parsed["user_aad"], user_cache)
-    payload = build_session_payload(parsed, source_ctx, composite_id, user)
+    payload = session_payload_for_write(
+        build_session_payload(parsed, source_ctx, composite_id, user),
+        updating=bool(existing),
+    )
     if dry_run:
         return "would_update" if existing else "would_create", len(parsed["activities"])
 
