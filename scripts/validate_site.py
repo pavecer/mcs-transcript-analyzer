@@ -24,6 +24,14 @@ INDEX = SITE / "index.html"
 PREVIEW = SITE / "assets" / "conversation-insights-preview.png"
 RELEASE_CONFIG = ROOT / "config" / "release-packages.json"
 LEGACY_ARTIFACT_KEYS = {"core", "codeApp"}
+PUBLIC_COPY_FORBIDDEN_PHRASES = (
+    "PVE",
+    "Contoso TPM",
+    "79/6/1",
+    "shared VS Code browser",
+    "exact retained",
+    "target-tenant",
+)
 
 
 class ReferenceParser(HTMLParser):
@@ -54,7 +62,20 @@ def expected_published_artifacts(
     return LEGACY_ARTIFACT_KEYS if published_core_version != configured_core_version else configured_artifacts
 
 
+def public_copy_violations(html: str) -> list[str]:
+    normalized_html = html.casefold()
+    return [
+        phrase
+        for phrase in PUBLIC_COPY_FORBIDDEN_PHRASES
+        if phrase.casefold() in normalized_html
+    ]
+
+
 def validate_html(html: str, manifest: dict[str, object]) -> None:
+    forbidden_phrases = public_copy_violations(html)
+    if forbidden_phrases:
+        fail(f"site/index.html exposes internal release details: {forbidden_phrases}")
+
     artifacts = manifest.get("artifacts", {})
     if not isinstance(artifacts, dict):
         fail("published release manifest artifacts must be an object")
@@ -83,15 +104,19 @@ def validate_html(html: str, manifest: dict[str, object]) -> None:
         "Preview features can change, have limited support, or become unavailable.",
         "Per-user limits are not available",
         "pvConversationInsightsCredits",
-        "manual target-tenant upgrade",
+        "Fresh install",
+        "Upgrade from 2.0.0.5",
+        "Upgrade from 1.4.0.15",
+        "Credits is unchanged and should not be reimported.",
+        "Microsoft Dataverse",
+        "Power Platform for Admins V2",
+        "HTTP with Microsoft Entra ID",
+        "Release manifest and checksums",
+        "docs/clean-install.md",
+        "docs/operations.md",
         "docs/credit-reporting.md",
         "docs/permissions-and-inventory.md",
     ]
-    required.append(
-        f"{candidate_version} stable architecture"
-        if promoted
-        else f"{candidate_version} candidate architecture"
-    )
     if promoted:
         required.extend([
             artifacts["credits"]["filename"],

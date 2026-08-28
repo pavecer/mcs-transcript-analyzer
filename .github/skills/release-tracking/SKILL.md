@@ -22,6 +22,10 @@ roadmap review.
   requires a positive numeric `candidateRunId` for each changed artifact.
 - `site/index.html` presents the public release history and roadmap.
 
+Keep `site/index.html` a concise maker-facing summary. Internal environment names, test evidence,
+component counts, browser-tool failures, and candidate/promotion/provenance mechanics belong in the
+changelog, roadmap, detailed docs, or release evidence instead of the public page.
+
 Do not infer shipped capabilities from a branch name or memory. Verify them against the solution
 contract, implementation, managed package, and release manifest.
 
