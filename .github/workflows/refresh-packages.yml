@@ -68,9 +68,9 @@ jobs:
             exit 0
           fi
           case "$artifact" in
-            core) paths=(plugin pcf solution/pvConversationInsights scripts/transcript_insights) ;;
+            core) paths=(plugin pcf solution/pvConversationInsights scripts/transcript_insights ':(exclude,glob)**/*.md') ;;
             credits) paths=(solution/pvConversationInsightsCredits ':(glob)scripts/transcript_insights/*credit*.py') ;;
-            codeApp) paths=(codeapp) ;;
+            codeApp) paths=(codeapp ':(exclude,glob)**/*.md') ;;
             *) echo "::error::Unsupported artifact scope: $artifact"; exit 1 ;;
           esac
           source_sha=$(git log -1 --format=%H -- "${paths[@]}")
