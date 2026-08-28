@@ -16,7 +16,7 @@ Current implementation status:
 - Delivered: `PVCI Apply Credit Governance Requests (scheduled)`, the Credit Administrator role,
   synchronous request guard, stale-state protection, one-resource threshold PUT, read-back, and
   before/after audit.
-- Delivered: model-driven administration and preview code-app analysis/lifecycle surfaces.
+- Delivered: model-driven administration and optional supported code-app analysis/lifecycle surfaces.
 - Still pending or intentionally excluded: completed PPAC CSV schema evidence, exact billing-event
   joins, per-user limit APIs, detailed Dataverse enrichment in every source environment, forecasts,
   and environment allocation/TenantPool/PayGo mutation.

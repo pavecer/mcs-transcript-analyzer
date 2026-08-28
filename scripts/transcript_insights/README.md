@@ -7,8 +7,8 @@ and carries end-user identity. See `docs/api-reference.md`.
 
 The current stable `2.1.0.0` release contains exactly three managed packages:
 `pvConversationInsights` required core `2.1.0.0`, unchanged `pvConversationInsightsCredits`
-optional licensing runtime `2.0.0.5`, and `pvConversationInsightsCodeApp` optional unsupported
-preview `2.1.0.0`. Core retains all schema, plugins,
+optional licensing runtime `2.0.0.5`, and `pvConversationInsightsCodeApp` optional supported code
+app `2.1.0.0`. Core retains all schema, plugins,
 APIs, roles, apps, inventory/transcript runtime, four transcript/shared flows, and three
 non-licensing references. The add-on owns only three credit flows, the two licensing references,
 and the required `pvci_CreditReportingTenantId` definition. Core inventory derives tenant scope
@@ -21,7 +21,8 @@ credits, and optional code app in that order. Follow `docs/clean-install.md` for
 preflight, live validator, target-generated app identity, and browser evidence rules. For an upgrade
 from `1.4.0.15`, install credits first, apply the core managed upgrade second, and upgrade the code
 app last. Transcript-only operation omits the credit add-on and does not need licensing
-administrator access.
+administrator access. The code app is supported by the maintainer, requires Power Apps Premium,
+and remains in its own solution for optional installation and independent lifecycle management.
 
 Local transcript sync is automatic in the environment where the solution is installed. Tenant
 inventory discovery and a readable verification probe are not consent to collect from another

@@ -75,6 +75,7 @@
   "surfaceCoverage": {
     "CHANGELOG.md": [
       "2.1.0.0 - 2026-08-28",
+      "app is maintainer-supported and built on fully supported Microsoft technologies",
       "Exact retained bytes then passed a fresh authorized Sandbox clean installation",
       "Credits is unchanged at `pvConversationInsightsCredits-managed-2.0.0.5.zip`",
       "does not claim one",
@@ -88,6 +89,8 @@
     ],
     "ROADMAP.md": [
       "Replace pre-authorized collection with zero-touch onboarding",
+      "shipped as an optional supported code app",
+      "documented platform limitations",
       "availability-aware telemetry labels",
       "Shipped in 2.1.0.0",
       "mixed-version release is valid",
@@ -102,6 +105,8 @@
     "README.md": [
       "clean-install runbook",
       "Enable code apps",
+      "Optional supported",
+      "fully supported Microsoft technologies",
       "2.1.0.0 stable package architecture",
       "unchanged Credits `2.0.0.5`",
       "{customTableCount} custom tables",
@@ -119,6 +124,8 @@
     ],
     "codeapp/README.md": [
       "Conversation Insights Explorer code app",
+      "optional supported investigation surface",
+      "standard Microsoft Support",
       "Enable code apps",
       "Power Apps Premium",
       "target-generated app ID",
@@ -143,6 +150,8 @@
     ],
     "docs/architecture.md": [
       "Stable solution boundaries",
+      "Optional supported code app",
+      "independent application lifecycle",
       "pvConversationInsightsCredits",
       "PVCI Collect Credit Governance",
       "PVCI Apply Credit Governance Requests",
@@ -158,6 +167,7 @@
     ],
     "docs/credit-reporting.md": [
       "optional `pvConversationInsightsCredits` add-on",
+      "optional supported code app",
       "Setup required",
       "Critical",
       "High",
@@ -176,6 +186,7 @@
     ],
     "docs/cross-environment-credit-consumption-design.md": [
       "Released in `1.3.0.0`",
+      "optional supported code-app analysis",
       "PVCI Apply Credit Governance Requests",
       "AppliedUnverified",
       "Environment allocation, TenantPool, and PayGo mutation remain out of scope"
@@ -183,6 +194,8 @@
     "docs/operations.md": [
       "clean-install validation runbook",
       "Enable code apps",
+      "optional and maintainer-supported",
+      "documented Code Apps limitations",
       "Managed 2.1.0.0 stable installation and upgrade",
       "does not need to be reimported",
       "pvConversationInsightsCredits-managed-2.0.0.5.zip",
@@ -198,6 +211,7 @@
     "docs/permissions-and-inventory.md": [
       "clean-install runbook",
       "Grouped Managed Environments",
+      "supported code app and its declared dependencies",
       "Optional `pvConversationInsightsCredits`",
       "transcript-only operation",
       "PVCI Credit Administrator",
@@ -210,6 +224,7 @@
     "scripts/transcript_insights/README.md": [
       "docs/clean-install.md",
       "Enable code apps",
+      "supported by the maintainer",
       "exactly three managed packages",
       "{customTableCount} custom tables",
       "PVCI Credit Administrator",
@@ -221,6 +236,8 @@
     ],
     "docs/release-automation.md": [
       "clean-install runbook",
+      "Optional supported Power Apps code app",
+      "independent application lifecycle",
       "direct runtime loading is diagnostic only",
       "exactly three managed Power Platform solutions",
       "exact-byte clean-install gates",
@@ -246,6 +263,8 @@
     ],
     "docs/clean-install.md": [
       "authoritative procedure",
+      "optional supported surface",
+      "fully supported Microsoft technologies",
       "Enable code apps",
       "group rule 22",
       "Power Apps Premium",
@@ -281,6 +300,7 @@
     ],
     ".github/skills/release-documentation/SKILL.md": [
       "config/documentation-contract.json",
+      "optional supported code app",
       "scripts/validate_documentation.py --list-surfaces",
       "scripts/validate_documentation.py --print-digest",
       "Keep `site/index.html` maker-facing",
@@ -288,6 +308,7 @@
     ],
     ".github/skills/release-tracking/SKILL.md": [
       "changed package artifacts",
+      "optional supported code-app artifact",
       "Mixed-version stable manifests are valid",
       "exact-byte clean-install gates",
       "positive numeric `candidateRunId`",
@@ -326,6 +347,7 @@
     ],
     ".github/skills/central-transcript-collector/SKILL.md": [
       "Public Package Invariant",
+      "optional supported code app",
       "three-solution ownership",
       "ListRecordsWithOrganization",
       "pvci_centralcollector",
@@ -336,6 +358,8 @@
     ],
     ".github/instructions/solution-boundaries.instructions.md": [
       "exactly three managed product solutions",
+      "optional supported code app",
+      "independent application lifecycle",
       "pvConversationInsights",
       "pvConversationInsightsCredits",
       "pvConversationInsightsCodeApp",
@@ -377,6 +401,7 @@
     ],
     "site/README.md": [
       "scripts/validate_documentation.py --list-surfaces",
+      "optional supported code app",
       "scripts/validate_documentation.py --print-digest",
       "mixed-version stable manifests are valid",
       "there is no `all` promotion path",
@@ -385,6 +410,10 @@
     ],
     "site/index.html": [
       "clean-install runbook",
+      "Optional · supported",
+      "Download code app ZIP",
+      "Review the supported code app",
+      "fully supported Microsoft technologies",
       "Fresh install",
       "Upgrade from 2.0.0.5",
       "Credits is unchanged and should not be reimported",
@@ -415,7 +444,6 @@
       "1.3.0.0",
       "Zero-touch source onboarding",
       "Easier central transcript collection",
-      "Production-ready code app",
       "CHANGELOG.md",
       "Discovery and verification are not consent",
       "disabling it stops future imports but does not delete records already copied",

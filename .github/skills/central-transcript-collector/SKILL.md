@@ -64,7 +64,9 @@ The repository has exactly three managed product solutions. `pvConversationInsig
 required transcript and shared inventory runtime, including
 `PVCI Collect Central Transcripts (scheduled)`. `pvConversationInsightsCredits` is optional and
 owns only the licensing HTTP references and three credit runtime flows.
-`pvConversationInsightsCodeApp` contains only the separate preview code app and its dependencies.
+`pvConversationInsightsCodeApp` contains only the separate optional supported code app and its
+dependencies. Its separate solution provides optional installation and an independent application
+lifecycle; it owns no backend runtime.
 
 The core flow must be tenant-neutral and must package:
 

@@ -42,6 +42,11 @@ session values and the Dataverse user lookup when the corresponding evidence dis
 Workday architecture is configured, but the available sessions are greeting-only. Representative
 substantive Workday evidence remains a known gap, not a Conversation Investigation exit criterion.
 
+The separate `pvConversationInsightsCodeApp` package is shipped as an optional supported code app.
+Its clean-install and upgrade paths, automated checks, accessibility workflow, Premium licensing,
+environment enablement, documented platform limitations, and maintainer support model are recorded
+in the current product documentation.
+
 ### ESS structured runtime diagnostics
 
 - **Status:** Shipped in `2.1.0.0` after PVE Dev parser/runtime and signed-in hosted failure-timeline validation, package validation, manual target-tenant upgrade, structural clean installation, and fresh-target launch authorization/runtime asset proof; a shared-browser iframe limitation prevents claiming a full fresh authenticated data-tab smoke
@@ -110,13 +115,6 @@ substantive Workday evidence remains a known gap, not a Conversation Investigati
 - **Tracking:** [Permissions and tenant inventory](docs/permissions-and-inventory.md)
 
 ## Later
-
-### Make the code app a supported production surface
-
-- **Status:** Preview
-- **Goal:** Stabilize the React code app, its data-source contract, accessibility, ALM path, licensing requirements, and support model before changing its unsupported-preview status.
-- **Exit criteria:** A clean-sandbox installation and upgrade path are documented, automated checks cover the supported workflow, and the public package is no longer described as unsupported.
-- **Tracking:** [Release automation](docs/release-automation.md) and the [code app source](codeapp/)
 
 ### Expand governance only as documented APIs allow
 

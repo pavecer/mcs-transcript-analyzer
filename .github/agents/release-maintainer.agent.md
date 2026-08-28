@@ -18,7 +18,8 @@ GitHub Pages release history, or roadmap status.
 - Treat `CHANGELOG.md` as shipped truth and `ROADMAP.md` as planned-direction truth. Never describe
   an unverified capability as released.
 - Keep public `site/index.html`, root release documents, and indexed documentation synchronized.
-- Preserve the boundary between supported model-driven functionality and the unsupported preview code app.
+- Preserve the boundary between the required supported model-driven core and the separate optional
+  supported code app, whose package exists for optional installation and independent lifecycle.
 - Preserve the reporting boundary between usage, capacity, inventory, transcripts, evaluations, and
   exact billing allocation.
 - Never overwrite a published package at the same version or edit package checksums by hand.

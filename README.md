@@ -12,7 +12,7 @@ what it did.
 
 Track shipped versions in [CHANGELOG.md](CHANGELOG.md) and planned work in [ROADMAP.md](ROADMAP.md).
 For a fresh managed environment, follow the authoritative
-[clean-install runbook](docs/clean-install.md). If installing the optional preview code app, set
+[clean-install runbook](docs/clean-install.md). If installing the optional supported code app, set
 **Power Apps Code Apps > Enable code apps** to **On**, save, and independently reload the setting
 before importing any package. For target-local connections, follow the
 [connection-wizard checklist](docs/permissions-and-inventory.md#first-import-connection-wizard).
@@ -27,7 +27,7 @@ the preauthorized HTTP connection with both licensing-service URLs first.
 | --- | --- |
 | **Dataverse solution** | 17 custom tables, views, forms, 4 application roles, a model-driven app, 3 Custom APIs, and 7 packaged scheduled flows |
 | **Model-driven app** | GA, standard-licensed. Transcript operations, environment collection coverage, Credits and Capacity grids, and evidence forms |
-| **Code app** (preview) | React/Vite workspaces for transcript triage, trends, Copilot Credit reporting, and dedicated tenant inventory/transcript-source management |
+| **Code app** (optional supported) | React/Vite workspaces for transcript triage, trends, Copilot Credit reporting, and dedicated tenant inventory/transcript-source management |
 | **Custom APIs + plugin** | Local incremental transcript sync, bounded cross-environment transcript import, and validated idempotent credit import |
 | **Python toolkit** | Bulk backfill, plugin registration, flow-run detail fetch |
 
@@ -41,7 +41,7 @@ upgrade, and exact-byte clean-install validation.
 | --- | --- | --- |
 | `pvConversationInsights` | Required | All 17 tables, plugins and Custom APIs, four roles, model-driven app, inventory/transcript runtime, four transcript/shared flows, and `pvci_dataversesync`, `pvci_powerplatformadminv2`, and `pvci_centralcollector` |
 | `pvConversationInsightsCredits` | Optional | Only the three credit collection/governance flows, licensing references `pvci_licensinghttp` and `pvci_powerplatformapi`, and required `pvci_CreditReportingTenantId` definition |
-| `pvConversationInsightsCodeApp` | Optional preview | Only the unsupported preview code app and its declared core dependencies |
+| `pvConversationInsightsCodeApp` | Optional supported | Only the maintainer-supported code app and its declared core dependencies |
 
 For a clean `2.1.0.0` installation, pre-enable Code Apps when that optional package will be used,
 then import core, optional credits, and optional code app in that order. To
@@ -282,8 +282,11 @@ These are real and worth understanding before you rely on the numbers.
    propagation must complete before the in-platform processor can be validated.
 4. **Retention.** Flow runs age out of Power Automate independently of Dataverse. Fetch details
    promptly or the drill-down will be empty.
-5. **Code apps are preview** and require premium licensing. The model-driven app is the
-   supportable surface; the code app is the richer one.
+5. **The optional code app requires Power Apps Premium and environment enablement.** It is
+   maintainer-supported and built on fully supported Microsoft technologies. Documented platform
+   limitations remain: no Power Platform Git integration, Power Apps for Windows,
+   `PowerBIIntegration`, or SharePoint forms integration; use Conditional Access rather than the
+   public asset endpoint for IP/location controls.
 6. **Inputs to connector actions are not logged** in the transcript itself — only outputs and
    exceptions. Full inputs come from the flow run detail fetch.
 7. **Credits are aggregate source facts.** No reviewed source exposes a billing-event ID shared

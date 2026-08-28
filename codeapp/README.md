@@ -1,9 +1,10 @@
 # Conversation Insights Explorer code app
 
-This React/Vite Power Apps code app is the optional unsupported preview surface for MCS Transcript
-Analyzer. It provides Sessions, Trends, Inventory, and Credits workspaces over the Dataverse schema
-owned by the required `pvConversationInsights` core solution. It does not own backend runtime,
-tables, flows, plugins, roles, or Custom APIs.
+This React/Vite Power Apps code app is the optional supported investigation surface for MCS
+Transcript Analyzer. It is supported by the project maintainer and built on fully supported
+Microsoft technologies. It provides Sessions, Trends, Inventory, and Credits workspaces over the
+Dataverse schema owned by the required `pvConversationInsights` core solution. It does not own
+backend runtime, tables, flows, plugins, roles, or Custom APIs.
 
 ## Prerequisites
 
@@ -42,7 +43,11 @@ token. Connector/data validation must use the normally hosted app.
 ## ALM and package ownership
 
 `pvConversationInsightsCodeApp` contains only the code-app component and declared core table
-dependencies. Candidate versions and filenames come from
+dependencies. The separate solution supports optional installation and an independent application
+lifecycle. Microsoft documents solution portability, CI/CD, and Power Platform Pipelines for
+development, test, and production environments in the
+[Code Apps ALM guidance](https://learn.microsoft.com/power-apps/developer/code-apps/how-to/alm).
+Candidate versions and filenames come from
 [`config/release-packages.json`](../config/release-packages.json). Candidate ZIPs stay under
 `output/candidate/` until all target-tenant and release gates pass; never overwrite a published ZIP
 at an existing version.
@@ -78,6 +83,14 @@ Code Apps follow DLP, Advanced Connector Policies, app quarantine, app-level Con
 tenant isolation where cross-tenant resources are used, app access control, sharing limits, and CSP
 for external origins. Code Apps ignore Storage SAS IP restriction; use Entra Conditional Access for
 location restrictions.
+
+Current documented platform limitations include no Power Platform Git integration, no Power Apps
+for Windows support, no `PowerBIIntegration`, no SharePoint forms integration, and public asset
+delivery that requires Conditional Access for IP/location controls. See the Microsoft
+[Code Apps overview](https://learn.microsoft.com/power-apps/developer/code-apps/overview) and
+[feedback and support guidance](https://learn.microsoft.com/power-apps/developer/code-apps/feedback-support).
+Documented SDK/CLI mismatches and regressions use standard Microsoft Support; project-specific
+support remains with this repository's maintainer.
 
 For `CodeAppOperationNotAllowedInEnvironment`, confirm the exact target, independently reload
 **Enable code apps** as On, confirm any effective group rule is published, and use the

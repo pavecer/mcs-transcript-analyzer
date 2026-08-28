@@ -16,25 +16,26 @@ Stable conversation-investigation and deterministic-install release.
 - Cleared stale nullable session projections and the Dataverse user lookup when reprocessing no
   longer contains the corresponding evidence, with parser parity across local and central imports.
 - Made clean installation deterministic by documenting and validating prerequisites, synchronous
-  core/Credits/Preview import order, target-generated app identity, and post-import structural and
+  core/Credits/code-app import order, target-generated app identity, and post-import structural and
   launch checks.
 - PVE package/runtime validation passed on 2026-08-27. The signed-in PVE hosted scenario matrix
   passed on 2026-08-27, including desktop and mobile investigation cases.
 - Manual target-tenant upgrade from stable `2.0.0.5` was user-approved on 2026-08-27 using
   semantically identical `2.1.0.0` candidates.
 - Exact retained bytes then passed a fresh authorized Sandbox clean installation: core
-  `2.1.0.0`, unchanged Credits `2.0.0.5`, and Preview `2.1.0.0` imported successfully; the
+  `2.1.0.0`, unchanged Credits `2.0.0.5`, and code app `2.1.0.0` imported successfully; the
   structural contract passed; the generated app was active; and launch plus runtime documents
   returned HTTP 200. A shared VS Code cross-origin iframe limitation prevented a full fresh
   authenticated data-tab smoke, so this release does not claim one.
 - Preserved exactly three solution boundaries and the separation between usage, capacity,
-  inventory, transcripts, evaluations, and exact billing allocation. The model-driven core is the
-  supported surface; the code app remains an unsupported preview.
+  inventory, transcripts, evaluations, and exact billing allocation. The separate optional code
+  app is maintainer-supported and built on fully supported Microsoft technologies, while retaining
+  the documented Power Apps code-app limitations.
 
 Changed downloads:
 
 - Core: `pvConversationInsights-managed-2.1.0.0.zip`
-- Preview: `pvConversationInsightsCodeApp-managed-2.1.0.0.zip`
+- Code app: `pvConversationInsightsCodeApp-managed-2.1.0.0.zip`
 
 Credits is unchanged at `pvConversationInsightsCredits-managed-2.0.0.5.zip`, with its published
 bytes, checksum, and source provenance preserved.

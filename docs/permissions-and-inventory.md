@@ -7,7 +7,8 @@ the security or data model. Core and code app are `2.1.0.0`; Credits remains unc
 Required `pvConversationInsights` core still owns all four roles, all tables, plugins, Custom APIs,
 the model-driven app, and transcript/inventory runtime. Optional `pvConversationInsightsCredits`
 owns only the three credit flows and `pvci_licensinghttp` plus `pvci_powerplatformapi`. Optional
-`pvConversationInsightsCodeApp` owns only the unsupported preview app. PVE validation is complete;
+`pvConversationInsightsCodeApp` owns only the supported code app and its declared dependencies. It
+remains separate for optional installation and an independent application lifecycle. PVE validation is complete;
 the user-performed manual Contoso TPM upgrade passed.
 
 The current source contract includes four least-privilege Dataverse application roles. All are mapped
@@ -28,7 +29,7 @@ to the model-driven app and apply to the same Dataverse data sources used by the
    `pvci_transcriptaccessrequest` and read/write on Environment Inventory. Assign it to the
    verification flow owner, not to ordinary report viewers.
 
-The preview code app must still be shared with users or groups through **Manage access**. App
+The optional supported code app must still be shared with users or groups through **Manage access**. App
 sharing grants the app shell; one of the packaged Dataverse roles grants its additional data
 access. Assign ordinary readers **PVCI Analyst** and only authorized approvers **PVCI Privacy
 Approver**. Do not grant System Administrator to report viewers.

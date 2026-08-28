@@ -33,9 +33,37 @@ REFRESH_WORKFLOW = (ROOT / ".github" / "workflows" / "refresh-packages.yml").rea
 BUILD_WORKFLOW = (ROOT / ".github" / "workflows" / "build.yml").read_text(encoding="utf-8")
 PROMOTION_WORKFLOW = (ROOT / ".github" / "workflows" / "release-promotion.yml").read_text(encoding="utf-8")
 LINKEDIN_WORKFLOW = (ROOT / ".github" / "workflows" / "linkedin-release.yml").read_text(encoding="utf-8")
+CURRENT_CODE_APP_SUPPORT_SURFACES = (
+    ROOT / "README.md",
+    ROOT / "codeapp" / "README.md",
+    ROOT / "docs" / "architecture.md",
+    ROOT / "docs" / "clean-install.md",
+    ROOT / "docs" / "credit-reporting.md",
+    ROOT / "docs" / "operations.md",
+    ROOT / "docs" / "permissions-and-inventory.md",
+    ROOT / "docs" / "release-automation.md",
+    ROOT / "scripts" / "transcript_insights" / "README.md",
+    ROOT / "site" / "README.md",
+    ROOT / "site" / "index.html",
+    ROOT / ".github" / "instructions" / "solution-boundaries.instructions.md",
+    ROOT / ".github" / "agents" / "release-maintainer.agent.md",
+    ROOT / ".github" / "skills" / "central-transcript-collector" / "SKILL.md",
+)
+OBSOLETE_CODE_APP_SUPPORT_LABELS = (
+    "unsupported preview code app",
+    "code apps are preview",
+    "Preview · unsupported",
+)
 
 
 class ComponentReleaseTests(unittest.TestCase):
+    def test_current_code_app_surfaces_reject_obsolete_preview_support_labels(self) -> None:
+        for path in CURRENT_CODE_APP_SUPPORT_SURFACES:
+            content = path.read_text(encoding="utf-8").casefold()
+            for label in OBSOLETE_CODE_APP_SUPPORT_LABELS:
+                with self.subTest(path=path.relative_to(ROOT), label=label):
+                    self.assertNotIn(label.casefold(), content)
+
     def test_public_site_rejects_internal_release_details(self) -> None:
         for phrase in PUBLIC_COPY_FORBIDDEN_PHRASES:
             with self.subTest(phrase=phrase):

@@ -40,6 +40,11 @@ Enable code apps** to **On**, save, and independently reload it before importing
 the authoritative [clean-install validation runbook](clean-install.md) for the policy matrix,
 target-generated app resolution, live validator, browser criteria, and cleanup workflow.
 
+The separate code-app package is optional and maintainer-supported. It uses fully supported
+Microsoft technologies, while retaining the documented Code Apps limitations and requiring Power
+Apps Premium for every runner. Review the source, test it in a sandbox, and use the normal Microsoft
+support path for documented SDK/CLI mismatches or platform regressions.
+
 For a clean installation:
 
 1. Import `pvConversationInsights-managed-2.1.0.0.zip`. Core does not prompt for a credit tenant ID.
@@ -58,7 +63,7 @@ For an upgrade from `1.4.0.15`, order is part of the migration contract:
 2. Apply `pvConversationInsights-managed-2.0.0.5.zip` as a managed upgrade second. Core retains all
     tables, data, plugins, Custom APIs, roles, the model-driven app, four transcript/shared flows,
     and three non-licensing references.
-3. Upgrade `pvConversationInsightsCodeApp-managed-2.0.0.5.zip` last when the preview app is used.
+3. Upgrade `pvConversationInsightsCodeApp-managed-2.0.0.5.zip` last when the optional code app is used.
 
 Do not delete the old core credit components before installing the add-on, and do not use a clean
 core-first order for this upgrade. In TPM, perform every import, connection mapping, publish, and

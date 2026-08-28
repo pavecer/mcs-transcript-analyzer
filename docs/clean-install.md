@@ -5,8 +5,11 @@ Analyzer packages into a brand-new Dataverse environment. The machine-readable r
 in [`config/clean-install-contract.json`](../config/clean-install-contract.json); candidate package
 identity and versions come from [`config/release-packages.json`](../config/release-packages.json).
 
-The optional Power Apps code app is a preview surface. The model-driven app remains the supported
-product surface. Never change or overwrite a published package while performing this procedure.
+The Power Apps code app is an optional supported surface with its own package and lifecycle. It is
+supported by the project maintainer and built on fully supported Microsoft technologies. The
+documented Code Apps limitations, environment setting, Power Apps Premium requirement, sharing,
+and governance controls still apply. Never change or overwrite a published package while
+performing this procedure.
 
 ## Verified fresh-environment result
 
@@ -253,6 +256,7 @@ not this documentation change.
 ## Microsoft references
 
 - [Power Apps code apps overview and prerequisites](https://learn.microsoft.com/power-apps/developer/code-apps/overview)
+- [Code Apps feedback and standard Microsoft Support paths](https://learn.microsoft.com/power-apps/developer/code-apps/feedback-support)
 - [Power Apps Code Apps environment setting and default](https://learn.microsoft.com/power-platform/admin/settings-features#power-apps-code-apps)
 - [Environment group rules, including rule 22](https://learn.microsoft.com/power-platform/admin/environment-groups-rules)
 - [Environment Management Settings API](https://learn.microsoft.com/rest/api/power-platform/environmentmanagement/environment-management-settings/list-environment-management-settings?view=power-platform-latest)
