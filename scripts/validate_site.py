@@ -83,7 +83,7 @@ def validate_html(html: str, manifest: dict[str, object]) -> None:
         "Preview features can change, have limited support, or become unavailable.",
         "Per-user limits are not available",
         "pvConversationInsightsCredits",
-        "TPM manual upgrade validation",
+        "manual target-tenant upgrade",
         "docs/credit-reporting.md",
         "docs/permissions-and-inventory.md",
     ]

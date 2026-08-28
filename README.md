@@ -31,10 +31,11 @@ the preauthorized HTTP connection with both licensing-service URLs first.
 | **Custom APIs + plugin** | Local incremental transcript sync, bounded cross-environment transcript import, and validated idempotent credit import |
 | **Python toolkit** | Bulk backfill, plugin registration, flow-run detail fetch |
 
-### 2.0.0.5 stable package architecture
+### 2.1.0.0 stable package architecture
 
-The current stable release contains three synchronized managed packages after hosted PVE UI
-validation, tenant-neutral package validation, and the user-performed manual Contoso TPM upgrade.
+The current stable release contains core `2.1.0.0`, unchanged Credits `2.0.0.5`, and code app
+`2.1.0.0` after hosted PVE UI validation, tenant-neutral package validation, manual target-tenant
+upgrade, and exact-byte clean-install validation.
 
 | Package | Required? | Ownership |
 | --- | --- | --- |
@@ -42,13 +43,14 @@ validation, tenant-neutral package validation, and the user-performed manual Con
 | `pvConversationInsightsCredits` | Optional | Only the three credit collection/governance flows, licensing references `pvci_licensinghttp` and `pvci_powerplatformapi`, and required `pvci_CreditReportingTenantId` definition |
 | `pvConversationInsightsCodeApp` | Optional preview | Only the unsupported preview code app and its declared core dependencies |
 
-For a clean `2.0.0.5` installation, pre-enable Code Apps when that optional package will be used,
+For a clean `2.1.0.0` installation, pre-enable Code Apps when that optional package will be used,
 then import core, optional credits, and optional code app in that order. To
 upgrade from `1.4.0.15`, import the credits add-on first, apply the core managed upgrade second,
 and upgrade the code app last. This additive ownership transfer preserves the existing credit flow
 identities while core retains schema and data ownership. Core does not contain or request the credit
 tenant variable. The optional credit add-on prompts for its required target-tenant current value and
-never packages the value from PVE.
+never packages the value from PVE. From stable `2.0.0.5`, upgrade core and the optional code app;
+the unchanged Credits package does not need to be reimported.
 
 Credits navigation remains visible. It reports **Unavailable** when the add-on is absent,
 **Setup required** when the add-on is installed without successful credit-sync evidence, and

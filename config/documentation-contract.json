@@ -74,6 +74,10 @@
   ],
   "surfaceCoverage": {
     "CHANGELOG.md": [
+      "2.1.0.0 - 2026-08-28",
+      "Exact retained bytes then passed a fresh authorized Sandbox clean installation",
+      "Credits is unchanged at `pvConversationInsightsCredits-managed-2.0.0.5.zip`",
+      "does not claim one",
       "2.0.0.5 - 2026-08-25",
       "pvConversationInsightsCredits-managed-2.0.0.5.zip",
       "Published downloads",
@@ -85,9 +89,10 @@
     "ROADMAP.md": [
       "Replace pre-authorized collection with zero-touch onboarding",
       "availability-aware telemetry labels",
-      "mixed-version configuration is valid",
+      "Shipped in 2.1.0.0",
+      "mixed-version release is valid",
       "second brand-new Sandbox retry on 2026-08-28",
-      "original Code Apps policy blocker is resolved",
+      "original Code Apps policy blocker is resolved and no longer blocks",
       "not a full fresh authenticated",
       "clears stale nullable",
       "Detailed cross-environment agent enrichment",
@@ -97,6 +102,8 @@
     "README.md": [
       "clean-install runbook",
       "Enable code apps",
+      "2.1.0.0 stable package architecture",
+      "unchanged Credits `2.0.0.5`",
       "{customTableCount} custom tables",
       "{roleCount} application roles",
       "7 packaged scheduled flows",
@@ -176,7 +183,8 @@
     "docs/operations.md": [
       "clean-install validation runbook",
       "Enable code apps",
-      "Managed 2.0.0.5 stable installation and upgrade",
+      "Managed 2.1.0.0 stable installation and upgrade",
+      "does not need to be reimported",
       "pvConversationInsightsCredits-managed-2.0.0.5.zip",
       "PVCI Credit Administrator",
       "pvci_powerplatformapi",
@@ -215,6 +223,8 @@
       "clean-install runbook",
       "direct runtime loading is diagnostic only",
       "exactly three managed Power Platform solutions",
+      "exact-byte clean-install gates",
+      "positive numeric `candidateRunId`",
       "core artifact version is the stable release identity",
       "validate_candidate_packages.py",
       "validate_release_promotion.py",
@@ -278,6 +288,8 @@
     ".github/skills/release-tracking/SKILL.md": [
       "changed package artifacts",
       "Mixed-version stable manifests are valid",
+      "exact-byte clean-install gates",
+      "positive numeric `candidateRunId`",
       "CHANGELOG.md",
       "ROADMAP.md",
       "site/index.html",
@@ -373,12 +385,12 @@
       "clean-install runbook",
       "Pre-enable the optional code app",
       "pac solution import --path",
-      "original Code Apps policy blocker is resolved",
-      "not a full fresh authenticated data-tab smoke",
-      "2.0.0.5 stable architecture",
-      "mixed-version configuration is valid",
-      "clears stale nullable session values",
+      "2.1.0.0 stable architecture",
+      "This mixed-version release uses core and code app",
+      "does not claim a full fresh authenticated data-tab smoke",
+      "clears stale nullable and user lookup projections",
       "pvConversationInsightsCredits",
+      "Released 2026-08-28",
       "Released 2026-08-25",
       "id=\"trust-credits\"",
       "id=\"download-credits\"",
@@ -399,7 +411,7 @@
       ,"Discovery and verification are not consent"
       ,"disabling it stops future imports but does not delete records already copied"
       ,"Credits resource reporting stay host-scoped"
-      ,"observed zero and telemetry that the transcript could not provide"
+      ,"distinguishes observed zero from unavailable telemetry"
     ],
     "scripts/validate_clean_install.py": [
       "DEFAULT_CONTRACT",

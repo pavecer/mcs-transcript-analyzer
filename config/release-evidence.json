@@ -1,47 +1,57 @@
 {
-  "schemaVersion": 1,
-  "version": "2.0.0.5",
-  "sourceCommit": "be33af99ae56ec4bf50e4334f94f47e96d918b31",
+  "schemaVersion": 2,
+  "version": "2.1.0.0",
+  "sourceCommit": "89aa24423324d5b54600f837f018cdb22ade88e0",
+  "artifacts": [
+    "core",
+    "codeApp"
+  ],
   "candidate": {
-    "sourceCommit": "be33af99ae56ec4bf50e4334f94f47e96d918b31",
+    "sourceCommit": "89aa24423324d5b54600f837f018cdb22ade88e0",
     "artifacts": {
       "core": {
-        "filename": "pvConversationInsights-managed-2.0.0.5.zip",
-        "sha256": "caaadf84307c735d50559d386d88fd0801bdc6b6520404861c6c7368c7092bcf"
-      },
-      "credits": {
-        "filename": "pvConversationInsightsCredits-managed-2.0.0.5.zip",
-        "sha256": "529f902f5be8f42d6c4852be0b15c6a1db84e9f629b432f801a685cd123990de"
+        "filename": "pvConversationInsights-managed-2.1.0.0.zip",
+        "sha256": "34c83d1d622f19fa0ff458db4d0acb76a5e9b17e67317234d6f25b227337f0a6",
+        "candidateRunId": 33154920938
       },
       "codeApp": {
-        "filename": "pvConversationInsightsCodeApp-managed-2.0.0.5.zip",
-        "sha256": "f5341f647eb5aa3e9d92b31f66f206dd27a3863e0cbf7406890bb72e5db4e778"
+        "filename": "pvConversationInsightsCodeApp-managed-2.1.0.0.zip",
+        "sha256": "48c4adb96177de45512fe9c5bab5364c18b930d3828a396485340e06f6ce3ecb",
+        "candidateRunId": 33155263930
       }
     }
   },
   "gates": {
     "pvePackageAndRuntime": {
       "status": "passed",
-      "completedAtUtc": "2026-08-25T21:30:31Z",
+      "completedAtUtc": "2026-08-27T13:06:54Z",
       "evidence": {
         "path": "CHANGELOG.md",
-        "contains": "Validated in PVE that all three live solutions are `2.0.0.5`"
+        "contains": "PVE package/runtime validation passed on 2026-08-27"
       }
     },
     "hostedUiSmoke": {
       "status": "passed",
-      "completedAtUtc": "2026-08-25T21:30:31Z",
+      "completedAtUtc": "2026-08-27T13:06:54Z",
       "evidence": {
         "path": "CHANGELOG.md",
-        "contains": "The hosted PVE UI smoke and the"
+        "contains": "signed-in PVE hosted scenario matrix"
       }
     },
     "tpmManualUpgrade": {
       "status": "passed",
-      "completedAtUtc": "2026-08-25T21:30:31Z",
+      "completedAtUtc": "2026-08-27T13:06:54Z",
       "evidence": {
         "path": "CHANGELOG.md",
-        "contains": "user-performed manual Contoso TPM upgrade passed"
+        "contains": "Manual target-tenant upgrade from stable `2.0.0.5` was user-approved"
+      }
+    },
+    "cleanInstall": {
+      "status": "passed",
+      "completedAtUtc": "2026-08-28T08:35:00Z",
+      "evidence": {
+        "path": "CHANGELOG.md",
+        "contains": "Exact retained bytes then passed a fresh authorized Sandbox clean installation"
       }
     }
   }

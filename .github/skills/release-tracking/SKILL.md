@@ -17,8 +17,9 @@ roadmap review.
    LinkedIn announcement version. Credits and code app may retain independent versions.
    Mixed-version stable manifests are valid.
 - `site/downloads/release-manifest.json` records the exact published ZIP checksums and provenance.
-- `config/release-evidence.json` records candidate identity and the independent PVE, hosted UI,
-  and manual TPM gates for the published release.
+- `config/release-evidence.json` records changed candidate identity and the independent PVE,
+  hosted UI, manual TPM, and exact-byte clean-install gates for the published release. Schema 2
+  requires a positive numeric `candidateRunId` for each changed artifact.
 - `site/index.html` presents the public release history and roadmap.
 
 Do not infer shipped capabilities from a branch name or memory. Verify them against the solution

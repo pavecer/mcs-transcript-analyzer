@@ -3,8 +3,9 @@
 The public presentation is deployed from this directory by `.github/workflows/pages.yml`.
 The stable managed solution ZIPs are release artifacts, not generic source archives: they must be
 exported from their deployed Dataverse solutions and pass `scripts/validate_site.py`. The current
-public release is the three-package `2.0.0.5` set. Its managed packages passed PVE validation and
-the user-performed manual Contoso TPM upgrade before exact-byte promotion from `output/candidate/`.
+public release is the mixed-version set: core `2.1.0.0`, unchanged Credits `2.0.0.5`, and code app
+`2.1.0.0`. Its managed packages passed PVE package/runtime and hosted validation, manual
+target-tenant upgrade, and exact-byte clean installation before promotion from `output/candidate/`.
 The core artifact version defines the stable release tag and LinkedIn announcement version. Credits
 and code app versions remain independent, so mixed-version stable manifests are valid.
 Product capabilities, setup, and public copy must also pass `scripts/validate_documentation.py`.
