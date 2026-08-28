@@ -594,7 +594,7 @@
               <div class="tracking-meta"><a href="https://github.com/pavecer/mcs-transcript-analyzer/tags">Version tags</a><a href="downloads/release-manifest.json">Release manifest</a></div>
             </div>
           </div>
-          <div class="tracking-boundary"><strong>Release discipline</strong> Stable releases require synchronized core, credit add-on, and code-app versions, fresh managed exports, updated documentation, validated checksums, and clean-install plus upgrade tests. Candidate ZIPs remain outside public downloads until manual target-tenant approval and byte-identical promotion.</div>
+          <div class="tracking-boundary"><strong>Release discipline</strong> Stable releases increment only changed package versions and preserve unchanged package bytes, versions, hashes, and provenance. Changed packages require fresh managed exports, updated documentation, validated checksums, and clean-install plus upgrade tests. Candidate ZIPs remain outside public downloads until manual target-tenant approval and byte-identical promotion.</div>
         </div>
       </div>
     </section>
@@ -603,17 +603,24 @@
       <div class="shell">
         <div class="section-head" data-reveal>
           <div><span class="section-kicker">Roadmap</span><h2>What comes next</h2></div>
-          <p class="section-intro">The roadmap distinguishes verified release work from planned improvements and capabilities that remain outside the current product boundary.</p>
+          <p class="section-intro">Last reviewed 2026-08-28. The roadmap distinguishes verified candidate work from shipped releases, planned improvements, and capabilities outside the current product boundary.</p>
+        </div>
+        <div class="tracking-boundary" data-reveal>
+          <strong>2.1.0.0 candidate architecture - feature preparation, not shipped</strong>
+          This mixed-version configuration is valid. Explicit local and alternate-source reprocessing clears stale nullable session values and the Dataverse user lookup when evidence disappears, preserving the difference between an observed zero and telemetry that the transcript could not provide.
+          Signed-in PVE Dev visual validation, parser/runtime tests, all 38 code-app tests, lint, and build passed. Managed core and code-app candidates at <code>2.1.0.0</code> passed component and tenant-neutral package validation, and the exact candidates passed manual target-tenant upgrade over stable <code>2.0.0.5</code>; Credits remains unchanged at <code>2.0.0.5</code>. On 2026-08-28, a second brand-new Sandbox retry pre-enabled the default-Off Code Apps setting before any import, then synchronously imported exact core, Credits, and code-app packages in order. Structural validation passed all 79 core, 6 Credits, and 1 code-app components, including 18 tables, 4 roles, 7 workflows, 5 connection references, 3 Custom APIs, and an active target-generated managed app. Normal Power Apps launch no longer returned <code>CodeAppOperationNotAllowedInEnvironment</code>; the exact runtime document returned HTTP 200 and rendered Sessions, Trends, Inventory, and Credits. The shared VS Code browser still aborted the cross-origin host iframe and reproduced that signature against a previously healthy app. Direct runtime loading lacks the parent host token, so this proves clean package installation plus launch authorization/runtime assets, not a full fresh authenticated data-tab smoke. The original Code Apps policy blocker is resolved and no longer blocks stable promotion. Candidates remain outside public downloads, so the published <code>2.0.0.5</code> manifest remains authoritative. Workday is configured but available sessions are greeting-only, a known evidence gap outside the Conversation Investigation exit criteria.
         </div>
         <div class="tracking-grid" data-reveal>
           <div class="tracking-list">
-            <article class="tracking-item"><h3>Replace pre-authorized collection with zero-touch onboarding</h3><p>Source-managed audited verification is implemented; automatic administrator bootstrap and continuous least-privilege reconciliation remain before completion.</p><div class="tracking-meta"><span>Now · Collector authorization</span></div></article>
-            <article class="tracking-item"><h3>In-platform flow-run detail enrichment</h3><p>Move action and loop-iteration detail enrichment into an approved DLP/custom-connector path when the Power Automate API audience is available.</p><div class="tracking-meta"><span>Next · Policy validation</span></div></article>
-            <article class="tracking-item"><h3>Detailed cross-environment agent enrichment</h3><p>Add explicit per-environment Dataverse metadata where the collector identity has access, while preserving unknown as unknown.</p><div class="tracking-meta"><span>Next · Planned</span></div></article>
+            <article class="tracking-item"><h3>Replace pre-authorized collection with zero-touch onboarding</h3><p>Source-managed audited verification is implemented. Completion still requires automatic administrator bootstrap, removal proof for temporary elevation, and continuous least-privilege reconciliation.</p><div class="tracking-meta"><span>Now · Incomplete</span><a href="https://github.com/pavecer/mcs-transcript-analyzer/blob/main/docs/permissions-and-inventory.md">Tracking</a></div></article>
+            <article class="tracking-item"><h3>Central transcript batch collector</h3><p>Source-managed collection and signed-in unavailable/no-flow telemetry validation have passed. Completion remains coupled to automated least-privilege source onboarding; manual role assignment in every environment is not accepted.</p><div class="tracking-meta"><span>Next · Incomplete</span><a href="https://github.com/pavecer/mcs-transcript-analyzer/blob/main/docs/cross-environment-credit-consumption-design.md">Tracking</a></div></article>
+            <article class="tracking-item"><h3>Agent and user conversation behavior telemetry</h3><p>Provide bounded, freshness-aware operational aggregates that preserve telemetry availability and privacy boundaries, with every aggregate drilling into supporting sessions.</p><div class="tracking-meta"><span>Next · Discovery</span><a href="https://github.com/pavecer/mcs-transcript-analyzer/blob/main/docs/operations.md">Tracking</a></div></article>
+            <article class="tracking-item"><h3>In-platform flow-run detail enrichment</h3><p>Move action and loop-iteration detail enrichment into an approved DLP/custom-connector path, with a credential-free sandbox run required before completion.</p><div class="tracking-meta"><span>Next · Policy validation</span><a href="https://github.com/pavecer/mcs-transcript-analyzer/blob/main/docs/flow-run-detail-findings.md">Tracking</a></div></article>
           </div>
           <div>
-            <div class="tracking-item"><h3>Make the code app supported</h3><p>Stabilize the preview code app's accessibility, ALM, licensing, data-source contract, and upgrade path before changing its unsupported status.</p><div class="tracking-meta"><span>Later · Preview</span></div></div>
-            <div class="tracking-item"><h3>Governance API discovery</h3><p>Evaluate additional control surfaces only where documented APIs support narrow authorization, stale-state protection, before/after audit, and rollback guidance.</p><div class="tracking-meta"><span>Later · Discovery</span></div></div>
+            <article class="tracking-item"><h3>Detailed cross-environment agent enrichment</h3><p>Add per-environment Dataverse metadata only where explicit access exists, preserving unavailable metadata as unknown rather than reporting a missing agent.</p><div class="tracking-meta"><span>Next · Planned</span><a href="https://github.com/pavecer/mcs-transcript-analyzer/blob/main/docs/permissions-and-inventory.md">Tracking</a></div></article>
+            <div class="tracking-item"><h3>Make the code app supported</h3><p>Stabilize the preview code app's accessibility, ALM, licensing, data-source contract, and upgrade path before changing its unsupported status.</p><div class="tracking-meta"><span>Later · Preview</span><a href="https://github.com/pavecer/mcs-transcript-analyzer/blob/main/docs/release-automation.md">Tracking</a></div></div>
+            <div class="tracking-item"><h3>Governance API discovery</h3><p>Evaluate additional control surfaces only where documented APIs support narrow authorization, stale-state protection, before/after audit, and rollback guidance.</p><div class="tracking-meta"><span>Later · Discovery</span><a href="https://github.com/pavecer/mcs-transcript-analyzer/blob/main/docs/credit-reporting.md">Tracking</a></div></div>
             <div class="tracking-boundary"><strong>Explicitly out of scope for now</strong> Per-user Copilot Studio limits, exact credit allocation to conversations or users, and environment allocation, TenantPool, or PayGo mutation are not presented as planned features.</div>
           </div>
         </div>
@@ -629,6 +636,7 @@
         </div>
         <div class="install-layout">
           <div class="steps" data-reveal>
+            <article class="step"><h3>Pre-enable the optional code app</h3><p>Before importing any package into a fresh target that will use the preview app, set <strong>Power Apps Code Apps &gt; Enable code apps</strong> to <strong>On</strong>, save, and independently reload it. Follow the <a href="https://github.com/pavecer/mcs-transcript-analyzer/blob/main/docs/clean-install.md">clean-install runbook</a>.</p></article>
             <article class="step"><h3>Download the managed ZIP</h3><p>Keep the archive intact. Power Apps imports the ZIP directly; do not extract it.</p></article>
             <article class="step"><h3>Import in Power Apps</h3><p>Open <strong>Solutions</strong>, choose <strong>Import solution</strong>, upload the ZIP, and complete the import wizard.</p></article>
             <article class="step"><h3>Configure connections</h3><p>For core, bind <code>pvci_dataversesync</code> and <code>pvci_centralcollector</code> to Dataverse and <code>pvci_powerplatformadminv2</code> to Power Platform for Admins V2. When installing the optional Credits add-on, also bind <code>pvci_licensinghttp</code> and <code>pvci_powerplatformapi</code> to the licensing API and set <code>pvci_CreditReportingTenantId</code>. The two licensing references may share one valid physical connection.</p></article>
@@ -706,7 +714,7 @@
         </div>
 
         <div class="command" data-reveal>
-          <code id="import-command">pac solution import --path pvConversationInsights-managed-2.0.0.5.zip --activate-plugins</code>
+          <code id="import-command">pac solution import --path pvConversationInsights-managed-2.0.0.5.zip</code>
           <button class="icon-button" id="copy-command" type="button" title="Copy import command" aria-label="Copy import command"><i data-lucide="copy" aria-hidden="true"></i></button>
         </div>
 
@@ -716,7 +724,7 @@
             <h3>Conversation Insights Explorer code app</h3>
             <p>The React code app adds conversation replay, trends, tool and flow drill-down, a visual execution map, and scoped Copilot Credit analysis. It is packaged separately so production users can install the supported model-driven solution without taking a dependency on preview technology.</p>
             <ul>
-              <li>Import the core managed solution first.</li>
+              <li>Enable Code Apps in the exact target before importing any package, then import the core managed solution first.</li>
               <li>Code apps and their ALM support are currently preview features.</li>
               <li>Premium licensing and tenant preview availability may be required.</li>
               <li>Validate behavior, security roles, and data access in a sandbox.</li>
@@ -809,7 +817,7 @@
           element.textContent = artifacts.credits.version;
         });
         document.getElementById("import-command").textContent =
-          `pac solution import --path ${artifacts.core.filename} --activate-plugins`;
+          `pac solution import --path ${artifacts.core.filename}`;
       })
       .catch(() => {
         document.getElementById("package-hash").textContent = "see release manifest";

@@ -49,9 +49,13 @@ Run the full validation:
 ```bash
 source .venv/bin/activate
 python3 -m py_compile scripts/transcript_insights/*.py
+python3 -m unittest discover -s scripts/transcript_insights -p "test_*.py" -v
+python3 scripts/validate_parser_parity.py
 (cd plugin && dotnet build -c Release)          # must be warning-free
-(cd pcf/JsonViewer && npm run build)
+(cd pcf/JsonViewer && npm run lint && npm run build)
 (cd codeapp && npm run build && npx eslint .)
+python3 scripts/validate_solution_ownership.py
+python3 scripts/validate_release_evidence.py
 python3 scripts/validate_documentation.py
 python3 scripts/validate_site.py
 python3 scripts/validate_browser_policy.py
@@ -66,6 +70,8 @@ python3 scripts/transcript_insights/sync_transcripts.py --config $CFG --full --r
 ```
 
 State in the PR which environment you tested against and what the before/after row counts were.
+The parser parity gate uses `tests/fixtures/transcript-analysis.json` to execute the same
+diagnostic and knowledge projection through Python and the dependency-free C# analyzer.
 
 Browser and UI validation must reuse an already shared VS Code built-in browser page. Workspace
 instructions and a PreToolUse hook block external Playwright, Chrome, and Chromium launches. Run
@@ -109,6 +115,12 @@ work. Do not move a roadmap item to completed without package, build, API, or te
 The ZIP must be imported into a clean sandbox before release. Confirm that all custom components,
 including the JSON Viewer PCF, are embedded in the solution rather than left as dependencies on
 the source environment.
+
+Stable release PRs must also update `config/release-evidence.json` from the approved candidate.
+Run `python3 scripts/validate_release_evidence.py`, then dispatch **validate release promotion**
+with the approved `refresh release packages` run ID. The workflow downloads that exact retained
+candidate and proves byte identity, source provenance, PVE validation, hosted UI smoke, and the
+manual TPM upgrade gate.
 
 ## Commit messages
 

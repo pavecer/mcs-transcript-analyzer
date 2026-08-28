@@ -8,6 +8,11 @@ The stable `2.0.0.5` release contains exactly three managed Power Platform solut
 | Credits | `pvConversationInsightsCredits` | Optional licensing runtime only | Second for clean install; first for `1.4.0.15` upgrade |
 | Code app | `pvConversationInsightsCodeApp` | Optional Power Apps code-app preview, unsupported | Last |
 
+For a fresh target that includes the optional code app, **Enable code apps** must be saved and
+independently reloaded as On before any package import. Follow the authoritative
+[clean-install runbook](clean-install.md); its structural validator and browser evidence are
+separate gates, and direct runtime loading is diagnostic only.
+
 Core intentionally retains every table, plugin, Custom API, role, the model-driven app, four
 transcript/shared flows, and three non-licensing references. Credits owns only three credit flows,
 two licensing references, and the required credit tenant variable definition; managed packages
@@ -15,24 +20,33 @@ must contain no environment-variable current value. The code app stays separate 
 model-driven app without preview technology. This release passed PVE package and live-runtime
 validation and the user-performed manual Contoso TPM upgrade.
 
+The core artifact version is the stable release identity: the stable Git tag and LinkedIn
+announcement use that version. Credits and code app versions remain independent, so a stable
+manifest may validly contain mixed artifact versions.
+
 ## Automation design
 
 `.github/workflows/refresh-packages.yml` runs daily at 03:17 UTC and can also be started
 manually. It uses the following sequence:
 
-1. Find the newest commit that changed deployable inputs under `codeapp/`, `plugin/`, `pcf/`,
-   `solution/`, or `scripts/transcript_insights/`.
-2. Compare that commit with `sourceCommit` in `site/downloads/release-manifest.json`.
-3. Exit successfully without touching Power Platform when the commits match.
-4. Authenticate to Power Platform by GitHub OIDC. There is no client secret.
-5. Build the committed code app and deploy it to `pvConversationInsightsCodeApp`.
-6. Export all three source solutions as managed ZIPs.
-7. Verify solution identity, version, managed state, embedded JSON Viewer PCF, embedded code app,
-   ZIP integrity, and SHA-256 hashes.
-8. Upload the synchronized `output/candidate/` set as a retained workflow artifact. Do not modify
-   `site/downloads/` or deploy Pages from the candidate refresh.
+1. Expand a fixed `core`, `credits`, and `codeApp` matrix. Scheduled runs and manual
+  `artifact=all` requests fan out into independent artifact legs; a manual single-artifact request
+  skips the other legs. `all` is not a candidate or promotion scope.
+2. Resolve each selected artifact's newest package-input commit. Credits uses only
+  `solution/pvConversationInsightsCredits` and credit-specific scripts, so unrelated core,
+  parser, configuration, or code-app changes do not advance its provenance.
+3. Compare that commit with the artifact's published provenance and skip the leg when they match,
+  unless a manual run sets `force=true`.
+4. For each changed leg, authenticate to Power Platform by GitHub OIDC. There is no client secret.
+5. Build and deploy the committed code app only on a changed `codeApp` leg.
+6. Export and validate only that leg's managed ZIP, including its solution identity, version,
+  managed state, packaged component contract, ZIP integrity, SHA-256 hash, and exact
+  package-input source commit.
+7. Upload each changed ZIP and its scoped candidate manifest as a separate retained workflow
+  artifact. Do not modify `site/downloads/` or deploy Pages from the candidate refresh.
 
-Failures stop before candidate upload. The previously validated downloads remain live.
+Failures stop the affected leg before candidate upload. The previously validated downloads remain
+live, including the stable three-package `2.0.0.5` manifest while candidate versions diverge.
 
 ## Issue candidate releases
 
@@ -50,9 +64,11 @@ not authenticate to or write to TPM. Never overwrite the stable `1.3.0.0` ZIP. A
 validation, promote the same fix through the normal versioned release process.
 
 This issue-fix workflow intentionally builds one patched core package from an immutable stable
-base. It is not the three-package feature-candidate pipeline and must not be used to publish or
-promote `2.0.0.5`. Three-package candidates are exported together to `output/candidate/`, validated
-with `scripts/validate_candidate_packages.py`, and handed to the user for manual TPM testing.
+base. It is not the feature-candidate pipeline and must not be used to publish or promote
+`2.0.0.5`. Feature candidates are exported, validated, uploaded, and manifested independently for
+each changed artifact, then handed to the user for manual TPM testing. Every candidate manifest
+contains the selected artifact scope and exact package-input `sourceCommit`; local validation
+derives the same artifact-specific commit from Git when `--source-commit` is omitted.
 
 ## Release documentation gate
 
@@ -76,6 +92,42 @@ Agents should load the checked-in `.github/skills/release-documentation/SKILL.md
 README, docs, release-package, or public Pages changes. The skill is guidance; the CI `site` job and
 Pages workflow run the deterministic gate and are the enforcement boundary.
 
+## Release evidence and promotion gate
+
+`config/release-evidence.json` records the candidate source commit and hashes that became the
+published packages, plus explicit PVE package/runtime, hosted UI, and manual TPM upgrade gates.
+Each passed gate requires an ISO-8601 completion timestamp and a checked-in evidence reference.
+
+Run:
+
+```bash
+python3 scripts/validate_release_evidence.py
+```
+
+The validator requires the evidence version, source commit, filenames, and hashes to match
+`site/downloads/release-manifest.json`.
+
+Before merging a stable release PR, dispatch **validate release promotion** with the artifact,
+version, and approved `refresh release packages` workflow `candidate_run_id`. The workflow
+downloads the one retained `managed-candidate-<artifact>-*` artifact for that matrix leg and
+executes:
+
+```bash
+python3 scripts/validate_release_promotion.py --artifact <core|credits|codeApp> --version <version>
+python3 scripts/validate_release_evidence.py
+```
+
+Stable manifest generation likewise requires one explicit artifact:
+
+```bash
+python3 scripts/update_release_manifest.py --artifact <core|credits|codeApp> --source-commit <implementation-sha>
+```
+
+There is no `all` promotion path. The promotion validator and workflow accept exactly one artifact
+and require the candidate manifest's `artifactScope` and `artifacts` keys to contain exactly that
+artifact. This makes candidate/stable byte identity and release evidence reproducible from a new
+session without access to the original developer workstation.
+
 ## npm dependency reliability
 
 The code app and PCF lockfiles must contain canonical `https://registry.npmjs.org/` tarball URLs.
@@ -93,8 +145,8 @@ registry responds. Do not bypass a real compile, test, typecheck, or lint failur
 
 Stable GitHub Releases can publish a LinkedIn announcement through
 `.github/workflows/linkedin-release.yml`. The workflow does not use generative AI. It derives the
-release identity from the exact version section in `CHANGELOG.md`, verifies that version against
-`site/downloads/release-manifest.json`, and generates a short awareness announcement with one
+release identity from the core artifact version in `site/downloads/release-manifest.json`, requires
+the stable tag and exact `CHANGELOG.md` section to use that version, and generates a short awareness announcement with one
 audience-focused value statement and one public Pages call to action. Detailed capabilities,
 boundaries, validation evidence, package inventories, checksums, and setup instructions remain on
 the public site and GitHub Release. The generator enforces a 600-character marketing limit, well
@@ -229,22 +281,23 @@ Configure these repository **Actions variables** (not secrets):
 The workflow has `id-token: write` solely to request the short-lived federated token and
 `contents: read` because candidate exports are uploaded as artifacts rather than committed.
 
-## Three-package candidate and promotion flow
+## Artifact candidate and promotion flow
 
 1. Deploy and verify changed source solutions in PVE Dev.
-2. Export core, credits, and code app to `output/candidate/` with synchronized versions and unique
-  filenames; never place unapproved candidates in `site/downloads/`.
+2. Export only changed artifacts to `output/candidate/` with immutable versioned filenames; never
+  rebuild unchanged packages or place unapproved candidates in `site/downloads/`.
 3. Run `scripts/validate_solution_ownership.py` and
-  `scripts/validate_candidate_packages.py --version <version>`.
-4. For a clean install, test core, optional credits, then optional code app. For an upgrade from
-  `1.4.0.15`, manually test credits first, core managed upgrade second, and code app last.
-5. Record PVE and TPM evidence separately. PVE success does not imply TPM validation.
+  `scripts/validate_candidate_packages.py --artifact <core|credits|codeApp> --source-commit <implementation-sha>`.
+4. Test only changed packages. Preserve dependency order when several artifacts change; a
+  code-app-only candidate upgrades only `pvConversationInsightsCodeApp`.
+5. Record PVE package/runtime, hosted UI, and TPM manual-upgrade evidence separately in
+  `config/release-evidence.json`. PVE success does not imply TPM validation.
 6. After manual target approval, commit package inputs first. Copy the exact validated candidate
   bytes into `site/downloads/`; do not rebuild them.
 7. Generate the stable manifest with the implementation commit, commit publication surfaces
-  separately, and run `scripts/validate_release_promotion.py --version <version>`.
-8. Merge only after required checks pass, then verify Pages, the public manifest, and all three
-  public downloads.
+  separately, and dispatch **validate release promotion** against the approved candidate run.
+8. Merge only after required checks pass, then verify Pages, the public manifest, each changed
+  download, and unchanged artifact hashes.
 
 For an identity/export smoke test that must not deploy code-app source, run manually with
 `force=true` and `export_only=true`. Scheduled runs always deploy the committed code app before
@@ -252,7 +305,7 @@ exporting.
 
 ## Version changes
 
-The core, credit add-on, and code-app packages use one synchronized four-part release train:
+The core, credit add-on, and code-app packages use independent immutable four-part versions:
 
 | Change | Version example | Use |
 | --- | --- | --- |
@@ -261,30 +314,31 @@ The core, credit add-on, and code-app packages use one synchronized four-part re
 | Backward-compatible fix | `1.1.1.0` | Correct behavior without adding a feature surface |
 | Rebuilt release artifact only | `1.1.1.1` | Packaging-only correction with unchanged solution behavior |
 
-Every published package must have a version greater than the previous package. Never replace a
-published ZIP while keeping its version: Power Platform upgrade detection and administrator audit
-trails depend on the version being immutable.
+Every changed package must have a version greater than its own previous package. Unchanged packages
+retain their previous version, filename, bytes, hash, and source provenance. Never replace a
+published ZIP while keeping its version.
 
-For every version change:
+For every artifact version change:
 
-1. Update all three live Dataverse solutions in PVE Dev with `pac solution online-version`.
-2. Update the core source versions in `solution-definition.json` and `src/Other/Solution.xml`.
-3. Update all three package versions, filenames, ownership contracts, and the code-app core-table dependency contract in
-  `config/release-packages.json`.
+1. Update only changed live Dataverse solutions in PVE Dev with `pac solution online-version`.
+2. When core changes, update its source versions in `solution-definition.json` and
+  `src/Other/Solution.xml`; otherwise leave core source untouched.
+3. Update only changed package versions and filenames in `config/release-packages.json`. Update
+  ownership or dependency contracts only when those contracts actually changed.
 4. Update the public page's version and install content.
 5. Review all indexed documentation surfaces, update the documentation digest when product inputs
   changed, and run `scripts/validate_documentation.py`.
-6. Export all three managed candidates to `output/candidate/` and run candidate validation. Do not
+6. Export changed managed candidates to `output/candidate/` and run scoped candidate validation. Do not
    regenerate the stable manifest before target-tenant approval.
-7. Test clean install and previous-version upgrade in their documented orders. Confirm all imports
-   are recognized correctly, workflow identities are preserved, and retained data remains
-   available.
-8. Publish through a pull request. Confirm CI, the refresh workflow, Pages deployment, public
-  manifest versions and hashes, and all three public downloads.
+7. Test clean install through `docs/clean-install.md` and previous-version upgrade in its documented
+  order. Confirm Code Apps preflight before imports, all managed identities/components, target-local
+  app resolution, preserved workflow identities, and retained data.
+8. Publish through a pull request. Confirm CI, the refresh workflow, Pages deployment, changed
+  manifest versions/hashes, changed downloads, and preserved hashes for unchanged artifacts.
 
-The release validator rejects filename/version drift, unsynchronized core source versions,
-unexpected code-app dependencies, stale manifests, and packages exported from a live solution
-whose version does not match the repository contract.
+The release validator rejects filename/version drift, unsynchronized core source versions when
+core changes, unexpected code-app dependencies, stale manifests, and packages exported from a live
+solution whose version does not match that artifact's repository contract.
 
 ## Recovery
 

@@ -246,7 +246,7 @@ where the transcript was read, while tenant and agent identity come from transcr
 | Turn counts | `pvci_userturncount`, `pvci_agentturncount`, `pvci_turncount` | Derived and `SessionInfo` counts |
 | Reply latency | `pvci_firstresponsems`, `pvci_avgresponsems`, `pvci_maxresponsems` | User message to first agent reply |
 | Tool metrics | `pvci_toolcallcount`, `pvci_toolerrorcount`, `pvci_tooltotalms`, `pvci_maxtoolms` | Invocation aggregates |
-| Flow metrics | `pvci_flowruncount`, `pvci_flowrunfailurecount`, `pvci_flowrunmaxms` | Correlated run aggregates |
+| Flow metrics | `pvci_flowruncount`, `pvci_flowrunfailurecount`, `pvci_flowrunmaxms` | Nullable source-local time-correlated run aggregates; null means source flow telemetry was unavailable |
 | Outcome | `pvci_sessionoutcome`, `pvci_outcomereason`, `pvci_isresolvedimplied` | `SessionInfo` values |
 | Payload safety | `pvci_payloadtruncated` | A JSON payload exceeded the storage guard |
 
@@ -259,7 +259,7 @@ where the transcript was read, while tenant and agent identity come from transcr
 | `pvci_planeventsjson` | `DynamicPlan*` reasoning events |
 | `pvci_metadatajson` | Native transcript metadata |
 | `pvci_toolcallsjson` | Tool duration, output, and exception data |
-| `pvci_flowrunsjson` | Correlation windows, candidate runs, confidence, and offsets |
+| `pvci_flowrunsjson` | Nullable source-local correlation windows, candidate runs, workflow names, and offsets; null for central source transcripts |
 | `pvci_monitorsessionid`, `pvci_embeddedconversationguid` | Legacy Monitor identifiers |
 | `pvci_topicname`, `pvci_topicid`, `pvci_csat`, `pvci_comments` | Legacy Monitor values |
 | `pvci_rawchattranscript`, `pvci_parsedturnsjson` | Legacy Monitor payloads |

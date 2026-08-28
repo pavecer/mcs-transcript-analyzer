@@ -45,7 +45,9 @@ tenant. The user performs TPM solution imports and upgrades manually.
    discovery health, source readiness, and collector enablement.
 6. Run `invoke_central_transcript_import.py --limit 1` against a readable source before activating
    the flow. Run it twice: the first call must create/update, and the second must skip through the
-   composite tenant/environment/transcript key.
+   composite tenant/environment/transcript key. On explicit local or alternate-source reprocessing,
+   updates must clear stale nullable projections and the Dataverse user lookup when the new evidence
+   no longer supplies them; create payloads continue to omit absent nullable values.
 7. Create/update `PVCI Collect Central Transcripts (scheduled)` stopped inside
    `pvConversationInsights`. It must use the packaged `pvci_centralcollector` Microsoft Dataverse
    reference and `ListRecordsWithOrganization` with the dynamic inventory URL.
@@ -175,24 +177,32 @@ Required before completion:
 ## Cross-Tenant Candidate Packages
 
 When another tenant must validate this feature, never overwrite an existing published package
-version. Advance core, optional credit add-on, and code app on one synchronized four-part version,
-for example `2.0.0.0`.
+version. Advance only artifacts whose packaged content changed. Preserve unchanged package
+versions and bytes even when another dependent artifact receives a newer four-part version.
 
 Before exporting:
 
 1. Verify the generic central flow and `pvci_centralcollector` reference are members of
    `pvConversationInsights` and no supported runtime is outside both product solutions.
 2. Run the three-solution ownership and tenant-neutrality guards against source.
-3. Set all live PVE Dev product solutions to the candidate version with
+3. Set only changed live PVE Dev product solutions to their candidate versions with
    `pac solution online-version`.
-4. Export fresh managed core, credit add-on, and code-app ZIPs into `output/candidate/`, not
-   `site/downloads/`.
+4. Export fresh managed ZIPs only for changed artifacts into `output/candidate/`, not
+   `site/downloads/`. Do not re-export unchanged packages for version alignment.
 5. Validate solution name, version, managed state, required tables/APIs/apps, code-app dependencies,
    absence of tenant runtime markers, ZIP integrity, and SHA-256 hashes.
-6. Provide the validated artifacts for manual target-tenant testing. For a clean install the user
-   imports core, optional credit add-on, then code app. For an upgrade from `1.4.0.15`, import the
-   add-on first, apply the core managed upgrade second, and upgrade the code app last. Do not
-   perform those writes in TPM.
+6. Provide the changed validated artifacts for manual target-tenant testing. When several artifacts
+   change together, preserve dependency order: core, optional credit add-on, then code app for a
+   clean install; add-on, core managed upgrade, then code app for the legacy ownership-transfer
+   upgrade. A code-app-only release upgrades only the code-app solution. Do not write to TPM.
+
+The refresh workflow evaluates a fixed `core`, `credits`, and `codeApp` matrix one artifact at a
+time. Scheduled and manual `artifact=all` requests fan out into independent legs that skip unchanged
+artifacts unless `force=true`, while a
+manual single-artifact request runs only that leg. A core collector change must therefore produce
+only a core candidate unless another artifact's own package inputs changed; each changed leg gets
+its own validated ZIP, scoped manifest, provenance commit, and retained workflow artifact. No
+`all` candidate or promotion path exists.
 
 Release `1.4.0.15` supports source-managed verification and collection only after the mapped
 identity receives organization-level Conversation Transcript Read in each selected source.

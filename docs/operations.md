@@ -35,6 +35,11 @@ tenant-neutral managed exports. The authenticated hosted PVE UI smoke passed acr
 Trends, and Credits in the persisted cross-environment consent state. The user-performed manual
 Contoso TPM import and upgrade test passed.
 
+For any fresh environment that will receive the optional code app, set **Power Apps Code Apps >
+Enable code apps** to **On**, save, and independently reload it before importing any package. See
+the authoritative [clean-install validation runbook](clean-install.md) for the policy matrix,
+target-generated app resolution, live validator, browser criteria, and cleanup workflow.
+
 For a clean installation:
 
 1. Import `pvConversationInsights-managed-2.0.0.5.zip`. Core does not prompt for a credit tenant ID.
@@ -469,12 +474,15 @@ sync parser directly without changing `pvci_syncstate`. Treat `SinceOverride` as
 its Custom API binding is corrected, and do not use it as the only safety boundary for a bulk
 reprocess.
 
-The candidate code-app artifact rendered directly with no viewport overflow in the shared VS Code
-browser. The normal `apps.powerapps.com` wrapper returned a successful launch response but aborted
-the generated app `index.html` navigation and failed inside Microsoft `webplayer-host-ui.js` before
-the app iframe mounted. Complete a hosted signed-in smoke in another supported browser/session
-before promoting the candidate; direct artifact navigation does not provide the Power Apps host
-context needed for Dataverse data loading.
+On 2026-08-26, the preview code app was deployed to PVE Dev and passed a signed-in
+`apps.powerapps.com` smoke in the shared VS Code browser. At desktop analyst width, Sessions put its
+assessment before timelines, Trends retained its completeness and latency summary, Inventory put
+selected-source remediation before the environment table, and Credits put attribution warnings
+before charts while identifying duplicate resource names by environment. The same deployment had no
+viewport overlap at narrow width. Live sessions preserved observed zero versus unavailable errors,
+knowledge, and exact tool telemetry. This proves the hosted shell and decision hierarchy; the full
+representative knowledge, expression-failure, connector-failure, no-flow, and multiple-candidate
+scenario matrix remains a separate exit gate.
 
 Knowledge retrieval diagnostics require reprocessing because older sessions have no
 `pvci_knowledge*` summaries. A successful knowledge smoke should show a nonzero Knowledge call
@@ -493,12 +501,19 @@ Use these interpretation rules when investigating a session:
 
 - `0` means the relevant telemetry was available and no event was observed. **Unavailable** means
     the transcript cannot prove zero; exact `DialogTracing` tool telemetry is normally test-only.
+    The code-app Overview and ESS KPI cards preserve this distinction for turns, errors, knowledge,
+    exact tool traces, and candidate flow matches instead of defaulting absent counters to zero.
 - Reply wait, plan-step elapsed, knowledge-step elapsed, exact invoke span, and Power Automate run
     duration are separate clocks. Do not add them together.
 - Flow matches are time-based **candidates**, not proven attribution. **Closest start** identifies
     ranking by start-time proximity only.
 - Knowledge/search plan steps are not Power Automate flow candidates and appear only under
     Knowledge and routing evidence.
+- MCP and other `LlmSkill` plan steps are tool/reasoning evidence, not Power Automate flow
+    candidates. Tool Calls shows them as planned steps with **execution not evidenced** when no exact
+    `DialogTracing` invocation was retained; they do not increase exact invocation metrics. A
+    production `CustomTopic` plan step appears under Flow Runs only when at least one backend run
+    overlaps its bounded step window; unmatched plan steps remain in Agent Reasoning.
 - Largest retained-event gap describes stored transcript events, not guaranteed user-visible
     silence.
 - Unknown flow-action status remains unknown. **First likely failure** is a triage starting point,
@@ -506,6 +521,40 @@ Use these interpretation rules when investigating a session:
     unavailable.
 - Source outcome, implied resolution, user-visible runtime errors, exact tool failures, knowledge
     failures, and candidate flow failures are independent signals and can disagree.
+
+### Session analyzer architecture audit
+
+The PVE Dev audit on 2026-08-27 compared 55 stored sessions with published Copilot Studio bot
+components and Dataverse workflow metadata. The analyzer uses these evidence boundaries:
+
+- `CustomTopic` is a selected Copilot Studio topic. It can be the primary topic, but its name alone
+    does not prove that a connector or cloud flow executed.
+- `KnowledgeSource` is knowledge retrieval. A `KnowledgeTraceData` outcome is associated with the
+    nearest prior knowledge step because the trace has no explicit step correlation ID.
+- `LlmSkill` / `MCP:` is an MCP or tool plan step. It appears in Agent Reasoning and as qualified
+    planned evidence in Tool Calls, but does not become an exact invocation or Power Automate flow
+    candidate without the corresponding evidence.
+- `DialogTracing` `Invoke*` entries are exact retained tool evidence in test transcripts. A missing
+    completion entry means **completion not observed**, not a confirmed failure.
+- Flow Runs contains exact `InvokeFlowAction` windows or `CustomTopic` windows with an overlapping
+    backend run. Every match remains time correlation, including a single candidate. Resolved Workflow
+    table names identify the candidate flow; they do not prove causality.
+- Source-local sessions can query `flowrun`. Central sessions cannot query the source environment's
+    flow runs through the collector plugin, so flow counters and JSON are **Unavailable**, not zero.
+- User error location is the nearest prior retained plan step unless the source adds an explicit
+    correlation key. Treat it as sequence context, not exact topic attribution.
+
+Validated live paths include Jira MCP `ListIssues`, ESS IT Universal Search knowledge retrieval,
+ESS IT topic-expression and connector failures, and the ServiceNow ITSM Create Ticket path. The
+ServiceNow session retained the selected `ServiceNowITSMCreateTicket` topic, three exact tool calls,
+and two time-correlated successful flows: **ESS IT ServiceNow ITSM Common Orchestrator** and
+**ESS IT ServiceNow ITSM Request Body Generator**.
+
+PVE Dev also contains published Contoso ESS HR Workday topics and Workday cloud flows, including
+National IDs, certifications, visas, company code, employment information, and common execution.
+The available HR sessions are greeting-only and contain no plan, tool, or flow events. Workday
+session analysis therefore remains unvalidated until a representative completed and failed Workday
+conversation is retained and reviewed. Do not infer Workday behavior from ServiceNow evidence.
 
 The Overview is the first-stop session view. Use Replay to inspect user/agent turns, then open
 Knowledge, Tool Calls, or Flow Runs only when the overview indicates participation or when capture

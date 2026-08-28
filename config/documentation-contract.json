@@ -1,7 +1,8 @@
 {
   "schemaVersion": 1,
-  "productSourceDigest": "94499c56eb100c13e467ed02e4d66e8f3a6be0f68df5ccd9c7a5b8f1ce9c1b4b",
+  "productSourceDigest": "a7147bfdda817bd4d24769039388c20052ed6741cd7aedcb2278eb2d98722f4f",
   "productInputs": [
+    "config/clean-install-contract.json",
     "config/release-packages.json",
     "solution/pvConversationInsights/solution-definition.json",
     "codeapp/src/App.tsx",
@@ -10,28 +11,41 @@
     "codeapp/src/lib/transcriptScope.ts",
     "codeapp/src/lib/thresholdRequestState.ts",
     "codeapp/src/lib/creditCapability.ts",
+    "codeapp/src/lib/telemetryAvailability.ts",
+    "codeapp/src/components/EssOps.tsx",
+    "codeapp/src/components/KnowledgeCalls.tsx",
+    "codeapp/src/components/ReasoningFlow.tsx",
+    "codeapp/src/components/Trends.tsx",
     "plugin/ImportCreditUsageBatch.cs",
+    "plugin/CreditUserDisclosure.cs",
+    "plugin/SyncConversationTranscripts.cs",
+    "plugin/TranscriptAnalysis.cs",
     "plugin/ThresholdChangeRequestGuard.cs",
     "plugin/ImportCentralTranscriptBatch.cs",
     "scripts/transcript_insights/create_credit_sync_flow.py",
     "scripts/transcript_insights/create_inventory_sync_flow.py",
     "scripts/transcript_insights/create_credit_governance_flow.py",
     "scripts/transcript_insights/create_credit_governance_processor_flow.py",
+    "scripts/transcript_insights/create_security_roles.py",
+    "scripts/transcript_insights/create_sync_flow.py",
     "scripts/transcript_insights/create_central_transcript_flow.py",
     "scripts/transcript_insights/create_transcript_access_verification_flow.py",
-    "codeapp/src/lib/transcriptAccessState.ts"
+    "codeapp/src/lib/transcriptAccessState.ts",
+    "scripts/validate_clean_install.py"
   ],
   "indexedSurfaces": [
     "CHANGELOG.md",
     "ROADMAP.md",
     ".github/ISSUE_TEMPLATE/bug_report.yml",
     ".github/ISSUE_TEMPLATE/feature_request.yml",
+    ".github/instructions/analyst-experience.instructions.md",
     ".github/instructions/browser-use.instructions.md",
     ".github/instructions/npm-dependencies.instructions.md",
     ".github/instructions/solution-boundaries.instructions.md",
     ".github/pull_request_template.md",
     ".github/skills/release-documentation/SKILL.md",
     ".github/skills/release-tracking/SKILL.md",
+    ".github/skills/clean-install-validation/SKILL.md",
     ".github/skills/central-transcript-collector/SKILL.md",
     ".github/skills/linkedin-release/SKILL.md",
     ".github/workflows/build.yml",
@@ -39,10 +53,13 @@
     ".github/workflows/linkedin-release.yml",
     ".github/workflows/pages.yml",
     ".github/workflows/refresh-packages.yml",
+    ".github/workflows/release-promotion.yml",
     "CONTRIBUTING.md",
     "README.md",
+    "codeapp/README.md",
     "docs/api-reference.md",
     "docs/architecture.md",
+    "docs/clean-install.md",
     "docs/credit-reporting.md",
     "docs/cross-environment-credit-consumption-design.md",
     "docs/data-model.md",
@@ -67,11 +84,19 @@
     ],
     "ROADMAP.md": [
       "Replace pre-authorized collection with zero-touch onboarding",
+      "availability-aware telemetry labels",
+      "mixed-version configuration is valid",
+      "second brand-new Sandbox retry on 2026-08-28",
+      "original Code Apps policy blocker is resolved",
+      "not a full fresh authenticated",
+      "clears stale nullable",
       "Detailed cross-environment agent enrichment",
       "Explicitly out of scope for the current product boundary",
       "CHANGELOG.md"
     ],
     "README.md": [
+      "clean-install runbook",
+      "Enable code apps",
       "{customTableCount} custom tables",
       "{roleCount} application roles",
       "7 packaged scheduled flows",
@@ -84,6 +109,30 @@
       ,"Setup required"
       ,"discovery and verification do not enable collection"
       ,"Credits resource reporting remain scoped"
+    ],
+    "codeapp/README.md": [
+      "Conversation Insights Explorer code app",
+      "Enable code apps",
+      "Power Apps Premium",
+      "target-generated app ID",
+      "diagnostic only",
+      "docs/clean-install.md"
+    ],
+    "config/clean-install-contract.json": [
+      "\"schemaVersion\": 1",
+      "\"releaseKey\": \"core\"",
+      "\"powerApps_AllowCodeApps\"",
+      "\"EnvironmentManagement.Settings.ReadWrite\"",
+      "\"installationAcceptance\"",
+      "\"requiredForInstallationAcceptance\": false",
+      "\"authenticatedFunctionalSmoke\"",
+      "\"diagnosticOnly\": true",
+      "\"targetAbsentFromTenantInventory\": true",
+      "\"targetDataverseNoLongerResolves\": true",
+      "\"operationNotStartableAfterSuccessfulDelete\": \"deletion-in-progress\"",
+      "\"pacAdminStatusAuthoritative\": false",
+      "\"verificationMode\": \"one-later-verification\"",
+      "\"policyCategory\": \"conditional\""
     ],
     "docs/architecture.md": [
       "Stable solution boundaries",
@@ -125,6 +174,8 @@
       "Environment allocation, TenantPool, and PayGo mutation remain out of scope"
     ],
     "docs/operations.md": [
+      "clean-install validation runbook",
+      "Enable code apps",
       "Managed 2.0.0.5 stable installation and upgrade",
       "pvConversationInsightsCredits-managed-2.0.0.5.zip",
       "PVCI Credit Administrator",
@@ -134,8 +185,11 @@
       "AppliedUnverified"
       ,"status never imply this consent"
       ,"Credits resource reporting to the host environment"
+      ,"instead of defaulting absent counters to zero"
     ],
     "docs/permissions-and-inventory.md": [
+      "clean-install runbook",
+      "Grouped Managed Environments",
       "Optional `pvConversationInsightsCredits`",
       "transcript-only operation",
       "PVCI Credit Administrator",
@@ -146,6 +200,8 @@
       ,"Credits resource reporting stay scoped to the host environment"
     ],
     "scripts/transcript_insights/README.md": [
+      "docs/clean-install.md",
+      "Enable code apps",
       "exactly three managed packages",
       "{customTableCount} custom tables",
       "PVCI Credit Administrator",
@@ -156,9 +212,17 @@
       ,"require_authorized_tenant"
     ],
     "docs/release-automation.md": [
+      "clean-install runbook",
+      "direct runtime loading is diagnostic only",
       "exactly three managed Power Platform solutions",
+      "core artifact version is the stable release identity",
       "validate_candidate_packages.py",
       "validate_release_promotion.py",
+      "There is no `all` promotion path",
+      "`artifactScope` and `artifacts` keys",
+      "validate_release_evidence.py",
+      "candidate_run_id",
+      "config/release-evidence.json",
       "config/documentation-contract.json",
       "scripts/validate_documentation.py",
       ".github/skills/release-documentation/SKILL.md",
@@ -170,13 +234,39 @@
       "dry_run=true",
       "require_authorized_config"
     ],
+    "docs/clean-install.md": [
+      "authoritative procedure",
+      "Enable code apps",
+      "group rule 22",
+      "Power Apps Premium",
+      "EnvironmentManagement.Settings.ReadWrite",
+      "within an hour in most cases",
+      "up to 24 hours",
+      "Access to the Dataverse API is restricted for this application ID.",
+      "runtime URL lacks the parent Power Apps host token",
+      "Do not pass `--user`",
+      "pac org who",
+      "recommended deterministic package-import command",
+      "Authenticated functional smoke remains an independent gate",
+      "target-generated app ID",
+      "Always delete the disposable environment",
+      "OperationNotStartable",
+      "canInitiateDelete:false",
+      "not authoritative for this lifecycle convergence",
+      "Perform one later verification",
+      "deletion-in-progress"
+    ],
     "CONTRIBUTING.md": [
       "scripts/validate_documentation.py",
+      "scripts/validate_parser_parity.py",
+      "scripts/validate_release_evidence.py",
       "config/documentation-contract.json",
       ".github/skills/release-documentation/SKILL.md"
     ],
     ".github/pull_request_template.md": [
       "python3 scripts/validate_documentation.py",
+      "python3 scripts/validate_parser_parity.py",
+      "python3 scripts/validate_release_evidence.py",
       "Documentation contract reviewed"
     ],
     ".github/skills/release-documentation/SKILL.md": [
@@ -186,12 +276,32 @@
       "python3 scripts/validate_site.py"
     ],
     ".github/skills/release-tracking/SKILL.md": [
-      "all three package artifacts",
+      "changed package artifacts",
+      "Mixed-version stable manifests are valid",
       "CHANGELOG.md",
       "ROADMAP.md",
       "site/index.html",
+      "config/release-evidence.json",
+      "validate release promotion",
+      "No `all` candidate or promotion path",
       "python3 scripts/validate_documentation.py",
       "publish LinkedIn release"
+    ],
+    ".github/skills/clean-install-validation/SKILL.md": [
+      "name: clean-install-validation",
+      "mandatory preflight before imports",
+      "pac org who",
+      "recommended deterministic package-import command",
+      "Authenticated functional smoke is another independent gate",
+      "Never issue parallel browser operations",
+      "runtime loading as authenticated smoke",
+      "Always delete the disposable environment",
+      "OperationNotStartable",
+      "canInitiateDelete:false",
+      "not authoritative for this lifecycle convergence",
+      "Perform one later verification",
+      "deletion-in-progress",
+      "Release Maintainer handoff"
     ],
     ".github/skills/linkedin-release/SKILL.md": [
       "generate_linkedin_post.py",
@@ -205,6 +315,8 @@
       "three-solution ownership",
       "ListRecordsWithOrganization",
       "pvci_centralcollector",
+      "clear stale nullable projections",
+      "Dataverse user lookup",
       "validate_site.py",
       "must not package hardcoded source"
     ],
@@ -224,7 +336,9 @@
       "HTTP 5xx failure during dependency download"
     ],
     ".github/workflows/build.yml": [
-      "python3 scripts/validate_documentation.py"
+      "python3 scripts/validate_documentation.py",
+      "python scripts/validate_parser_parity.py",
+      "python scripts/validate_release_evidence.py"
     ],
     ".github/workflows/candidate-release.yml": [
       "build_candidate_package.py",
@@ -242,14 +356,28 @@
     ".github/workflows/pages.yml": [
       "python3 scripts/validate_documentation.py"
     ],
+    ".github/workflows/release-promotion.yml": [
+      "candidate_run_id",
+      "validate_release_promotion.py",
+      "validate_release_evidence.py"
+    ],
     "site/README.md": [
       "scripts/validate_documentation.py --list-surfaces",
       "scripts/validate_documentation.py --print-digest",
+      "mixed-version stable manifests are valid",
+      "there is no `all` promotion path",
       "smoke-test all 7 flows",
       ".github/skills/release-documentation/SKILL.md"
     ],
     "site/index.html": [
+      "clean-install runbook",
+      "Pre-enable the optional code app",
+      "pac solution import --path",
+      "original Code Apps policy blocker is resolved",
+      "not a full fresh authenticated data-tab smoke",
       "2.0.0.5 stable architecture",
+      "mixed-version configuration is valid",
+      "clears stale nullable session values",
       "pvConversationInsightsCredits",
       "Released 2026-08-25",
       "id=\"trust-credits\"",
@@ -271,6 +399,19 @@
       ,"Discovery and verification are not consent"
       ,"disabling it stops future imports but does not delete records already copied"
       ,"Credits resource reporting stay host-scoped"
+      ,"observed zero and telemetry that the transcript could not provide"
+    ],
+    "scripts/validate_clean_install.py": [
+      "DEFAULT_CONTRACT",
+      "KNOWN_RELEASE_KEYS",
+      "validate_contract",
+      "--contract",
+      "Target access token tenant does not match",
+      "appopenuri",
+      "EXPECTED_CLEANUP_COMPLETION_CRITERIA",
+      "EXPECTED_CLEANUP_CONVERGENCE",
+      "cleanup completion requires target absence from tenant",
+      "one-later-verification"
     ]
   }
 }

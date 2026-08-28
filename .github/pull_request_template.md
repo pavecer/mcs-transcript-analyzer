@@ -6,9 +6,13 @@
 
 ```text
 python3 -m py_compile scripts/transcript_insights/*.py
+python3 -m unittest discover -s scripts/transcript_insights -p "test_*.py" -v
+python3 scripts/validate_parser_parity.py
 (cd plugin && dotnet build -c Release)
-(cd pcf/JsonViewer && npm run build)
+(cd pcf/JsonViewer && npm run lint && npm run build)
 (cd codeapp && npm run build)
+python3 scripts/validate_solution_ownership.py
+python3 scripts/validate_release_evidence.py
 python3 scripts/validate_documentation.py
 python3 scripts/validate_site.py
 python3 scripts/validate_browser_policy.py
@@ -30,4 +34,5 @@ Row counts before → after: <!-- sessions / turns -->
 - [ ] Docs updated if behaviour or limitations changed
 - [ ] `CHANGELOG.md` and `ROADMAP.md` reviewed and updated when release scope changed
 - [ ] Documentation contract reviewed and both documentation/site validators pass
+- [ ] Published release evidence remains tied to candidate hashes and tenant/UI validation
 - [ ] Browser/UI validation reused the shared VS Code browser; browser policy gate passes

@@ -76,7 +76,8 @@ namespace PvciTranscripts
 
             var userCache = new Dictionary<string, Entity>(StringComparer.OrdinalIgnoreCase);
             var botNameCache = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-            List<Entity> flowRuns = QueryFlowRuns(service, tracing);
+            bool flowRunsAvailable;
+            List<Entity> flowRuns = QueryFlowRuns(service, tracing, out flowRunsAvailable);
 
             foreach (Entity transcript in QueryTranscripts(service, since, maxRecords))
             {
@@ -84,7 +85,7 @@ namespace PvciTranscripts
                 try
                 {
                     SyncResult r = SyncOne(service, tracing, transcript, userCache, botNameCache,
-                                           includeTraces, reprocess, flowRuns, sourceEnvironment);
+                                           includeTraces, reprocess, flowRuns, flowRunsAvailable, sourceEnvironment);
                     processed++;
                     turns += r.Turns;
                     if (r.Skipped) skipped++;
@@ -138,17 +139,6 @@ namespace PvciTranscripts
             public string OrganizationName;
         }
 
-        internal class TranscriptDiagnostics
-        {
-            public string TopicId;
-            public string TopicName;
-            public int UserErrorCount;
-            public string PrimaryErrorCode;
-            public string PrimaryErrorMessage;
-            public string PrimaryErrorTopic;
-            public string ErrorCategory;
-        }
-
         internal static SyncResult ImportCentralRow(
             IOrganizationService service,
             ITracingService tracing,
@@ -177,6 +167,7 @@ namespace PvciTranscripts
                 includeTraces,
                 reprocess,
                 new List<Entity>(),
+                false,
                 source,
                 compositeId);
         }
@@ -215,6 +206,7 @@ namespace PvciTranscripts
             bool includeTraces,
             bool reprocess,
             List<Entity> flowRuns,
+            bool flowRunsAvailable,
             SourceEnvironment sourceEnvironment,
             string transcriptIdOverride = null)
         {
@@ -314,7 +306,7 @@ namespace PvciTranscripts
 
             DateTime? start = stamps.Count > 0 ? EpochUtc(stamps.Min()) : (DateTime?)null;
             DateTime? end = stamps.Count > 0 ? EpochUtc(stamps.Max()) : (DateTime?)null;
-            TranscriptDiagnostics diagnostics = ExtractDiagnostics(activities);
+            TranscriptDiagnostics diagnostics = TranscriptAnalysis.ExtractDiagnostics(activities);
 
             var userMessages = messages.Where(m => IsUser(m)).ToList();
             var agentMessages = messages.Where(m => !IsUser(m)).ToList();
@@ -348,7 +340,7 @@ namespace PvciTranscripts
             List<long> latencies = ResponseLatencies(messages);
             List<object> toolCalls = ExtractToolCalls(activities);
             string toolsJson = WriteLimited(toolCalls, out ignore);
-            List<object> knowledgeCalls = ExtractKnowledgeCalls(activities);
+            List<object> knowledgeCalls = TranscriptAnalysis.ExtractKnowledgeCalls(activities);
             string knowledgeJson = WriteLimited(knowledgeCalls, out ignore);
             int knowledgeSources = 0, knowledgeFailures = 0;
             foreach (object knowledgeCall in knowledgeCalls)
@@ -404,10 +396,11 @@ namespace PvciTranscripts
             session["pvci_environmentname"] = Trim(sourceEnvironment.Name, TextLimit);
             session["pvci_useraadobjectid"] = Trim(userAad, TextLimit);
             session["pvci_channel"] = Trim(channelName, TextLimit);
-            if (start.HasValue) session["pvci_startdatetimeutc"] = start.Value;
-            if (end.HasValue) session["pvci_enddatetimeutc"] = end.Value;
-            if (start.HasValue && end.HasValue)
-                session["pvci_durationseconds"] = (int)(end.Value - start.Value).TotalSeconds;
+            session["pvci_startdatetimeutc"] = start.HasValue ? (object)start.Value : null;
+            session["pvci_enddatetimeutc"] = end.HasValue ? (object)end.Value : null;
+            session["pvci_durationseconds"] = start.HasValue && end.HasValue
+                ? (object)(int)(end.Value - start.Value).TotalSeconds
+                : null;
             session["pvci_activitycount"] = activities.Count;
             session["pvci_messagecount"] = messages.Count;
             session["pvci_eventcount"] = eventCount;
@@ -417,30 +410,26 @@ namespace PvciTranscripts
             session["pvci_lastagentmessage"] = agentMessages.Count > 0 ? Json.Str(agentMessages[agentMessages.Count - 1], "text") : null;
             session["pvci_istestmode"] = testMode;
             session["pvci_multiuseranomaly"] = userIds.Count > 1;
-            if (latencies.Count > 0)
-            {
-                session["pvci_firstresponsems"] = (int)latencies[0];
-                session["pvci_avgresponsems"] = (int)latencies.Average();
-                session["pvci_maxresponsems"] = (int)latencies.Max();
-            }
+            session["pvci_firstresponsems"] = latencies.Count > 0 ? (object)(int)latencies[0] : null;
+            session["pvci_avgresponsems"] = latencies.Count > 0 ? (object)(int)latencies.Average() : null;
+            session["pvci_maxresponsems"] = latencies.Count > 0 ? (object)(int)latencies.Max() : null;
             session["pvci_toolcallcount"] = toolCalls.Count;
             session["pvci_toolerrorcount"] = toolErrors;
-            if (toolDurations.Count > 0)
-            {
-                session["pvci_tooltotalms"] = (int)toolDurations.Sum();
-                session["pvci_maxtoolms"] = (int)toolDurations.Max();
-            }
+            session["pvci_tooltotalms"] = toolDurations.Count > 0 ? (object)(int)toolDurations.Sum() : null;
+            session["pvci_maxtoolms"] = toolDurations.Count > 0 ? (object)(int)toolDurations.Max() : null;
             session["pvci_toolcallsjson"] = toolsJson;
             session["pvci_knowledgecallcount"] = knowledgeCalls.Count;
             session["pvci_knowledgesourcecount"] = knowledgeSources;
             session["pvci_knowledgefailurecount"] = knowledgeFailures;
             session["pvci_knowledgecallsjson"] = knowledgeJson;
-            session["pvci_flowrunsjson"] = flowsJson;
-            session["pvci_flowruncount"] = matchedRuns;
-            session["pvci_flowrunfailurecount"] = failedRuns;
-            if (maxRunMs > 0) session["pvci_flowrunmaxms"] = (int)maxRunMs;
+            session["pvci_flowrunsjson"] = flowRunsAvailable ? (object)flowsJson : null;
+            session["pvci_flowruncount"] = flowRunsAvailable ? (object)matchedRuns : null;
+            session["pvci_flowrunfailurecount"] = flowRunsAvailable ? (object)failedRuns : null;
+            session["pvci_flowrunmaxms"] = flowRunsAvailable && maxRunMs > 0 ? (object)(int)maxRunMs : null;
             session["pvci_sessionoutcome"] = Trim(Json.Str(sessionInfo, "outcome"), TextLimit);
-            string userErrorReason = ErrorReason(diagnostics.PrimaryErrorCode, diagnostics.PrimaryErrorMessage);
+            string userErrorReason = TranscriptAnalysis.ErrorReason(
+                diagnostics.PrimaryErrorCode,
+                diagnostics.PrimaryErrorMessage);
             session["pvci_outcomereason"] = Trim(userErrorReason ?? Json.Str(sessionInfo, "outcomeReason"), TextLimit);
             session["pvci_usererrorcount"] = diagnostics.UserErrorCount;
             session["pvci_primaryerrorcode"] = Trim(diagnostics.PrimaryErrorCode, TextLimit);
@@ -448,9 +437,11 @@ namespace PvciTranscripts
             session["pvci_primaryerrortopic"] = Trim(diagnostics.PrimaryErrorTopic, TextLimit);
             session["pvci_errorcategory"] = Trim(diagnostics.ErrorCategory, TextLimit);
             object implied = Json.Get(sessionInfo, "impliedSuccess");
-            if (implied is bool) session["pvci_isresolvedimplied"] = ((bool)implied) ? "true" : "false";
+            session["pvci_isresolvedimplied"] = implied is bool
+                ? (object)(((bool)implied) ? "true" : "false")
+                : null;
             int? sessionTurns = Json.Int(sessionInfo, "turnCount");
-            if (sessionTurns.HasValue) session["pvci_turncount"] = sessionTurns.Value;
+            session["pvci_turncount"] = sessionTurns.HasValue ? (object)sessionTurns.Value : null;
             session["pvci_payloadtruncated"] = truncated || truncatedConv;
             session["pvci_activitiesjson"] = activitiesJson;
             session["pvci_conversationjson"] = conversationJson;
@@ -462,12 +453,15 @@ namespace PvciTranscripts
                 sourceEnvironment,
                 sourceEnvironment.TenantId ?? Json.Str(metadata, "AADTenantId"));
             session["pvci_correlationstatus"] = systemUser != null ? "exact" : (string.IsNullOrEmpty(userAad) ? "unmatched" : "heuristic");
-            if (systemUser != null)
-                session["pvci_userid"] = new EntityReference("systemuser", systemUser.Id);
-            if (systemUser != null)
-                session["pvci_userupn"] = Trim(systemUser.GetAttributeValue<string>("domainname"), TextLimit);
-            if (systemUser != null)
-                session["pvci_userdisplayname"] = Trim(systemUser.GetAttributeValue<string>("fullname"), TextLimit);
+            session["pvci_userid"] = systemUser != null
+                ? (object)new EntityReference("systemuser", systemUser.Id)
+                : null;
+            session["pvci_userupn"] = systemUser != null
+                ? (object)Trim(systemUser.GetAttributeValue<string>("domainname"), TextLimit)
+                : null;
+            session["pvci_userdisplayname"] = systemUser != null
+                ? (object)Trim(systemUser.GetAttributeValue<string>("fullname"), TextLimit)
+                : null;
 
             Guid sessionId;
             bool wasCreated;
@@ -496,7 +490,7 @@ namespace PvciTranscripts
             {
                 string type = Json.Str(a, "type");
                 string name = Json.Str(a, "name");
-                if (!includeTraces && !IsUserErrorTrace(a)
+                if (!includeTraces && !TranscriptAnalysis.IsUserErrorTrace(a)
                     && ((type != null && NoiseTypes.Contains(type)) || (name != null && NoiseEvents.Contains(name))))
                     continue;
 
@@ -590,65 +584,9 @@ namespace PvciTranscripts
             return role.HasValue && role.Value == 1;
         }
 
-        private static bool IsUserErrorTrace(object activity)
-        {
-            if (!string.Equals(Json.Str(activity, "valueType"), "ErrorTraceData", StringComparison.Ordinal)) return false;
-            object isUserError = Json.Get(Json.Get(activity, "value"), "isUserError");
-            return isUserError is bool && (bool)isUserError;
-        }
-
         private static long? Ms(object activity)
         {
             return Json.Long(activity, "timestampMs");
-        }
-
-        private static TranscriptDiagnostics ExtractDiagnostics(List<object> activities)
-        {
-            var diagnostics = new TranscriptDiagnostics();
-            string currentTopic = null;
-            foreach (object activity in activities)
-            {
-                if (string.Equals(Json.Str(activity, "name"), "DynamicPlanStepTriggered", StringComparison.OrdinalIgnoreCase))
-                {
-                    string topicId = Json.Str(Json.Get(activity, "value"), "taskDialogId");
-                    if (!string.IsNullOrWhiteSpace(topicId))
-                    {
-                        currentTopic = LastSegment(topicId.Trim());
-                        if (string.IsNullOrEmpty(diagnostics.TopicId)) diagnostics.TopicId = topicId.Trim();
-                        if (string.IsNullOrEmpty(diagnostics.TopicName)) diagnostics.TopicName = currentTopic;
-                    }
-                }
-
-                if (!string.Equals(Json.Str(activity, "valueType"), "ErrorTraceData", StringComparison.Ordinal)) continue;
-                object value = Json.Get(activity, "value");
-                object isUserError = Json.Get(value, "isUserError");
-                if (!(isUserError is bool) || !(bool)isUserError) continue;
-
-                diagnostics.UserErrorCount++;
-                diagnostics.PrimaryErrorCode = TrimOrNull(Json.Str(value, "errorCode"));
-                diagnostics.PrimaryErrorMessage = TrimOrNull(Json.Str(value, "errorMessage"));
-                diagnostics.PrimaryErrorTopic = currentTopic;
-                diagnostics.ErrorCategory = ErrorCategory(diagnostics.PrimaryErrorCode, diagnostics.PrimaryErrorMessage);
-            }
-            return diagnostics;
-        }
-
-        private static string ErrorReason(string errorCode, string errorMessage)
-        {
-            if (!string.IsNullOrEmpty(errorCode) && !string.IsNullOrEmpty(errorMessage)) return errorCode + ": " + errorMessage;
-            return errorCode ?? errorMessage;
-        }
-
-        private static string ErrorCategory(string errorCode, string errorMessage)
-        {
-            string text = ((errorCode ?? string.Empty) + " " + (errorMessage ?? string.Empty)).ToLowerInvariant();
-            if (text.Contains("authentication") || text.Contains("unauthorized") || text.Contains("forbidden") || text.Contains("consent"))
-                return "Authentication";
-            if (text.Contains("connector") || text.Contains("connection") || text.Contains("reference id"))
-                return "Connector";
-            if (text.Contains("expression") || text.Contains("contentvalidation"))
-                return "Topic expression";
-            return "Topic runtime";
         }
 
         private static string TrimOrNull(string value)
@@ -714,6 +652,7 @@ namespace PvciTranscripts
                         { "started_utc", FormatIso(EpochUtc(occ[i].Key / 1000)) },
                         { "duration_ms", (double)(occ[i + 1].Key - occ[i].Key) },
                         { "failed", exception.Length > 0 },
+                        { "completion_observed", true },
                         { "exception", exception },
                         { "output", Json.Get(Json.Get(endAct, "variableState"), "dialogState") },
                     });
@@ -728,8 +667,9 @@ namespace PvciTranscripts
                         { "topic", LastSegment(Json.Str(act, "topicId")) },
                         { "started_utc", FormatIso(EpochUtc(occ[occ.Count - 1].Key / 1000)) },
                         { "duration_ms", null },
-                        { "failed", true },
-                        { "exception", "no completion trace - call did not finish" },
+                        { "failed", false },
+                        { "completion_observed", false },
+                        { "exception", "completion trace was not retained; outcome is unknown" },
                         { "output", null },
                     });
                 }
@@ -737,66 +677,19 @@ namespace PvciTranscripts
             return calls;
         }
 
-        private static List<object> ExtractKnowledgeCalls(List<object> activities)
-        {
-            var calls = new List<object>();
-            string stepId = null, task = null, startedUtc = null;
-            long? startedMs = null;
-
-            foreach (object activity in activities)
-            {
-                string name = Json.Str(activity, "name") ?? string.Empty;
-                object value = Json.Get(activity, "value");
-                if (name.Equals("DynamicPlanStepTriggered", StringComparison.OrdinalIgnoreCase))
-                {
-                    string candidateTask = Json.Str(value, "taskDialogId");
-                    if (!string.IsNullOrEmpty(candidateTask)
-                        && candidateTask.IndexOf("search", StringComparison.OrdinalIgnoreCase) >= 0)
-                    {
-                        stepId = Json.Str(value, "stepId");
-                        task = candidateTask;
-                        startedMs = Ms(activity);
-                        startedUtc = startedMs.HasValue ? FormatIso(EpochUtc(startedMs.Value / 1000)) : null;
-                    }
-                    continue;
-                }
-
-                if (!string.Equals(Json.Str(activity, "valueType"), "KnowledgeTraceData", StringComparison.Ordinal)) continue;
-                List<object> cited = Json.Arr(Json.Get(value, "citedKnowledgeSources")) ?? new List<object>();
-                List<object> failedSources = Json.Arr(Json.Get(value, "failedKnowledgeSourcesTypes")) ?? new List<object>();
-                string completion = Json.Str(value, "completionState");
-                bool completionFailed = !string.Equals(completion, "Answered", StringComparison.OrdinalIgnoreCase)
-                    && !string.Equals(completion, "Completed", StringComparison.OrdinalIgnoreCase)
-                    && !string.Equals(completion, "Complete", StringComparison.OrdinalIgnoreCase)
-                    && !string.Equals(completion, "Succeeded", StringComparison.OrdinalIgnoreCase);
-                long? finishedMs = Ms(activity);
-                object searchedValue = Json.Get(value, "isKnowledgeSearched");
-
-                calls.Add(new Dictionary<string, object>(StringComparer.Ordinal)
-                {
-                    { "step_id", stepId },
-                    { "task", task ?? "Knowledge search" },
-                    { "started_utc", startedUtc },
-                    { "duration_ms", startedMs.HasValue && finishedMs.HasValue ? (object)(double)(finishedMs.Value - startedMs.Value) : null },
-                    { "completion_state", completion },
-                    { "searched", searchedValue is bool && (bool)searchedValue },
-                    { "cited_sources", cited },
-                    { "failed_source_types", failedSources },
-                    { "failed", failedSources.Count > 0 || completionFailed },
-                });
-            }
-            return calls;
-        }
-
-        private static List<Entity> QueryFlowRuns(IOrganizationService service, ITracingService tracing)
+        private static List<Entity> QueryFlowRuns(
+            IOrganizationService service,
+            ITracingService tracing,
+            out bool available)
         {
             var results = new List<Entity>();
+            available = true;
             try
             {
                 var query = new QueryExpression("flowrun")
                 {
                     ColumnSet = new ColumnSet("flowrunid", "name", "status", "starttime", "endtime",
-                                             "duration", "workflowid", "workflowname", "errorcode",
+                                             "duration", "workflowid", "errorcode",
                                              "errormessage", "parentrunid", "callingproductrunid",
                                              "isprimary", "conversationid"),
                     PageInfo = new PagingInfo { Count = 500, PageNumber = 1 },
@@ -811,14 +704,47 @@ namespace PvciTranscripts
                     query.PageInfo.PageNumber++;
                     query.PageInfo.PagingCookie = page.PagingCookie;
                 }
+                PopulateWorkflowNames(service, results);
             }
             catch (Exception ex)
             {
                 // Flow run visibility depends on privileges; correlation is best-effort.
+                available = false;
                 tracing.Trace("flowrun query failed: {0}", ex.Message);
             }
             tracing.Trace("flow runs available: {0}", results.Count);
             return results;
+        }
+
+        private static void PopulateWorkflowNames(IOrganizationService service, List<Entity> flowRuns)
+        {
+            var workflowIds = flowRuns
+                .Select(run => run.GetAttributeValue<string>("workflowid"))
+                .Where(value => !string.IsNullOrWhiteSpace(value))
+                .Select(value => { Guid id; return Guid.TryParse(value, out id) ? (Guid?)id : null; })
+                .Where(value => value.HasValue)
+                .Select(value => value.Value)
+                .Distinct()
+                .ToArray();
+            if (workflowIds.Length == 0) return;
+
+            var query = new QueryExpression("workflow")
+            {
+                ColumnSet = new ColumnSet("workflowid", "name"),
+            };
+            query.Criteria.AddCondition("workflowid", ConditionOperator.In, workflowIds.Cast<object>().ToArray());
+            var names = service.RetrieveMultiple(query).Entities.ToDictionary(
+                row => row.Id.ToString(),
+                row => row.GetAttributeValue<string>("name"),
+                StringComparer.OrdinalIgnoreCase);
+
+            foreach (Entity run in flowRuns)
+            {
+                string workflowId = run.GetAttributeValue<string>("workflowid");
+                string name;
+                if (!string.IsNullOrWhiteSpace(workflowId) && names.TryGetValue(workflowId, out name))
+                    run["workflowname"] = name;
+            }
         }
 
         private class FlowSpan
@@ -899,7 +825,7 @@ namespace PvciTranscripts
                 if (name.Equals("DynamicPlanStepTriggered", StringComparison.OrdinalIgnoreCase))
                 {
                     string taskDialogId = Json.Str(value, "taskDialogId");
-                    if (!IsFlowCandidateTask(taskDialogId)) continue;
+                    if (!IsFlowCandidateTask(taskDialogId, Json.Str(value, "type"))) continue;
                     steps[stepId] = new FlowSpan
                     {
                         ActionId = stepId,
@@ -933,11 +859,15 @@ namespace PvciTranscripts
             return ordered;
         }
 
-        private static bool IsFlowCandidateTask(string taskDialogId)
+        private static bool IsFlowCandidateTask(string taskDialogId, string taskType)
         {
             if (string.IsNullOrWhiteSpace(taskDialogId)) return false;
-            return taskDialogId.IndexOf("search", StringComparison.OrdinalIgnoreCase) < 0
-                && taskDialogId.IndexOf("knowledge", StringComparison.OrdinalIgnoreCase) < 0;
+            if (taskDialogId.IndexOf("search", StringComparison.OrdinalIgnoreCase) >= 0
+                || taskDialogId.IndexOf("knowledge", StringComparison.OrdinalIgnoreCase) >= 0
+                || taskDialogId.StartsWith("MCP:", StringComparison.OrdinalIgnoreCase)) return false;
+            if (!string.IsNullOrWhiteSpace(taskType))
+                return taskType.Equals("CustomTopic", StringComparison.OrdinalIgnoreCase);
+            return taskDialogId.IndexOf(".topic.", StringComparison.OrdinalIgnoreCase) >= 0;
         }
 
         private static List<object> CorrelateFlowRuns(List<object> activities, List<Entity> flowRuns)
@@ -984,6 +914,8 @@ namespace PvciTranscripts
                     ranked[r]["rank"] = (double)r;
                     ranked[r]["best"] = r == 0;
                 }
+
+                if (span.Source == "plan_step" && ranked.Count == 0) continue;
 
                 output.Add(new Dictionary<string, object>(StringComparer.Ordinal)
                 {

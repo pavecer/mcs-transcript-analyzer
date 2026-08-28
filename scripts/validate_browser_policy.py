@@ -32,7 +32,7 @@ def main() -> None:
     errors: list[str] = []
     config = json.loads(HOOK_CONFIG.read_text(encoding="utf-8"))
     command = config.get("hooks", {}).get("PreToolUse", [{}])[0].get("command")
-    if command != "python3 .github/hooks/block_external_browser.py":
+    if command != "python .github/hooks/block_external_browser.py":
         errors.append("PreToolUse hook does not invoke the external-browser blocker")
 
     instructions = INSTRUCTIONS.read_text(encoding="utf-8")
@@ -52,6 +52,7 @@ def main() -> None:
         {"tool_name": "run_in_terminal", "tool_input": {"command": "open https://example.com"}},
         {"tool_name": "run_in_terminal", "tool_input": {"command": "google-chrome-stable https://example.com"}},
         {"tool_name": "functions.run_in_terminal", "tool_input": {"command": "open -a 'Google Chrome' https://example.com"}},
+        {"tool_name": "functions.powershell", "tool_input": {"command": "npx playwright test"}},
         {"tool_name": "run_playwright_code", "tool_input": {"code": "return await page.title();"}},
         {"tool_name": "run_playwright_code", "tool_input": {"pageId": "shared-page", "code": "return await page.context().newPage();"}},
         {"tool_name": "run_playwright_code", "tool_input": {"pageId": "shared-page", "code": "return await chromium.launch();"}},
@@ -66,6 +67,7 @@ def main() -> None:
         {"tool_name": "run_playwright_code", "tool_input": {"pageId": "shared-page", "code": "return await page.title();"}},
         {"tool_name": "functions.run_in_terminal", "tool_input": {"command": "npm test"}},
         {"tool_name": "functions.run_in_terminal", "tool_input": {"command": "rg playwright .github/hooks"}},
+        {"tool_name": "functions.powershell", "tool_input": {"command": "git status --short"}},
     ]
     for payload in denied:
         if hook_decision(payload) != "deny":

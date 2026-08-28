@@ -15,6 +15,16 @@ on:
         required: false
         type: boolean
         default: false
+      artifact:
+        description: Solution artifact to refresh
+        required: false
+        type: choice
+        default: all
+        options:
+          - all
+          - core
+          - credits
+          - codeApp
 
 permissions:
   contents: read
@@ -37,6 +47,10 @@ env:
 jobs:
   refresh:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        artifact: [core, credits, codeApp]
     steps:
       - uses: actions/checkout@v4
         with:
@@ -46,14 +60,33 @@ jobs:
         id: changes
         shell: bash
         run: |
-          source_sha=$(git log -1 --format=%H -- \
-            codeapp plugin pcf solution scripts/transcript_insights config/release-packages.json)
-          packaged_sha=$(python3 - <<'PY'
+          requested="${{ inputs.artifact || 'all' }}"
+          artifact="${{ matrix.artifact }}"
+          if [[ "$requested" != "all" && "$requested" != "$artifact" ]]; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "Skipping $artifact because $requested was requested."
+            exit 0
+          fi
+          case "$artifact" in
+            core) paths=(plugin pcf solution/pvConversationInsights scripts/transcript_insights) ;;
+            credits) paths=(solution/pvConversationInsightsCredits ':(glob)scripts/transcript_insights/*credit*.py') ;;
+            codeApp) paths=(codeapp) ;;
+            *) echo "::error::Unsupported artifact scope: $artifact"; exit 1 ;;
+          esac
+          source_sha=$(git log -1 --format=%H -- "${paths[@]}")
+          packaged_sha=$(ARTIFACT="$artifact" python3 - <<'PY'
           import json
+          import os
           from pathlib import Path
 
           path = Path("site/downloads/release-manifest.json")
-          print(json.loads(path.read_text())["sourceCommit"] if path.exists() else "")
+          if not path.exists():
+              print("")
+          else:
+              manifest = json.loads(path.read_text())
+              artifact = os.environ["ARTIFACT"]
+              published = manifest.get("artifacts", {}).get(artifact, {})
+              print(published.get("sourceCommit", manifest.get("sourceCommit", "")))
           PY
           )
           force="${{ inputs.force || 'false' }}"
@@ -63,7 +96,8 @@ jobs:
           else
             echo "changed=true" >> "$GITHUB_OUTPUT"
             echo "source_sha=$source_sha" >> "$GITHUB_OUTPUT"
-            echo "Refreshing packages for $source_sha (previously $packaged_sha)."
+            echo "artifact=$artifact" >> "$GITHUB_OUTPUT"
+            echo "Refreshing $artifact packages for $source_sha (previously $packaged_sha)."
           fi
 
       - name: Require OIDC configuration
@@ -88,7 +122,7 @@ jobs:
           exit "$missing"
 
       - uses: actions/setup-node@v4
-        if: steps.changes.outputs.changed == 'true'
+        if: steps.changes.outputs.changed == 'true' && steps.changes.outputs.artifact == 'codeApp'
         with:
           node-version: "22"
           cache: npm
@@ -104,7 +138,7 @@ jobs:
         run: dotnet tool install --global Microsoft.PowerApps.CLI.Tool
 
       - name: Build committed code app
-        if: steps.changes.outputs.changed == 'true'
+        if: steps.changes.outputs.changed == 'true' && steps.changes.outputs.artifact == 'codeApp'
         working-directory: codeapp
         run: |
           npm ci
@@ -112,7 +146,7 @@ jobs:
           npm run build
 
       - name: Configure code app target
-        if: steps.changes.outputs.changed == 'true'
+        if: steps.changes.outputs.changed == 'true' && steps.changes.outputs.artifact == 'codeApp'
         run: |
           python3 - <<'PY'
           import json
@@ -138,7 +172,7 @@ jobs:
           pac org who
 
       - name: Deploy committed preview code app
-        if: steps.changes.outputs.changed == 'true' && inputs.export_only != true
+        if: steps.changes.outputs.changed == 'true' && inputs.export_only != true && steps.changes.outputs.artifact == 'codeApp'
         working-directory: codeapp
         run: >-
           pac code push
@@ -153,33 +187,29 @@ jobs:
           core_file=$(python3 -c 'import json; print(json.load(open("config/release-packages.json"))["core"]["filename"])')
           credits_file=$(python3 -c 'import json; print(json.load(open("config/release-packages.json"))["credits"]["filename"])')
           codeapp_file=$(python3 -c 'import json; print(json.load(open("config/release-packages.json"))["codeApp"]["filename"])')
-          pac solution export \
-            --environment "$POWER_PLATFORM_ENVIRONMENT_URL" \
-            --name "$CORE_SOLUTION" \
-            --path "output/candidate/$core_file" \
-            --managed --overwrite
-          pac solution export \
-            --environment "$POWER_PLATFORM_ENVIRONMENT_URL" \
-            --name "$CREDITS_SOLUTION" \
-            --path "output/candidate/$credits_file" \
-            --managed --overwrite
-          pac solution export \
-            --environment "$POWER_PLATFORM_ENVIRONMENT_URL" \
-            --name "$CODEAPP_SOLUTION" \
-            --path "output/candidate/$codeapp_file" \
-            --managed --overwrite
+          artifact="${{ steps.changes.outputs.artifact }}"
+          if [[ "$artifact" == "core" ]]; then
+            pac solution export --environment "$POWER_PLATFORM_ENVIRONMENT_URL" --name "$CORE_SOLUTION" --path "output/candidate/$core_file" --managed --overwrite
+          fi
+          if [[ "$artifact" == "credits" ]]; then
+            pac solution export --environment "$POWER_PLATFORM_ENVIRONMENT_URL" --name "$CREDITS_SOLUTION" --path "output/candidate/$credits_file" --managed --overwrite
+          fi
+          if [[ "$artifact" == "codeApp" ]]; then
+            pac solution export --environment "$POWER_PLATFORM_ENVIRONMENT_URL" --name "$CODEAPP_SOLUTION" --path "output/candidate/$codeapp_file" --managed --overwrite
+          fi
 
       - name: Validate candidate packages
         if: steps.changes.outputs.changed == 'true'
         run: |
-          version=$(python3 -c 'import json; print(json.load(open("config/release-packages.json"))["core"]["version"])')
-          python3 scripts/validate_candidate_packages.py --version "$version"
+          python3 scripts/validate_candidate_packages.py \
+            --artifact "${{ steps.changes.outputs.artifact }}" \
+            --source-commit "${{ steps.changes.outputs.source_sha }}"
 
-      - name: Upload synchronized candidate set
+      - name: Upload candidate set
         if: steps.changes.outputs.changed == 'true'
         uses: actions/upload-artifact@v4
         with:
-          name: managed-candidate-${{ steps.changes.outputs.source_sha }}
+          name: managed-candidate-${{ steps.changes.outputs.artifact }}-${{ steps.changes.outputs.source_sha }}
           path: output/candidate/
           if-no-files-found: error
           retention-days: 30

@@ -292,21 +292,67 @@ def inspect_package(key: str, config: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def existing_artifact_source_commit(manifest: dict[str, Any], key: str) -> str | None:
+    artifact = manifest.get("artifacts", {}).get(key, {})
+    if isinstance(artifact, dict) and FULL_COMMIT_PATTERN.fullmatch(
+        str(artifact.get("sourceCommit", ""))
+    ):
+        return str(artifact["sourceCommit"])
+    legacy = manifest.get("sourceCommit")
+    return str(legacy) if FULL_COMMIT_PATTERN.fullmatch(str(legacy or "")) else None
+
+
+def release_artifacts_for_update(
+    config: dict[str, Any],
+    previous_manifest: dict[str, Any],
+    selected_key: str,
+    source_commit: str,
+) -> dict[str, Any]:
+    previous_artifacts = previous_manifest.get("artifacts", {})
+    artifacts: dict[str, Any] = {}
+    for key in ARTIFACT_KEYS:
+        if key == selected_key:
+            artifact = inspect_package(key, config[key])
+            artifact["sourceCommit"] = source_commit
+            artifacts[key] = artifact
+            continue
+
+        previous = previous_artifacts.get(key)
+        if not isinstance(previous, dict):
+            raise RuntimeError(f"Cannot preserve missing unchanged artifact {key}")
+        artifact = dict(previous)
+        artifact_source_commit = existing_artifact_source_commit(previous_manifest, key)
+        if not artifact_source_commit:
+            raise RuntimeError(f"Cannot preserve source provenance for unchanged artifact {key}")
+        artifact.setdefault("sourceCommit", artifact_source_commit)
+        artifacts[key] = artifact
+    return artifacts
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--source-commit", required=True, help="Commit represented by the packages")
+    parser.add_argument("--artifact", choices=ARTIFACT_KEYS, required=True)
     args = parser.parse_args()
     if not FULL_COMMIT_PATTERN.fullmatch(args.source_commit):
         raise SystemExit("--source-commit must be a full 40-character lowercase Git commit SHA")
 
     config = read_config()
+    previous_manifest = (
+        json.loads(MANIFEST_PATH.read_text(encoding="utf-8"))
+        if MANIFEST_PATH.is_file()
+        else {}
+    )
+    artifacts = release_artifacts_for_update(
+        config,
+        previous_manifest,
+        args.artifact,
+        args.source_commit,
+    )
     manifest = {
-        "schemaVersion": 1,
-        "sourceCommit": args.source_commit,
+        "schemaVersion": 2,
         "generatedAtUtc": datetime.now(timezone.utc).replace(microsecond=0).isoformat(),
-        "artifacts": {
-            key: inspect_package(key, config[key]) for key in ARTIFACT_KEYS
-        },
+        "artifacts": artifacts,
     }
     MANIFEST_PATH.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
     print(f"Wrote {MANIFEST_PATH.relative_to(ROOT)}")

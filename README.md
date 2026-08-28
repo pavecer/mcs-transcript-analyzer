@@ -11,7 +11,10 @@ what it did.
 **[View the solution presentation and download the managed installer](https://pavecer.github.io/mcs-transcript-analyzer/)**
 
 Track shipped versions in [CHANGELOG.md](CHANGELOG.md) and planned work in [ROADMAP.md](ROADMAP.md).
-For a first managed import, follow the
+For a fresh managed environment, follow the authoritative
+[clean-install runbook](docs/clean-install.md). If installing the optional preview code app, set
+**Power Apps Code Apps > Enable code apps** to **On**, save, and independently reload the setting
+before importing any package. For target-local connections, follow the
 [connection-wizard checklist](docs/permissions-and-inventory.md#first-import-connection-wizard).
 Do not bind a licensing entry that shows `Invalid connection` or a blank `BaseResourceUrl`; create
 the preauthorized HTTP connection with both licensing-service URLs first.
@@ -39,7 +42,8 @@ validation, tenant-neutral package validation, and the user-performed manual Con
 | `pvConversationInsightsCredits` | Optional | Only the three credit collection/governance flows, licensing references `pvci_licensinghttp` and `pvci_powerplatformapi`, and required `pvci_CreditReportingTenantId` definition |
 | `pvConversationInsightsCodeApp` | Optional preview | Only the unsupported preview code app and its declared core dependencies |
 
-For a clean `2.0.0.5` installation, import core, then optional credits, then optional code app. To
+For a clean `2.0.0.5` installation, pre-enable Code Apps when that optional package will be used,
+then import core, optional credits, and optional code app in that order. To
 upgrade from `1.4.0.15`, import the credits add-on first, apply the core managed upgrade second,
 and upgrade the code app last. This additive ownership transfer preserves the existing credit flow
 identities while core retains schema and data ownership. Core does not contain or request the credit

@@ -7,7 +7,7 @@
       "uniqueName": "pvConversationInsightsPublisher",
       "prefix": "pvci"
     },
-    "version": "2.0.0.5"
+    "version": "2.1.0.0"
   },
   "securityRoles": [
     {

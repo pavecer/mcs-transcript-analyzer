@@ -1,0 +1,45 @@
+{
+  "activities": [
+    {
+      "type": "event",
+      "name": "DynamicPlanStepTriggered",
+      "timestampMs": 100000,
+      "value": {
+        "stepId": "step-topic",
+        "taskDialogId": "msdyn.ess.ResetPassword"
+      }
+    },
+    {
+      "type": "trace",
+      "valueType": "ErrorTraceData",
+      "value": {
+        "isUserError": true,
+        "errorCode": "ContentValidationError",
+        "errorMessage": "The expression on the 'ExpressionSegment' node failed."
+      }
+    },
+    {
+      "type": "event",
+      "name": "DynamicPlanStepTriggered",
+      "timestamp": 102,
+      "timestampMs": 102000,
+      "value": {
+        "stepId": "step-search",
+        "taskDialogId": "P:UniversalSearchTool"
+      }
+    },
+    {
+      "type": "trace",
+      "timestampMs": 104500,
+      "valueType": "KnowledgeTraceData",
+      "value": {
+        "completionState": "Answered",
+        "isKnowledgeSearched": true,
+        "citedKnowledgeSources": [
+          "agent.topic.ServiceNowKB_source"
+        ],
+        "failedKnowledgeSourcesTypes": []
+      }
+    }
+  ]
+}

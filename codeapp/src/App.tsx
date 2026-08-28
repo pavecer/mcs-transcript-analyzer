@@ -16,6 +16,9 @@ import { Trends } from "./components/Trends";
 import { Credits } from "./components/Credits";
 import { InventoryManagement } from "./components/InventoryManagement";
 import { classifyCreditCapability, withTimeout, type CreditCapability } from "./lib/creditCapability";
+import { formatObservedPair } from "./lib/telemetryAvailability";
+import { buildSessionAlerts } from "./lib/sessionAlerts";
+import { isFlowTelemetryAvailable } from "./lib/flowTelemetryAvailability";
 import { isCrossEnvironmentCollectionEnabled, scopeRowsToHost } from "./lib/transcriptScope";
 import {
   fmtDuration,
@@ -307,7 +310,13 @@ export default function App() {
       <header className="app-header">
         <div className="app-brand">
           <strong>Conversation Insights</strong>
-          <span>{sessions.length} sessions</span>
+          <span>{view === "sessions"
+            ? `${sessions.length} sessions`
+            : view === "trends"
+              ? "Quality and latency"
+              : view === "inventory"
+                ? "Environment readiness"
+                : "Usage and governance"}</span>
         </div>
         <nav className="viewswitch app-navigation" aria-label="Primary navigation">
           <button type="button" className={view === "sessions" ? "on" : ""} aria-current={view === "sessions" ? "page" : undefined} onClick={() => setView("sessions")}>Sessions</button>
@@ -358,41 +367,51 @@ export default function App() {
             <div className="session-list">
               {loadingSessions && <div className="muted pad">Loading…</div>}
               {!loadingSessions && !filtered.length && <div className="muted pad">No sessions match.</div>}
-              {filtered.map((s) => (
-                <button
-                  key={s.pvci_transcriptsessionid}
-                  className={`session-item${activeSession?.pvci_transcriptsessionid === s.pvci_transcriptsessionid ? " active" : ""}`}
-                  onClick={() => { setSelected(s); setTab("essops"); }}
-                >
-                  <div className="si-top">
-                    <span className="si-user">{s.pvci_userdisplayname ?? "Unknown user"}</span>
-                    <span className="chip">{s.pvci_channel ?? "—"}</span>
-                  </div>
-                  <div className="si-sub muted small">
-                    {fmtTime(s.pvci_startdatetimeutc)} · {s.pvci_messagecount ?? 0} msg · {fmtDuration(s.pvci_durationseconds)}
-                  </div>
-                  <div className="si-metrics">
-                    <span className={`lat ${latencyBand(s.pvci_maxresponsems)}`}>
-                      slowest reply {fmtMs(s.pvci_maxresponsems)}
-                    </span>
-                    {(s.pvci_toolcallcount ?? 0) > 0 && (
-                      <span className={`lat ${s.pvci_toolerrorcount ? "bad" : "none"}`}>
-                        {s.pvci_toolcallcount} tools
-                        {s.pvci_toolerrorcount ? ` · ${s.pvci_toolerrorcount} failed` : ""}
+              {filtered.map((s) => {
+                const flowTelemetryAvailable = isFlowTelemetryAvailable(s, hostEnvironmentId);
+                const alerts = buildSessionAlerts({
+                  userErrorCount: s.pvci_usererrorcount,
+                  errorCategory: s.pvci_errorcategory,
+                  primaryErrorCode: s.pvci_primaryerrorcode,
+                  toolErrorCount: s.pvci_toolerrorcount,
+                  candidateFlowFailureCount: flowTelemetryAvailable ? s.pvci_flowrunfailurecount : null,
+                  payloadTruncated: s.pvci_payloadtruncated,
+                });
+                return (
+                  <button
+                    key={s.pvci_transcriptsessionid}
+                    className={`session-item${alerts.some((alert) => alert.kind === "error") ? " has-error" : ""}${activeSession?.pvci_transcriptsessionid === s.pvci_transcriptsessionid ? " active" : ""}`}
+                    onClick={() => { setSelected(s); setTab("essops"); }}
+                  >
+                    <div className="si-top">
+                      <span className="si-user">{s.pvci_userdisplayname ?? "Unknown user"}</span>
+                      <span className="chip">{s.pvci_channel ?? "—"}</span>
+                    </div>
+                    {alerts.length > 0 && <div className="si-alerts" aria-label="Session alerts">
+                      {alerts.map((alert) => <span key={alert.text} className={`si-alert ${alert.kind}`}>{alert.text}</span>)}
+                    </div>}
+                    <div className="si-sub muted small">
+                      {fmtTime(s.pvci_startdatetimeutc)} · {s.pvci_messagecount == null ? "messages unavailable" : `${s.pvci_messagecount} msg`} · {fmtDuration(s.pvci_durationseconds)}
+                    </div>
+                    <div className="si-metrics">
+                      <span className={`lat ${latencyBand(s.pvci_maxresponsems)}`}>
+                        slowest reply {fmtMs(s.pvci_maxresponsems)}
                       </span>
-                    )}
-                  </div>
-                  {s.pvci_initialusermessage && <div className="si-snippet">{s.pvci_initialusermessage.slice(0, 90)}</div>}
-                  <div className="si-flags">
-                    {s.pvci_istestmode && <span className="flag test">test</span>}
-                    {s.pvci_multiuseranomaly && <span className="flag warn">multi-user</span>}
-                    {s.pvci_payloadtruncated && <span className="flag warn">truncated</span>}
-                    {s.pvci_correlationstatus && s.pvci_correlationstatus !== "exact" && (
-                      <span className="flag warn">{s.pvci_correlationstatus}</span>
-                    )}
-                  </div>
-                </button>
-              ))}
+                      {s.pvci_toolcallcount != null && s.pvci_toolcallcount > 0 && (
+                        <span className="lat none">{s.pvci_toolcallcount} tools</span>
+                      )}
+                    </div>
+                    {s.pvci_initialusermessage && <div className="si-snippet">{s.pvci_initialusermessage.slice(0, 90)}</div>}
+                    <div className="si-flags">
+                      {s.pvci_istestmode && <span className="flag test">test</span>}
+                      {s.pvci_multiuseranomaly && <span className="flag warn">multi-user</span>}
+                      {s.pvci_correlationstatus && s.pvci_correlationstatus !== "exact" && (
+                        <span className="flag warn">{s.pvci_correlationstatus}</span>
+                      )}
+                    </div>
+                  </button>
+                );
+              })}
             </div>
           </>
         )}
@@ -448,46 +467,98 @@ export default function App() {
         {view === "sessions" && activeSession && (
           <>
             <header className="detail-head">
-              <div>
-                <h2>{activeSession.pvci_userdisplayname ?? "Unknown user"}</h2>
-                <div className="muted small">{activeSession.pvci_userupn ?? activeSession.pvci_useraadobjectid ?? "—"}</div>
+              <div className="session-identity">
+                <div className="session-person">
+                  <h2>{activeSession.pvci_userdisplayname ?? "Unknown user"}</h2>
+                  <div className="muted small">{activeSession.pvci_userupn ?? activeSession.pvci_useraadobjectid ?? "—"}</div>
+                </div>
+                <div className="session-context" aria-label="Session context">
+                  <span>{activeSession.pvci_channel ?? "Unknown channel"}</span>
+                  <span>{sourceEnvironmentLabel(activeSession)}</span>
+                  <span>{activeSession.pvci_istestmode ? "Test chat" : "Production"}</span>
+                </div>
               </div>
-              <dl className="facts">
-                <Fact k="Channel" v={activeSession.pvci_channel} />
-                <Fact k="Agent" v={activeSession.pvci_botname} />
-                <Fact k="Tenant" v={activeSession.pvci_tenantid} />
-                <Fact k="Environment" v={sourceEnvironmentLabel(activeSession)} />
-                <Fact k="Mode" v={activeSession.pvci_istestmode ? "Test chat" : "Production channel"} />
-                <Fact k="Identity match" v={activeSession.pvci_correlationstatus ?? "unknown"} />
-                <Fact k="Capture" v={activeSession.pvci_payloadtruncated ? "Truncated" : "Complete stored payload"} />
-                <Fact k="Session topic" v={activeSession.pvci_topicname ?? activeSession.pvci_topicid} />
-                <Fact k="Started (UTC)" v={fmtTime(activeSession.pvci_startdatetimeutc)} />
-                <Fact k="Duration" v={fmtDuration(activeSession.pvci_durationseconds)} />
-                <Fact k="Turns" v={`${activeSession.pvci_userturncount ?? 0} user / ${activeSession.pvci_agentturncount ?? 0} agent`} />
-                <Fact k="Source outcome" v={activeSession.pvci_sessionoutcome} />
-                <Fact k="Outcome detail" v={activeSession.pvci_outcomereason} />
-                <Fact k="Implied resolved" v={activeSession.pvci_isresolvedimplied} />
-                <Fact
-                  k="User errors"
-                  v={activeSession.pvci_usererrorcount
-                    ? `${activeSession.pvci_usererrorcount} · ${activeSession.pvci_errorcategory ?? activeSession.pvci_primaryerrorcode ?? "user error"}`
-                    : "0"}
-                />
-                <Fact k="First reply" v={fmtMs(activeSession.pvci_firstresponsems)} />
-                <Fact k="Slowest reply" v={fmtMs(activeSession.pvci_maxresponsems)} />
-                <Fact
-                  k="Exact tool traces"
-                  v={activeSession.pvci_istestmode
-                    ? `${activeSession.pvci_toolcallcount ?? 0}${activeSession.pvci_toolerrorcount ? ` (${activeSession.pvci_toolerrorcount} failed)` : ""}`
-                    : "Unavailable in this transcript"}
-                />
-                <Fact k="Knowledge" v={`${activeSession.pvci_knowledgecallcount ?? 0} retrievals / ${activeSession.pvci_knowledgesourcecount ?? 0} source IDs`} />
-                <Fact k="Slowest exact tool" v={fmtMs(activeSession.pvci_maxtoolms)} />
-                <Fact
-                  k="Candidate flow matches"
-                  v={`${activeSession.pvci_flowruncount ?? 0}${activeSession.pvci_flowrunfailurecount ? ` (${activeSession.pvci_flowrunfailurecount} failed)` : ""}`}
-                />
-              </dl>
+
+              <div className="signal-groups">
+                <section className="signal-group" aria-labelledby="conversation-signals-heading">
+                  <h3 id="conversation-signals-heading">Conversation</h3>
+                  <dl className="signal-grid conversation-signals">
+                    <Fact k="Duration" v={fmtDuration(activeSession.pvci_durationseconds)} />
+                    <Fact
+                      k="Turns"
+                      v={formatObservedPair(
+                        activeSession.pvci_userturncount,
+                        { singular: "user turn", plural: "user turns" },
+                        activeSession.pvci_agentturncount,
+                        { singular: "agent turn", plural: "agent turns" },
+                      )}
+                    />
+                    <Fact k="Outcome" v={activeSession.pvci_sessionoutcome} />
+                    <Fact
+                      k="User errors"
+                      v={activeSession.pvci_usererrorcount == null
+                        ? "Unavailable in this transcript"
+                        : activeSession.pvci_usererrorcount > 0
+                          ? `${activeSession.pvci_usererrorcount} · ${activeSession.pvci_errorcategory ?? activeSession.pvci_primaryerrorcode ?? "user error"}`
+                          : "0"}
+                    />
+                    <Fact k="First reply" v={fmtMs(activeSession.pvci_firstresponsems)} />
+                    <Fact k="Slowest reply" v={fmtMs(activeSession.pvci_maxresponsems)} />
+                  </dl>
+                </section>
+
+                <section className="signal-group" aria-labelledby="observability-signals-heading">
+                  <h3 id="observability-signals-heading">Observed telemetry</h3>
+                  <dl className="signal-grid observability-signals">
+                    <Fact
+                      k="Exact tool traces"
+                      v={activeSession.pvci_istestmode
+                        ? formatObservedPair(
+                            activeSession.pvci_toolcallcount,
+                            { singular: "tool call", plural: "tool calls" },
+                            activeSession.pvci_toolerrorcount,
+                            { singular: "failed call", plural: "failed calls" },
+                          )
+                        : "Unavailable in this transcript"}
+                    />
+                    <Fact
+                      k="Knowledge"
+                      v={formatObservedPair(
+                        activeSession.pvci_knowledgecallcount,
+                        { singular: "retrieval", plural: "retrievals" },
+                        activeSession.pvci_knowledgesourcecount,
+                        { singular: "source ID", plural: "source IDs" },
+                      )}
+                    />
+                    <Fact
+                      k="Candidate flow matches"
+                      v={isFlowTelemetryAvailable(activeSession, hostEnvironmentId)
+                        ? formatObservedPair(
+                            activeSession.pvci_flowruncount,
+                            { singular: "candidate match", plural: "candidate matches" },
+                            activeSession.pvci_flowrunfailurecount,
+                            { singular: "failed run", plural: "failed runs" },
+                          )
+                        : "Unavailable for this source transcript"}
+                    />
+                    <Fact k="Slowest exact tool" v={fmtMs(activeSession.pvci_maxtoolms)} />
+                  </dl>
+                </section>
+              </div>
+
+              <details className="technical-details">
+                <summary>Session metadata</summary>
+                <dl className="technical-grid">
+                  <Fact k="Agent" v={activeSession.pvci_botname} />
+                  <Fact k="Tenant" v={activeSession.pvci_tenantid} />
+                  <Fact k="Identity match" v={activeSession.pvci_correlationstatus ?? "unknown"} />
+                  <Fact k="Capture" v={activeSession.pvci_payloadtruncated ? "Truncated" : "Complete stored payload"} />
+                  <Fact k="Session topic" v={activeSession.pvci_topicname ?? activeSession.pvci_topicid} />
+                  <Fact k="Started (UTC)" v={fmtTime(activeSession.pvci_startdatetimeutc)} />
+                  <Fact k="Outcome detail" v={activeSession.pvci_outcomereason} />
+                  <Fact k="Implied resolved" v={activeSession.pvci_isresolvedimplied} />
+                </dl>
+              </details>
             </header>
 
             <nav className="tabs">
@@ -500,15 +571,29 @@ export default function App() {
 
             <section className="pane">
               {tab === "essops" ? (
-                <EssOps session={detail ? { ...activeSession, ...detail } : activeSession} turns={turns} loading={loadingTurns} />
+                <EssOps
+                  session={detail ? { ...activeSession, ...detail } : activeSession}
+                  turns={turns}
+                  loading={loadingTurns}
+                  flowTelemetryAvailable={isFlowTelemetryAvailable(activeSession, hostEnvironmentId)}
+                />
               ) : tab === "replay" ? (
                 <Timeline turns={turns} loading={loadingTurns} />
               ) : tab === "tools" ? (
-                <ToolCalls json={detail?.pvci_toolcallsjson} loading={loadingTurns} exactTelemetryAvailable={Boolean(activeSession.pvci_istestmode)} />
+                <ToolCalls
+                  json={detail?.pvci_toolcallsjson}
+                  loading={loadingTurns}
+                  exactTelemetryAvailable={Boolean(activeSession.pvci_istestmode)}
+                  planEventsJson={detail?.pvci_planeventsjson}
+                />
               ) : tab === "knowledge" ? (
                 <KnowledgeCalls json={detail?.pvci_knowledgecallsjson} loading={loadingTurns} />
               ) : tab === "flows" ? (
-                <FlowRuns json={detail?.pvci_flowrunsjson} loading={loadingTurns} />
+                <FlowRuns
+                  json={detail?.pvci_flowrunsjson}
+                  loading={loadingTurns}
+                  telemetryAvailable={isFlowTelemetryAvailable(activeSession, hostEnvironmentId)}
+                />
               ) : tab === "reasoning" ? (
                 <ReasoningFlow json={detail?.pvci_planeventsjson} knowledgeJson={detail?.pvci_knowledgecallsjson} loading={loadingTurns} />
               ) : (

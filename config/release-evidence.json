@@ -1,0 +1,48 @@
+{
+  "schemaVersion": 1,
+  "version": "2.0.0.5",
+  "sourceCommit": "be33af99ae56ec4bf50e4334f94f47e96d918b31",
+  "candidate": {
+    "sourceCommit": "be33af99ae56ec4bf50e4334f94f47e96d918b31",
+    "artifacts": {
+      "core": {
+        "filename": "pvConversationInsights-managed-2.0.0.5.zip",
+        "sha256": "caaadf84307c735d50559d386d88fd0801bdc6b6520404861c6c7368c7092bcf"
+      },
+      "credits": {
+        "filename": "pvConversationInsightsCredits-managed-2.0.0.5.zip",
+        "sha256": "529f902f5be8f42d6c4852be0b15c6a1db84e9f629b432f801a685cd123990de"
+      },
+      "codeApp": {
+        "filename": "pvConversationInsightsCodeApp-managed-2.0.0.5.zip",
+        "sha256": "f5341f647eb5aa3e9d92b31f66f206dd27a3863e0cbf7406890bb72e5db4e778"
+      }
+    }
+  },
+  "gates": {
+    "pvePackageAndRuntime": {
+      "status": "passed",
+      "completedAtUtc": "2026-08-25T21:30:31Z",
+      "evidence": {
+        "path": "CHANGELOG.md",
+        "contains": "Validated in PVE that all three live solutions are `2.0.0.5`"
+      }
+    },
+    "hostedUiSmoke": {
+      "status": "passed",
+      "completedAtUtc": "2026-08-25T21:30:31Z",
+      "evidence": {
+        "path": "CHANGELOG.md",
+        "contains": "The hosted PVE UI smoke and the"
+      }
+    },
+    "tpmManualUpgrade": {
+      "status": "passed",
+      "completedAtUtc": "2026-08-25T21:30:31Z",
+      "evidence": {
+        "path": "CHANGELOG.md",
+        "contains": "user-performed manual Contoso TPM upgrade passed"
+      }
+    }
+  }
+}

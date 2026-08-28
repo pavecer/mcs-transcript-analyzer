@@ -9,6 +9,7 @@ SOLUTION = json.loads(
 )
 PLUGIN = (ROOT / "plugin" / "ImportCentralTranscriptBatch.cs").read_text(encoding="utf-8")
 SYNC_PLUGIN = (ROOT / "plugin" / "SyncConversationTranscripts.cs").read_text(encoding="utf-8")
+TRANSCRIPT_ANALYSIS = (ROOT / "plugin" / "TranscriptAnalysis.cs").read_text(encoding="utf-8")
 
 
 class CentralTranscriptContractTests(unittest.TestCase):
@@ -60,14 +61,36 @@ class CentralTranscriptContractTests(unittest.TestCase):
             self.assertIn(column, table["columns"])
 
     def test_default_sync_retains_user_error_traces(self):
-        self.assertIn("IsUserErrorTrace(a)", SYNC_PLUGIN)
-        self.assertIn('"ErrorTraceData"', SYNC_PLUGIN)
+        self.assertIn("TranscriptAnalysis.IsUserErrorTrace(a)", SYNC_PLUGIN)
+        self.assertIn('"ErrorTraceData"', TRANSCRIPT_ANALYSIS)
         self.assertIn('turn["pvci_eventname"] = Trim(name ?? Json.Str(a, "valueType")', SYNC_PLUGIN)
 
     def test_local_sync_prefers_inventory_environment_display_name(self):
         self.assertIn("ResolveInventoryEnvironmentName(service, context6.EnvironmentId)", SYNC_PLUGIN)
         self.assertIn('ColumnSet = new ColumnSet("pvci_displayname")', SYNC_PLUGIN)
         self.assertIn("Name = inventoryName ?? friendlyName", SYNC_PLUGIN)
+
+    def test_reprocess_explicitly_clears_conditional_session_values(self):
+        for field in (
+            "pvci_startdatetimeutc",
+            "pvci_enddatetimeutc",
+            "pvci_durationseconds",
+            "pvci_firstresponsems",
+            "pvci_avgresponsems",
+            "pvci_maxresponsems",
+            "pvci_tooltotalms",
+            "pvci_maxtoolms",
+            "pvci_isresolvedimplied",
+            "pvci_turncount",
+            "pvci_userid",
+            "pvci_userupn",
+            "pvci_userdisplayname",
+        ):
+            self.assertRegex(
+                SYNC_PLUGIN,
+                rf'session\["{field}"\]\s*=.*(?:\n.*){{0,3}}?: null;',
+                field,
+            )
 
 
 if __name__ == "__main__":

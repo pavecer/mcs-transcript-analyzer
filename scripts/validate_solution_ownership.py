@@ -229,6 +229,22 @@ def main() -> None:
         fail("Release refresh workflow is missing the immutable tenant write allowlist")
     if 'POWER_PLATFORM_TENANT_ID" != "$ALLOWED_PROGRAMMATIC_TENANT_ID' not in refresh_workflow:
         fail("Release refresh workflow does not reject non-allowlisted tenants")
+    if "--source-commit" not in refresh_workflow or "steps.changes.outputs.source_sha" not in refresh_workflow:
+        fail("Release refresh workflow does not persist candidate source provenance")
+
+    promotion_workflow = (ROOT / ".github" / "workflows" / "release-promotion.yml").read_text(
+        encoding="utf-8"
+    )
+    for required in (
+        "validate_release_promotion.py",
+        "validate_release_evidence.py",
+        "candidate_run_id",
+    ):
+        if required not in promotion_workflow:
+            fail(f"Release promotion workflow is missing {required}")
+    for forbidden in ("pac solution import", "--publish-changes"):
+        if forbidden in promotion_workflow:
+            fail(f"Release promotion workflow must be read-only; found {forbidden}")
 
     transcript_scripts = ROOT / "scripts" / "transcript_insights"
     unguarded = [

@@ -10,7 +10,14 @@ from typing import Any
 
 
 EXTERNAL_TOOL_PREFIXES = ("mcp_playwright", "mcp_playwright2", "mcp_puppeteer")
-TERMINAL_TOOL_NAMES = {"run_in_terminal", "functions.run_in_terminal"}
+TERMINAL_TOOL_NAMES = {
+    "bash",
+    "functions.bash",
+    "functions.powershell",
+    "functions.run_in_terminal",
+    "powershell",
+    "run_in_terminal",
+}
 COMMAND_START = r"(?:^|[;&|]\s*)"
 COMMAND_WRAPPER = r"(?:(?:env(?:\s+[A-Za-z_][A-Za-z0-9_]*=\S+)*|command|sudo(?:\s+-\S+)*)\s+)?"
 EXTERNAL_COMMAND_PATTERNS = (

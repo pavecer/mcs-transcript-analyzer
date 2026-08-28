@@ -1,0 +1,182 @@
+{
+  "schemaVersion": 1,
+  "policyCategories": {
+    "mandatory": "Required whenever the stated package or target condition applies.",
+    "conditional": "Evaluate for the target governance configuration and installed features."
+  },
+  "artifacts": {
+    "releaseConfig": "config/release-packages.json",
+    "order": [
+      {
+        "releaseKey": "core",
+        "optional": false
+      },
+      {
+        "releaseKey": "credits",
+        "optional": true
+      },
+      {
+        "releaseKey": "codeApp",
+        "optional": true
+      }
+    ],
+    "requirementsFromReleaseConfig": {
+      "tables": [
+        "core.requiredTables"
+      ],
+      "roles": [
+        "core.requiredRoles"
+      ],
+      "workflows": [
+        "core.requiredWorkflows",
+        "credits.requiredWorkflows"
+      ],
+      "connectionReferences": [
+        "credits.requiredConnectionReferences"
+      ],
+      "environmentVariables": [
+        "credits.requiredEnvironmentVariables"
+      ]
+    }
+  },
+  "prerequisites": {
+    "codeApps": {
+      "policyCategory": "mandatory",
+      "appliesWhen": "codeApp is installed",
+      "settingLabel": "Enable code apps",
+      "settingsPath": [
+        "Power Platform admin center",
+        "Manage",
+        "Environments",
+        "target environment",
+        "Settings",
+        "Product",
+        "Features",
+        "Power Apps Code Apps"
+      ],
+      "defaultValue": "Off",
+      "requiredValue": "On",
+      "requiredBefore": "codeApp import",
+      "verification": "Save, reload independently, and confirm the value remains On with Save disabled.",
+      "officialApi": {
+        "property": "powerApps_AllowCodeApps",
+        "apiVersion": "2024-10-01",
+        "delegatedPermissions": {
+          "read": "EnvironmentManagement.Settings.Read",
+          "readWrite": "EnvironmentManagement.Settings.ReadWrite"
+        }
+      }
+    }
+  },
+  "structuralRequirements": {
+    "coreConnectionReferences": [
+      "pvci_centralcollector",
+      "pvci_dataversesync",
+      "pvci_powerplatformadminv2"
+    ],
+    "customApis": [
+      "pvci_ImportCentralTranscriptBatch",
+      "pvci_ImportCreditUsageBatch",
+      "pvci_SyncConversationTranscripts"
+    ],
+    "codeApp": {
+      "componentType": 300,
+      "expectedComponentCount": 1,
+      "requiredComponentState": 0,
+      "resolveTargetGeneratedApp": true,
+      "sourceAppIdPortable": false
+    }
+  },
+  "postImportRules": [
+    {
+      "policyCategory": "mandatory",
+      "rule": "Validate managed solution identity and version for every imported artifact from config/release-packages.json."
+    },
+    {
+      "policyCategory": "mandatory",
+      "rule": "Create and map target-local physical connections before starting dependent flows; connection placeholder warnings do not make a successful import fail."
+    },
+    {
+      "policyCategory": "mandatory",
+      "rule": "Set the target tenant value for the Credits environment variable when the optional Credits package is installed."
+    },
+    {
+      "policyCategory": "mandatory",
+      "rule": "Keep packaged flows stopped until connection mappings, environment configuration, role assignment, and manual smoke validation pass."
+    }
+  ],
+  "installationAcceptance": {
+    "required": true,
+    "criteria": [
+      "Every selected managed package imports successfully, synchronously, and in the required core, optional Credits, optional code-app order.",
+      "scripts/validate_clean_install.py completes successfully against the target environment."
+    ]
+  },
+  "browserValidation": {
+    "execution": "Use one shared VS Code browser page and run hosted checks sequentially; never operate on one shared page in parallel.",
+    "requiredForInstallationAcceptance": false,
+    "launchAuthorizationAndRuntimeDelivery": {
+      "independentGate": true,
+      "criteria": [
+        "Normal Power Apps launch does not return CodeAppOperationNotAllowedInEnvironment.",
+        "The exact runtime document returns successfully and delivers the packaged shell assets."
+      ]
+    },
+    "authenticatedFunctionalSmoke": {
+      "independentGate": true,
+      "criteria": [
+        "The parent-hosted authenticated app renders Sessions, Trends, Inventory, and Credits.",
+        "Authenticated connector and data behavior is validated through the parent Power Apps host."
+      ]
+    },
+    "directRuntime": {
+      "diagnosticOnly": true,
+      "rule": "An exact powerplatformusercontent runtime URL may prove runtime document and asset delivery, but lacks the parent host token and must never be treated as authenticated connector or data smoke."
+    },
+    "limitations": "A shared-browser cross-origin iframe abort or hidden about:blank fullscreen host is a browser-validation limitation when reproduced against a known healthy app; it is not package-install failure evidence."
+  },
+  "evidence": {
+    "capture": [
+      "Exact artifact filenames, versions, hashes, and synchronous import order",
+      "Preflight setting save and independent reload result",
+      "Import warnings and final success state",
+      "Structural validator JSON, including component counts and target-generated app open URI",
+      "Hosted launch status, runtime document status, rendered views, and browser limitations"
+    ],
+    "repositoryRules": [
+      "Keep tenant IDs, environment IDs, temporary URLs, target-generated app IDs, hashes, and account names out of this committed contract.",
+      "Hand verified candidate evidence to the Release Maintainer; do not mutate stable artifacts or shipped history during candidate validation."
+    ],
+    "cleanup": {
+      "required": true,
+      "rule": "Always delete the disposable environment after evidence review, even when validation fails; cleanup remains owned by the coordinating release operator.",
+      "completionCriteria": {
+        "allRequired": true,
+        "targetAbsentFromTenantInventory": true,
+        "targetDataverseNoLongerResolves": true
+      },
+      "convergence": {
+        "operationNotStartableAfterSuccessfulDelete": "deletion-in-progress",
+        "activeLifecycleCanInitiateDeleteFalse": "deletion-in-progress",
+        "pacAdminStatusAuthoritative": false,
+        "repeatDeleteWhileConvergingAllowed": false,
+        "concurrentDeletesAllowed": false,
+        "verificationMode": "one-later-verification"
+      }
+    }
+  },
+  "conditionalGovernance": [
+    {
+      "policyCategory": "conditional",
+      "topic": "Managed Environment group rules"
+    },
+    {
+      "policyCategory": "conditional",
+      "topic": "DLP and connector action control"
+    },
+    {
+      "policyCategory": "conditional",
+      "topic": "App quarantine, Conditional Access, tenant isolation, app access control, sharing limits, CSP, and IP restrictions"
+    }
+  ]
+}

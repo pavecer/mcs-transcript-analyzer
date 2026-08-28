@@ -23,6 +23,7 @@ interface FlowRun {
   flow_run_id?: string;
   run_name?: string;
   workflow_id?: string;
+  workflow_name?: string | null;
   status?: string;
   started_utc?: string;
   ended_utc?: string;
@@ -55,7 +56,7 @@ function escapeODataString(value: string): string {
   return value.replace(/'/g, "''");
 }
 
-export function FlowRuns({ json, loading }: { json?: string; loading?: boolean }) {
+export function FlowRuns({ json, loading, telemetryAvailable = true }: { json?: string; loading?: boolean; telemetryAvailable?: boolean }) {
   const items = (safeParse(json) as unknown as FlowCorrelation[] | undefined) ?? [];
   const [open, setOpen] = useState<Set<number>>(new Set());
   const [selectedRun, setSelectedRun] = useState<string | null>(null);
@@ -65,7 +66,8 @@ export function FlowRuns({ json, loading }: { json?: string; loading?: boolean }
   const detailRequestRef = useRef(0);
 
   if (loading) return <div className="muted pad">Loading flow correlation…</div>;
-  if (!items.length) return <div className="muted pad">No Power Automate invocation or flow-candidate plan step was detected in this session.</div>;
+  if (!telemetryAvailable) return <div className="muted pad">Power Automate run telemetry is unavailable for this source transcript. Use Tool Calls and Agent Reasoning for retained execution evidence.</div>;
+  if (!items.length) return <div className="muted pad">No Power Automate invocation or matched flow-candidate plan step was detected in this session.</div>;
 
   const toggle = (i: number) => {
     const next = new Set(open);
@@ -122,7 +124,7 @@ export function FlowRuns({ json, loading }: { json?: string; loading?: boolean }
         Candidate Power Automate runs are matched by time overlap because a run does not carry the conversation id.
         <br />
         <span className="conf flow_action">action</span> = exact invoke trace (test mode only) ·{" "}
-        <span className="conf plan_step">plan step</span> = flow-candidate orchestrator window, not flow runtime (production channels). Knowledge/search steps are excluded.
+        <span className="conf plan_step">plan step</span> = orchestrator window with a matched Power Automate run, not flow runtime (production channels). MCP/tool and knowledge/search steps are excluded.
       </div>
 
       <div className="timing-help" tabIndex={0} aria-label="Timing explanation">
@@ -154,7 +156,7 @@ export function FlowRuns({ json, loading }: { json?: string; loading?: boolean }
               <span className={`conf ${fc.source ?? "flow_action"}`}>
                 {fc.source === "plan_step" ? "plan step" : "action"}
               </span>
-              <span className={`conf ${fc.confidence}`}>{fc.confidence === "none" ? "no candidate run" : fc.confidence}</span>
+              <span className={`conf ${fc.confidence}`}>{fc.confidence === "high" ? "single candidate" : fc.confidence}</span>
               <span className="ttopic">{(fc.started_utc ?? "").slice(11, 19)}</span>
               <span className="caret">{isOpen ? "▼" : "▶"}</span>
             </div>
@@ -187,7 +189,7 @@ export function FlowRuns({ json, loading }: { json?: string; loading?: boolean }
                           >
                             {fmtStartDelta(r.offset_ms)}
                           </td>
-                          <td className="mono muted" title={r.workflow_id}>{(r.workflow_id ?? "").slice(0, 8)}</td>
+                          <td className="muted" title={r.workflow_id}>{r.workflow_name ?? (r.workflow_id ?? "").slice(0, 8)}</td>
                           <td>
                             {r.run_name && (
                               <button
