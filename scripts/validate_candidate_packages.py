@@ -80,6 +80,21 @@ def package_source_commit(artifact: str = "all") -> str:
     return result.stdout.strip()
 
 
+def commits_match_artifact_inputs(artifact: str, first: str, second: str) -> bool:
+    if (
+        artifact not in ARTIFACT_PACKAGE_INPUTS
+        or not FULL_COMMIT_PATTERN.fullmatch(first)
+        or not FULL_COMMIT_PATTERN.fullmatch(second)
+    ):
+        return False
+    result = subprocess.run(
+        ["git", "diff", "--quiet", first, second, "--", *ARTIFACT_PACKAGE_INPUTS[artifact]],
+        cwd=ROOT,
+        check=False,
+    )
+    return result.returncode == 0
+
+
 def candidate_manifest_name(artifact: str, versions: dict[str, str]) -> str:
     unique_versions = set(versions.values())
     if artifact == "all" and len(unique_versions) == 1:

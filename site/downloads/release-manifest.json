@@ -8,7 +8,7 @@
       "sha256": "34c83d1d622f19fa0ff458db4d0acb76a5e9b17e67317234d6f25b227337f0a6",
       "solutionUniqueName": "pvConversationInsights",
       "version": "2.1.0.0",
-      "sourceCommit": "89aa24423324d5b54600f837f018cdb22ade88e0"
+      "sourceCommit": "10bb561a32829fb37886cac633288450eebd64c2"
     },
     "credits": {
       "filename": "pvConversationInsightsCredits-managed-2.0.0.5.zip",
@@ -24,7 +24,7 @@
       "sha256": "48c4adb96177de45512fe9c5bab5364c18b930d3828a396485340e06f6ce3ecb",
       "solutionUniqueName": "pvConversationInsightsCodeApp",
       "version": "2.1.0.0",
-      "sourceCommit": "89aa24423324d5b54600f837f018cdb22ade88e0"
+      "sourceCommit": "10bb561a32829fb37886cac633288450eebd64c2"
     }
   }
 }
