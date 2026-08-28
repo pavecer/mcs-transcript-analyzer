@@ -3,6 +3,42 @@
 Release history for MCS Transcript Analyzer. Each published package version is immutable; package
 checksums and source provenance are recorded in `site/downloads/release-manifest.json`.
 
+## 2.1.0.0 - 2026-08-28
+
+Stable conversation-investigation and deterministic-install release.
+
+- Reworked the analyzer around a decision-first overview with visible warnings, consistent filter
+  and detail state, and explicit unavailable-versus-zero telemetry so absent traces are not
+  presented as measured zero activity.
+- Distinguished MCP and Jira planned tool/flow candidates from exact observed execution, and
+  classified knowledge retrievals, flow candidates, topics, errors, and reasoning steps without
+  promoting correlation into exact attribution.
+- Cleared stale nullable session projections and the Dataverse user lookup when reprocessing no
+  longer contains the corresponding evidence, with parser parity across local and central imports.
+- Made clean installation deterministic by documenting and validating prerequisites, synchronous
+  core/Credits/Preview import order, target-generated app identity, and post-import structural and
+  launch checks.
+- PVE package/runtime validation passed on 2026-08-27. The signed-in PVE hosted scenario matrix
+  passed on 2026-08-27, including desktop and mobile investigation cases.
+- Manual target-tenant upgrade from stable `2.0.0.5` was user-approved on 2026-08-27 using
+  semantically identical `2.1.0.0` candidates.
+- Exact retained bytes then passed a fresh authorized Sandbox clean installation: core
+  `2.1.0.0`, unchanged Credits `2.0.0.5`, and Preview `2.1.0.0` imported successfully; the
+  structural contract passed; the generated app was active; and launch plus runtime documents
+  returned HTTP 200. A shared VS Code cross-origin iframe limitation prevented a full fresh
+  authenticated data-tab smoke, so this release does not claim one.
+- Preserved exactly three solution boundaries and the separation between usage, capacity,
+  inventory, transcripts, evaluations, and exact billing allocation. The model-driven core is the
+  supported surface; the code app remains an unsupported preview.
+
+Changed downloads:
+
+- Core: `pvConversationInsights-managed-2.1.0.0.zip`
+- Preview: `pvConversationInsightsCodeApp-managed-2.1.0.0.zip`
+
+Credits is unchanged at `pvConversationInsightsCredits-managed-2.0.0.5.zip`, with its published
+bytes, checksum, and source provenance preserved.
+
 ## 2.0.0.5 - 2026-08-25
 
 Stable three-package architecture release after PVE deployment and hosted UI smoke, tenant-neutral

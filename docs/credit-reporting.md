@@ -2,8 +2,8 @@
 
 ## Current implementation and optional runtime
 
-The stable `2.0.0.5` release
-moves only the three licensing-backed flows and two licensing HTTP connection references into the
+In the stable `2.1.0.0` product release, the Credits package remains unchanged at `2.0.0.5`. It
+owns only the three licensing-backed flows and two licensing HTTP connection references in the
 optional `pvConversationInsightsCredits` add-on. All credit schema, plugins, APIs, roles, forms,
 views, and model-driven navigation intentionally remain in required core to avoid destructive data
 migration. The release passed PVE validation and the user-performed manual Contoso TPM upgrade.

@@ -5,9 +5,10 @@ and carries end-user identity. See `docs/api-reference.md`.
 
 ## Solution pipeline (v9.1)
 
-The current stable `2.0.0.5` release contains exactly three managed packages:
-`pvConversationInsights` required core, `pvConversationInsightsCredits` optional licensing runtime,
-and `pvConversationInsightsCodeApp` optional unsupported preview. Core retains all schema, plugins,
+The current stable `2.1.0.0` release contains exactly three managed packages:
+`pvConversationInsights` required core `2.1.0.0`, unchanged `pvConversationInsightsCredits`
+optional licensing runtime `2.0.0.5`, and `pvConversationInsightsCodeApp` optional unsupported
+preview `2.1.0.0`. Core retains all schema, plugins,
 APIs, roles, apps, inventory/transcript runtime, four transcript/shared flows, and three
 non-licensing references. The add-on owns only three credit flows, the two licensing references,
 and the required `pvci_CreditReportingTenantId` definition. Core inventory derives tenant scope

@@ -15,11 +15,12 @@ ROOT = Path(__file__).resolve().parents[1]
 EVIDENCE_PATH = ROOT / "config" / "release-evidence.json"
 MANIFEST_PATH = ROOT / "site" / "downloads" / "release-manifest.json"
 FULL_COMMIT_PATTERN = re.compile(r"^[0-9a-f]{40}$")
-REQUIRED_GATES = {
+LEGACY_REQUIRED_GATES = {
     "pvePackageAndRuntime",
     "hostedUiSmoke",
     "tpmManualUpgrade",
 }
+REQUIRED_GATES = LEGACY_REQUIRED_GATES | {"cleanInstall"}
 
 
 def fail(errors: list[str]) -> None:
@@ -48,6 +49,14 @@ def published_source_commit(manifest: dict[str, Any], key: str) -> object:
     if isinstance(artifact, dict) and artifact.get("sourceCommit"):
         return artifact["sourceCommit"]
     return manifest.get("sourceCommit")
+
+
+def required_gates(schema_version: object) -> set[str]:
+    return REQUIRED_GATES if schema_version == 2 else LEGACY_REQUIRED_GATES
+
+
+def valid_candidate_run_id(value: object) -> bool:
+    return isinstance(value, int) and not isinstance(value, bool) and value > 0
 
 
 def main() -> None:
@@ -112,17 +121,20 @@ def main() -> None:
                 errors.append(f"{key} candidate evidence filename does not match the published manifest")
             if recorded.get("sha256") != published.get("sha256"):
                 errors.append(f"{key} candidate evidence hash does not match the published package")
+            if schema_version == 2 and not valid_candidate_run_id(recorded.get("candidateRunId")):
+                errors.append(f"{key} candidate evidence candidateRunId must be a positive integer")
 
     gates = evidence.get("gates", {})
     if not isinstance(gates, dict):
         errors.append("release evidence gates must be an object")
         gates = {}
-    if set(gates) != REQUIRED_GATES:
+    expected_gates = required_gates(schema_version)
+    if set(gates) != expected_gates:
         errors.append(
             "release evidence gates must be exactly "
-            + ", ".join(sorted(REQUIRED_GATES))
+            + ", ".join(sorted(expected_gates))
         )
-    for name in sorted(REQUIRED_GATES):
+    for name in sorted(expected_gates):
         gate = gates.get(name, {})
         if not isinstance(gate, dict):
             errors.append(f"{name} release gate must be an object")
@@ -150,7 +162,7 @@ def main() -> None:
         fail(errors)
     print(
         "PASS: published packages are tied to the approved candidate source, hashes, "
-        "PVE validation, hosted UI smoke, and manual TPM upgrade evidence"
+        "PVE validation, hosted UI smoke, manual TPM upgrade, and clean-install evidence"
     )
 
 

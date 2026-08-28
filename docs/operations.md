@@ -27,13 +27,13 @@ cp config/transcript_solution_config.sample.json config/transcript_solution_conf
 
 If tokens expire: `az login --tenant <tenantId>`.
 
-## Managed 2.0.0.5 stable installation and upgrade
+## Managed 2.1.0.0 stable installation and upgrade
 
-The three published `2.0.0.5` managed ZIPs passed PVE validation for all solution versions, exact flow
-and connection-reference ownership, seven unique active flows, five mapped references, and
-tenant-neutral managed exports. The authenticated hosted PVE UI smoke passed across Sessions,
-Trends, and Credits in the persisted cross-environment consent state. The user-performed manual
-Contoso TPM import and upgrade test passed.
+The stable set is core `2.1.0.0`, unchanged Credits `2.0.0.5`, and code app `2.1.0.0`. It passed
+PVE package/runtime and hosted scenario validation, exact flow and connection-reference ownership,
+tenant-neutral managed export validation, manual target-tenant upgrade, and exact-byte clean
+installation. The fresh target proved structural installation and launch/runtime asset delivery;
+the shared-browser iframe limitation prevents claiming a full fresh authenticated data-tab smoke.
 
 For any fresh environment that will receive the optional code app, set **Power Apps Code Apps >
 Enable code apps** to **On**, save, and independently reload it before importing any package. See
@@ -42,10 +42,13 @@ target-generated app resolution, live validator, browser criteria, and cleanup w
 
 For a clean installation:
 
-1. Import `pvConversationInsights-managed-2.0.0.5.zip`. Core does not prompt for a credit tenant ID.
+1. Import `pvConversationInsights-managed-2.1.0.0.zip`. Core does not prompt for a credit tenant ID.
 2. Optionally import `pvConversationInsightsCredits-managed-2.0.0.5.zip` and supply the required
     `pvci_CreditReportingTenantId` current value in the import wizard.
-3. Optionally import `pvConversationInsightsCodeApp-managed-2.0.0.5.zip` last.
+3. Optionally import `pvConversationInsightsCodeApp-managed-2.1.0.0.zip` last.
+
+For an upgrade from stable `2.0.0.5`, upgrade core to `2.1.0.0` and the optional code app to
+`2.1.0.0`. Credits remains byte-identical at `2.0.0.5` and does not need to be reimported.
 
 For an upgrade from `1.4.0.15`, order is part of the migration contract:
 

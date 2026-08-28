@@ -2,8 +2,10 @@
 
 ## Stable solution boundaries
 
-Version `2.0.0.5` is the stable three-package architecture after PVE deployment, tenant-neutral
-package validation, the hosted UI smoke, and the user-performed manual Contoso TPM upgrade.
+Version `2.1.0.0` is the stable release identity for the three-package architecture after PVE
+deployment, tenant-neutral package validation, hosted UI smoke, manual target-tenant upgrade, and
+exact-byte clean installation. Core and code app are `2.1.0.0`; Credits remains unchanged at
+`2.0.0.5`.
 
 | Managed solution | Boundary |
 | --- | --- |

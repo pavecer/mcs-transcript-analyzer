@@ -10,7 +10,12 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from validate_candidate_packages import ARTIFACT_PACKAGE_INPUTS, artifact_keys, candidate_manifest_name
 from update_release_manifest import existing_artifact_source_commit, release_artifacts_for_update
 from validate_release_promotion import PROMOTABLE_ARTIFACTS, candidate_scope_errors, published_source_commit
-from validate_release_evidence import published_source_commit as evidence_source_commit
+from validate_release_evidence import (
+    REQUIRED_GATES,
+    published_source_commit as evidence_source_commit,
+    required_gates,
+    valid_candidate_run_id,
+)
 from validate_site import expected_published_artifacts
 
 
@@ -171,6 +176,17 @@ class ComponentReleaseTests(unittest.TestCase):
         self.assertEqual("b" * 40, existing_artifact_source_commit(manifest, "codeApp"))
         self.assertEqual("b" * 40, published_source_commit(manifest, "codeApp"))
         self.assertEqual("b" * 40, evidence_source_commit(manifest, "codeApp"))
+
+    def test_schema_two_requires_clean_install_evidence(self) -> None:
+        self.assertIn("cleanInstall", REQUIRED_GATES)
+        self.assertEqual(REQUIRED_GATES, required_gates(2))
+        self.assertNotIn("cleanInstall", required_gates(1))
+
+    def test_schema_two_candidate_run_id_must_be_positive_integer(self) -> None:
+        self.assertTrue(valid_candidate_run_id(33154920938))
+        for invalid in (None, 0, -1, True, "33154920938"):
+            with self.subTest(invalid=invalid):
+                self.assertFalse(valid_candidate_run_id(invalid))
 
 
 if __name__ == "__main__":

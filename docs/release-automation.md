@@ -1,6 +1,7 @@
 # Release package automation
 
-The stable `2.0.0.5` release contains exactly three managed Power Platform solutions:
+The stable `2.1.0.0` release contains exactly three managed Power Platform solutions. Core and code
+app are `2.1.0.0`; Credits remains byte-identical at `2.0.0.5`:
 
 | Package | Solution | Support status | Import order |
 | --- | --- | --- | --- |
@@ -46,7 +47,7 @@ manually. It uses the following sequence:
   artifact. Do not modify `site/downloads/` or deploy Pages from the candidate refresh.
 
 Failures stop the affected leg before candidate upload. The previously validated downloads remain
-live, including the stable three-package `2.0.0.5` manifest while candidate versions diverge.
+live, including the current mixed-version stable manifest while candidate versions diverge.
 
 ## Issue candidate releases
 
@@ -94,8 +95,9 @@ Pages workflow run the deterministic gate and are the enforcement boundary.
 
 ## Release evidence and promotion gate
 
-`config/release-evidence.json` records the candidate source commit and hashes that became the
-published packages, plus explicit PVE package/runtime, hosted UI, and manual TPM upgrade gates.
+`config/release-evidence.json` schema 2 records the changed artifact scope, candidate source commit,
+hashes, and positive numeric `candidateRunId` values that became the published packages, plus
+explicit PVE package/runtime, hosted UI, manual TPM upgrade, and exact-byte clean-install gates.
 Each passed gate requires an ISO-8601 completion timestamp and a checked-in evidence reference.
 
 Run:
@@ -290,8 +292,9 @@ The workflow has `id-token: write` solely to request the short-lived federated t
   `scripts/validate_candidate_packages.py --artifact <core|credits|codeApp> --source-commit <implementation-sha>`.
 4. Test only changed packages. Preserve dependency order when several artifacts change; a
   code-app-only candidate upgrades only `pvConversationInsightsCodeApp`.
-5. Record PVE package/runtime, hosted UI, and TPM manual-upgrade evidence separately in
-  `config/release-evidence.json`. PVE success does not imply TPM validation.
+5. Record PVE package/runtime, hosted UI, TPM manual-upgrade, and exact-byte clean-install evidence
+  separately in `config/release-evidence.json`. Schema 2 records a positive numeric
+  `candidateRunId` for every changed artifact. No gate implies another.
 6. After manual target approval, commit package inputs first. Copy the exact validated candidate
   bytes into `site/downloads/`; do not rebuild them.
 7. Generate the stable manifest with the implementation commit, commit publication surfaces

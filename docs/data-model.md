@@ -7,9 +7,9 @@ not modify transcript, usage, capacity-allocation, tenant-pool, or PAYG source r
 platform mutation is an explicitly requested, audited per-resource threshold change. Logical names are used throughout this
 reference because they are shared by the plugin, Python tools, code app, and Web API.
 
-In the stable `2.0.0.5` release, every table remains owned by required `pvConversationInsights` core.
+In the stable `2.1.0.0` release, every table remains owned by required `pvConversationInsights` core.
 The optional `pvConversationInsightsCredits` solution owns no schema: it contributes only the
-three licensing-backed credit flows and two licensing connection references. Existing credit,
+unchanged `2.0.0.5` licensing runtime with three credit flows and two licensing connection references. Existing credit,
 capacity, privacy, threshold, governance, and sync rows therefore remain in place during the
 additive upgrade from `1.4.0.15`; installing or removing the runtime add-on does not transfer table
 or data ownership. The release was validated in PVE and passed the user-performed manual Contoso TPM upgrade.
