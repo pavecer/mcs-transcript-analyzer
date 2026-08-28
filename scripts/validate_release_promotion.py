@@ -13,6 +13,7 @@ from typing import Any
 from validate_candidate_packages import (
     artifact_keys,
     candidate_manifest_name,
+    commits_match_artifact_inputs,
     package_source_commit,
 )
 
@@ -106,10 +107,18 @@ def main() -> None:
         promoted[key] = {"filename": filename, "sha256": stable_hash}
 
     source_commit = package_source_commit(args.artifact)
-    if candidate_manifest.get("sourceCommit") != source_commit:
+    candidate_source_commit = str(candidate_manifest.get("sourceCommit", ""))
+    if (
+        candidate_source_commit != source_commit
+        and not commits_match_artifact_inputs(
+            args.artifact,
+            candidate_source_commit,
+            source_commit,
+        )
+    ):
         errors.append(
             "candidate manifest sourceCommit does not match the latest package-input commit: "
-            f"manifest={candidate_manifest.get('sourceCommit')}, source={source_commit}"
+            f"manifest={candidate_source_commit}, source={source_commit}"
         )
     for key in selected_keys:
         if published_source_commit(stable_manifest, key) == source_commit:

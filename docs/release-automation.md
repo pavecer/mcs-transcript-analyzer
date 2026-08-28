@@ -37,6 +37,9 @@ manually. It uses the following sequence:
   package directory is excluded because it does not change exported solution bytes. Credits uses only
   `solution/pvConversationInsightsCredits` and credit-specific scripts, so unrelated core,
   parser, configuration, or code-app changes do not advance its provenance.
+  A retained candidate manifest created before a path-scope correction may identify a later commit;
+  promotion accepts it only when Git proves no differences across the corrected deployable input
+  pathspec. The candidate and published ZIPs must still be byte-identical.
 3. Compare that commit with the artifact's published provenance and skip the leg when they match,
   unless a manual run sets `force=true`.
 4. For each changed leg, authenticate to Power Platform by GitHub OIDC. There is no client secret.

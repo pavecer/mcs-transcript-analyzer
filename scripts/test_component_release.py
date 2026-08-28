@@ -7,7 +7,12 @@ from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from validate_candidate_packages import ARTIFACT_PACKAGE_INPUTS, artifact_keys, candidate_manifest_name
+from validate_candidate_packages import (
+    ARTIFACT_PACKAGE_INPUTS,
+    artifact_keys,
+    candidate_manifest_name,
+    commits_match_artifact_inputs,
+)
 from update_release_manifest import existing_artifact_source_commit, release_artifacts_for_update
 from validate_release_promotion import PROMOTABLE_ARTIFACTS, candidate_scope_errors, published_source_commit
 from validate_release_evidence import (
@@ -65,6 +70,19 @@ class ComponentReleaseTests(unittest.TestCase):
             REFRESH_WORKFLOW,
         )
         self.assertIn("codeapp ':(exclude,glob)**/*.md'", REFRESH_WORKFLOW)
+
+    @patch("validate_candidate_packages.subprocess.run")
+    def test_equivalent_candidate_provenance_requires_no_artifact_diff(self, run) -> None:
+        run.return_value.returncode = 0
+
+        self.assertTrue(commits_match_artifact_inputs("core", "a" * 40, "b" * 40))
+        command = run.call_args.args[0]
+        self.assertEqual(["git", "diff", "--quiet", "a" * 40, "b" * 40, "--"], command[:6])
+        self.assertIn(":(exclude,glob)**/*.md", command)
+
+        run.return_value.returncode = 1
+        self.assertFalse(commits_match_artifact_inputs("core", "a" * 40, "b" * 40))
+        self.assertFalse(commits_match_artifact_inputs("unknown", "a" * 40, "b" * 40))
 
     def test_component_release_regressions_run_in_ci(self) -> None:
         self.assertIn("scripts.test_component_release", BUILD_WORKFLOW)

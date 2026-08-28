@@ -1,13 +1,13 @@
 {
   "schemaVersion": 2,
   "version": "2.1.0.0",
-  "sourceCommit": "89aa24423324d5b54600f837f018cdb22ade88e0",
+  "sourceCommit": "10bb561a32829fb37886cac633288450eebd64c2",
   "artifacts": [
     "core",
     "codeApp"
   ],
   "candidate": {
-    "sourceCommit": "89aa24423324d5b54600f837f018cdb22ade88e0",
+    "sourceCommit": "10bb561a32829fb37886cac633288450eebd64c2",
     "artifacts": {
       "core": {
         "filename": "pvConversationInsights-managed-2.1.0.0.zip",
