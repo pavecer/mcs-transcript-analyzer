@@ -23,6 +23,7 @@ PACKAGE_INPUTS = (
     "solution",
     "scripts/transcript_insights",
     "config/release-packages.json",
+    ":(exclude,glob)**/*.md",
 )
 ARTIFACT_PACKAGE_INPUTS = {
     "core": (
@@ -30,6 +31,7 @@ ARTIFACT_PACKAGE_INPUTS = {
         "pcf",
         "solution/pvConversationInsights",
         "scripts/transcript_insights",
+        ":(exclude,glob)**/*.md",
     ),
     "credits": (
         "solution/pvConversationInsightsCredits",
@@ -37,6 +39,7 @@ ARTIFACT_PACKAGE_INPUTS = {
     ),
     "codeApp": (
         "codeapp",
+        ":(exclude,glob)**/*.md",
     ),
 }
 

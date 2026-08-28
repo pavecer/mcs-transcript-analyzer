@@ -33,7 +33,8 @@ manually. It uses the following sequence:
 1. Expand a fixed `core`, `credits`, and `codeApp` matrix. Scheduled runs and manual
   `artifact=all` requests fan out into independent artifact legs; a manual single-artifact request
   skips the other legs. `all` is not a candidate or promotion scope.
-2. Resolve each selected artifact's newest package-input commit. Credits uses only
+2. Resolve each selected artifact's newest package-input commit. Markdown documentation under a
+  package directory is excluded because it does not change exported solution bytes. Credits uses only
   `solution/pvConversationInsightsCredits` and credit-specific scripts, so unrelated core,
   parser, configuration, or code-app changes do not advance its provenance.
 3. Compare that commit with the artifact's published provenance and skip the leg when they match,

@@ -55,6 +55,17 @@ class ComponentReleaseTests(unittest.TestCase):
         self.assertNotIn("scripts/transcript_insights", credits_inputs)
         self.assertNotIn("config/release-packages.json", credits_inputs)
 
+    def test_core_and_code_app_provenance_exclude_documentation(self) -> None:
+        markdown_exclusion = ":(exclude,glob)**/*.md"
+
+        self.assertIn(markdown_exclusion, ARTIFACT_PACKAGE_INPUTS["core"])
+        self.assertIn(markdown_exclusion, ARTIFACT_PACKAGE_INPUTS["codeApp"])
+        self.assertIn(
+            "scripts/transcript_insights ':(exclude,glob)**/*.md'",
+            REFRESH_WORKFLOW,
+        )
+        self.assertIn("codeapp ':(exclude,glob)**/*.md'", REFRESH_WORKFLOW)
+
     def test_component_release_regressions_run_in_ci(self) -> None:
         self.assertIn("scripts.test_component_release", BUILD_WORKFLOW)
 
