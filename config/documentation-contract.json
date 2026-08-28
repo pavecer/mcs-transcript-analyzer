@@ -1,7 +1,8 @@
 {
   "schemaVersion": 1,
-  "productSourceDigest": "e7a392210f72cf970b22a56b02cb830843f5d2e51af4e27deecfef78eb8fbaff",
+  "productSourceDigest": "a7147bfdda817bd4d24769039388c20052ed6741cd7aedcb2278eb2d98722f4f",
   "productInputs": [
+    "config/clean-install-contract.json",
     "config/release-packages.json",
     "solution/pvConversationInsights/solution-definition.json",
     "codeapp/src/App.tsx",
@@ -29,7 +30,8 @@
     "scripts/transcript_insights/create_sync_flow.py",
     "scripts/transcript_insights/create_central_transcript_flow.py",
     "scripts/transcript_insights/create_transcript_access_verification_flow.py",
-    "codeapp/src/lib/transcriptAccessState.ts"
+    "codeapp/src/lib/transcriptAccessState.ts",
+    "scripts/validate_clean_install.py"
   ],
   "indexedSurfaces": [
     "CHANGELOG.md",
@@ -43,6 +45,7 @@
     ".github/pull_request_template.md",
     ".github/skills/release-documentation/SKILL.md",
     ".github/skills/release-tracking/SKILL.md",
+    ".github/skills/clean-install-validation/SKILL.md",
     ".github/skills/central-transcript-collector/SKILL.md",
     ".github/skills/linkedin-release/SKILL.md",
     ".github/workflows/build.yml",
@@ -53,8 +56,10 @@
     ".github/workflows/release-promotion.yml",
     "CONTRIBUTING.md",
     "README.md",
+    "codeapp/README.md",
     "docs/api-reference.md",
     "docs/architecture.md",
+    "docs/clean-install.md",
     "docs/credit-reporting.md",
     "docs/cross-environment-credit-consumption-design.md",
     "docs/data-model.md",
@@ -81,12 +86,17 @@
       "Replace pre-authorized collection with zero-touch onboarding",
       "availability-aware telemetry labels",
       "mixed-version configuration is valid",
+      "second brand-new Sandbox retry on 2026-08-28",
+      "original Code Apps policy blocker is resolved",
+      "not a full fresh authenticated",
       "clears stale nullable",
       "Detailed cross-environment agent enrichment",
       "Explicitly out of scope for the current product boundary",
       "CHANGELOG.md"
     ],
     "README.md": [
+      "clean-install runbook",
+      "Enable code apps",
       "{customTableCount} custom tables",
       "{roleCount} application roles",
       "7 packaged scheduled flows",
@@ -99,6 +109,30 @@
       ,"Setup required"
       ,"discovery and verification do not enable collection"
       ,"Credits resource reporting remain scoped"
+    ],
+    "codeapp/README.md": [
+      "Conversation Insights Explorer code app",
+      "Enable code apps",
+      "Power Apps Premium",
+      "target-generated app ID",
+      "diagnostic only",
+      "docs/clean-install.md"
+    ],
+    "config/clean-install-contract.json": [
+      "\"schemaVersion\": 1",
+      "\"releaseKey\": \"core\"",
+      "\"powerApps_AllowCodeApps\"",
+      "\"EnvironmentManagement.Settings.ReadWrite\"",
+      "\"installationAcceptance\"",
+      "\"requiredForInstallationAcceptance\": false",
+      "\"authenticatedFunctionalSmoke\"",
+      "\"diagnosticOnly\": true",
+      "\"targetAbsentFromTenantInventory\": true",
+      "\"targetDataverseNoLongerResolves\": true",
+      "\"operationNotStartableAfterSuccessfulDelete\": \"deletion-in-progress\"",
+      "\"pacAdminStatusAuthoritative\": false",
+      "\"verificationMode\": \"one-later-verification\"",
+      "\"policyCategory\": \"conditional\""
     ],
     "docs/architecture.md": [
       "Stable solution boundaries",
@@ -140,6 +174,8 @@
       "Environment allocation, TenantPool, and PayGo mutation remain out of scope"
     ],
     "docs/operations.md": [
+      "clean-install validation runbook",
+      "Enable code apps",
       "Managed 2.0.0.5 stable installation and upgrade",
       "pvConversationInsightsCredits-managed-2.0.0.5.zip",
       "PVCI Credit Administrator",
@@ -152,6 +188,8 @@
       ,"instead of defaulting absent counters to zero"
     ],
     "docs/permissions-and-inventory.md": [
+      "clean-install runbook",
+      "Grouped Managed Environments",
       "Optional `pvConversationInsightsCredits`",
       "transcript-only operation",
       "PVCI Credit Administrator",
@@ -162,6 +200,8 @@
       ,"Credits resource reporting stay scoped to the host environment"
     ],
     "scripts/transcript_insights/README.md": [
+      "docs/clean-install.md",
+      "Enable code apps",
       "exactly three managed packages",
       "{customTableCount} custom tables",
       "PVCI Credit Administrator",
@@ -172,6 +212,8 @@
       ,"require_authorized_tenant"
     ],
     "docs/release-automation.md": [
+      "clean-install runbook",
+      "direct runtime loading is diagnostic only",
       "exactly three managed Power Platform solutions",
       "core artifact version is the stable release identity",
       "validate_candidate_packages.py",
@@ -191,6 +233,28 @@
       "LINKEDIN_ACCESS_TOKEN",
       "dry_run=true",
       "require_authorized_config"
+    ],
+    "docs/clean-install.md": [
+      "authoritative procedure",
+      "Enable code apps",
+      "group rule 22",
+      "Power Apps Premium",
+      "EnvironmentManagement.Settings.ReadWrite",
+      "within an hour in most cases",
+      "up to 24 hours",
+      "Access to the Dataverse API is restricted for this application ID.",
+      "runtime URL lacks the parent Power Apps host token",
+      "Do not pass `--user`",
+      "pac org who",
+      "recommended deterministic package-import command",
+      "Authenticated functional smoke remains an independent gate",
+      "target-generated app ID",
+      "Always delete the disposable environment",
+      "OperationNotStartable",
+      "canInitiateDelete:false",
+      "not authoritative for this lifecycle convergence",
+      "Perform one later verification",
+      "deletion-in-progress"
     ],
     "CONTRIBUTING.md": [
       "scripts/validate_documentation.py",
@@ -222,6 +286,22 @@
       "No `all` candidate or promotion path",
       "python3 scripts/validate_documentation.py",
       "publish LinkedIn release"
+    ],
+    ".github/skills/clean-install-validation/SKILL.md": [
+      "name: clean-install-validation",
+      "mandatory preflight before imports",
+      "pac org who",
+      "recommended deterministic package-import command",
+      "Authenticated functional smoke is another independent gate",
+      "Never issue parallel browser operations",
+      "runtime loading as authenticated smoke",
+      "Always delete the disposable environment",
+      "OperationNotStartable",
+      "canInitiateDelete:false",
+      "not authoritative for this lifecycle convergence",
+      "Perform one later verification",
+      "deletion-in-progress",
+      "Release Maintainer handoff"
     ],
     ".github/skills/linkedin-release/SKILL.md": [
       "generate_linkedin_post.py",
@@ -290,6 +370,11 @@
       ".github/skills/release-documentation/SKILL.md"
     ],
     "site/index.html": [
+      "clean-install runbook",
+      "Pre-enable the optional code app",
+      "pac solution import --path",
+      "original Code Apps policy blocker is resolved",
+      "not a full fresh authenticated data-tab smoke",
       "2.0.0.5 stable architecture",
       "mixed-version configuration is valid",
       "clears stale nullable session values",
@@ -315,6 +400,18 @@
       ,"disabling it stops future imports but does not delete records already copied"
       ,"Credits resource reporting stay host-scoped"
       ,"observed zero and telemetry that the transcript could not provide"
+    ],
+    "scripts/validate_clean_install.py": [
+      "DEFAULT_CONTRACT",
+      "KNOWN_RELEASE_KEYS",
+      "validate_contract",
+      "--contract",
+      "Target access token tenant does not match",
+      "appopenuri",
+      "EXPECTED_CLEANUP_COMPLETION_CRITERIA",
+      "EXPECTED_CLEANUP_CONVERGENCE",
+      "cleanup completion requires target absence from tenant",
+      "one-later-verification"
     ]
   }
 }

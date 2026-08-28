@@ -8,6 +8,11 @@ The stable `2.0.0.5` release contains exactly three managed Power Platform solut
 | Credits | `pvConversationInsightsCredits` | Optional licensing runtime only | Second for clean install; first for `1.4.0.15` upgrade |
 | Code app | `pvConversationInsightsCodeApp` | Optional Power Apps code-app preview, unsupported | Last |
 
+For a fresh target that includes the optional code app, **Enable code apps** must be saved and
+independently reloaded as On before any package import. Follow the authoritative
+[clean-install runbook](clean-install.md); its structural validator and browser evidence are
+separate gates, and direct runtime loading is diagnostic only.
+
 Core intentionally retains every table, plugin, Custom API, role, the model-driven app, four
 transcript/shared flows, and three non-licensing references. Credits owns only three credit flows,
 two licensing references, and the required credit tenant variable definition; managed packages
@@ -325,9 +330,9 @@ For every artifact version change:
   changed, and run `scripts/validate_documentation.py`.
 6. Export changed managed candidates to `output/candidate/` and run scoped candidate validation. Do not
    regenerate the stable manifest before target-tenant approval.
-7. Test clean install and previous-version upgrade in their documented orders. Confirm all imports
-   are recognized correctly, workflow identities are preserved, and retained data remains
-   available.
+7. Test clean install through `docs/clean-install.md` and previous-version upgrade in its documented
+  order. Confirm Code Apps preflight before imports, all managed identities/components, target-local
+  app resolution, preserved workflow identities, and retained data.
 8. Publish through a pull request. Confirm CI, the refresh workflow, Pages deployment, changed
   manifest versions/hashes, changed downloads, and preserved hashes for unchanged artifacts.
 

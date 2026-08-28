@@ -35,6 +35,11 @@ tenant-neutral managed exports. The authenticated hosted PVE UI smoke passed acr
 Trends, and Credits in the persisted cross-environment consent state. The user-performed manual
 Contoso TPM import and upgrade test passed.
 
+For any fresh environment that will receive the optional code app, set **Power Apps Code Apps >
+Enable code apps** to **On**, save, and independently reload it before importing any package. See
+the authoritative [clean-install validation runbook](clean-install.md) for the policy matrix,
+target-generated app resolution, live validator, browser criteria, and cleanup workflow.
+
 For a clean installation:
 
 1. Import `pvConversationInsights-managed-2.0.0.5.zip`. Core does not prompt for a credit tenant ID.

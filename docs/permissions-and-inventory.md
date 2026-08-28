@@ -136,6 +136,12 @@ and [field-level data sources](https://github.com/microsoft/Power-CAT-Copilot-St
 
 ### Collector environment
 
+Before a fresh install that includes the optional code app, set **Power Apps Code Apps > Enable
+code apps** to **On** in the exact target, save, and independently reload the setting before any
+solution import. Grouped Managed Environments must also have the effective, published Code Apps
+group rule enabled. The complete mandatory/conditional policy matrix is in the
+[clean-install runbook](clean-install.md).
+
 For a clean `2.0.0.5` installation, import core, optional credits, then optional code app. For a
 manual upgrade from `1.4.0.15`, import credits first, apply the core managed upgrade second, and
 upgrade the code app last. This preserves existing credit workflow identities while transferring

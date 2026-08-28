@@ -14,7 +14,10 @@ and the required `pvci_CreditReportingTenantId` definition. Core inventory deriv
 server-side and does not depend on that variable.
 The published packages passed PVE validation and the user-performed manual Contoso TPM upgrade.
 
-For a clean installation use core, optional credits, then optional code app. For an upgrade
+For a clean installation that includes the optional code app, first save and independently reload
+**Power Apps Code Apps > Enable code apps** as On in the exact target. Then import core, optional
+credits, and optional code app in that order. Follow `docs/clean-install.md` for the deterministic
+preflight, live validator, target-generated app identity, and browser evidence rules. For an upgrade
 from `1.4.0.15`, install credits first, apply the core managed upgrade second, and upgrade the code
 app last. Transcript-only operation omits the credit add-on and does not need licensing
 administrator access.
