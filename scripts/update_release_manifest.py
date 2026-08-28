@@ -269,7 +269,7 @@ def inspect_package(key: str, config: dict[str, Any]) -> dict[str, Any]:
             and item.get("schemaName") == config["componentSchemaName"]
             for item in root_components
         ):
-            raise RuntimeError("Code-app package does not contain the configured preview app")
+            raise RuntimeError("Code-app package does not contain the configured code app")
         expected_tables = set(config["requiredCoreTables"])
         required_tables = {
             item.get("schemaName")

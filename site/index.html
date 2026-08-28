@@ -308,7 +308,7 @@
     .trust-check span { color: var(--cp-text-muted); font-size: 14px; line-height: 1.5; }
     .trust-check a { font-weight: 650; }
     .hash { margin: 13px 0 0; color: var(--cp-text-soft); font-family: Consolas, "Courier New", Courier, monospace; font-size: 11px; overflow-wrap: anywhere; }
-    .preview-release, .addon-release {
+    .codeapp-release, .addon-release {
       display: grid;
       grid-template-columns: minmax(0, 1fr) minmax(320px, 0.85fr);
       gap: 54px;
@@ -317,12 +317,12 @@
       padding-top: 64px;
       border-top: 1px solid var(--cp-border);
     }
-    .preview-copy h3, .addon-copy h3 { margin: 8px 0 14px; font-size: 30px; }
-    .preview-copy p, .addon-copy p { color: var(--cp-text-muted); }
-    .preview-copy ul, .addon-copy ul { padding-left: 20px; color: var(--cp-text-muted); }
+    .codeapp-copy h3, .addon-copy h3 { margin: 8px 0 14px; font-size: 30px; }
+    .codeapp-copy p, .addon-copy p { color: var(--cp-text-muted); }
+    .codeapp-copy ul, .addon-copy ul { padding-left: 20px; color: var(--cp-text-muted); }
     .credits-package { position: static; }
-    .preview-package { position: static; border-top-color: var(--cp-warning); }
-    .preview-badge { color: var(--cp-warning); font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; }
+    .codeapp-package { position: static; border-top-color: var(--cp-warning); }
+    .codeapp-badge { color: var(--cp-warning); font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; }
 
     .command { display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-top: 18px; padding: 14px 16px; border: 1px solid var(--cp-border); background: var(--cp-surface-soft); border-radius: 6px; }
     .command code { overflow-wrap: anywhere; font-size: 13px; }
@@ -379,7 +379,7 @@
       .arch-arrow { transform: rotate(90deg); min-height: 34px; }
       .install-layout { grid-template-columns: 1fr; }
       .package { position: static; }
-      .preview-release, .addon-release { grid-template-columns: 1fr; }
+      .codeapp-release, .addon-release { grid-template-columns: 1fr; }
       .limitations { grid-template-columns: 1fr; }
       .tracking-grid { grid-template-columns: 1fr; }
     }
@@ -537,7 +537,7 @@
           <article class="arch-node"><span class="node-label">Investigation</span><h3>Conversation Insights</h3><p>Dataverse tables, model-driven app, forms, views, and searchable JSON.</p></article>
         </div>
         <p class="arch-detail" data-reveal><strong>Additive by default.</strong> Finalized transcripts are treated as immutable. Reprocessing is an explicit operation, and the watermark freezes when a batch fails so a bad record cannot be silently skipped.</p>
-        <div class="tracking-boundary" data-reveal><strong>Choose the packages you need.</strong> Install the required <code>pvConversationInsights</code> core for transcript collection and the supported model-driven app. Add <code>pvConversationInsightsCredits</code> when makers need Copilot Credit usage, capacity, and governance. Add the optional unsupported <code>pvConversationInsightsCodeApp</code> preview for the richer investigation experience when preview Code Apps and Premium licensing are appropriate.</div>
+        <div class="tracking-boundary" data-reveal><strong>Choose the packages you need.</strong> Install the required <code>pvConversationInsights</code> core for transcript collection and the supported model-driven app. Add <code>pvConversationInsightsCredits</code> when makers need Copilot Credit usage, capacity, and governance. Add the optional supported <code>pvConversationInsightsCodeApp</code> for the richer investigation experience when Code Apps are enabled and Premium licensing is available.</div>
       </div>
     </section>
 
@@ -550,12 +550,12 @@
         <div class="tracking-list" data-reveal>
             <div class="tracking-item">
               <h3>2.1.0.0</h3>
-              <p>Adds a decision-first conversation overview, clearer knowledge and failure timelines, availability-aware telemetry, and more reliable reprocessing.</p>
+              <p>Adds a decision-first conversation overview, clearer knowledge and failure timelines, availability-aware telemetry, and more reliable reprocessing. The separate optional code app is maintainer-supported.</p>
               <div class="tracking-meta"><span>Released 2026-08-28</span><a href="https://github.com/pavecer/mcs-transcript-analyzer/blob/main/CHANGELOG.md">Full changelog</a></div>
             </div>
             <div class="tracking-item">
               <h3>2.0.0.5</h3>
-              <p>Introduces a required transcript core, optional Credits add-on, and optional unsupported preview code app so makers install only the experiences they need.</p>
+              <p>Introduces a required transcript core, optional Credits add-on, and separate optional code app so makers install only the experiences they need.</p>
               <div class="tracking-meta"><span>Released 2026-08-25</span><a href="https://github.com/pavecer/mcs-transcript-analyzer/blob/main/CHANGELOG.md">Full changelog</a></div>
             </div>
             <div class="tracking-item">
@@ -597,7 +597,6 @@
           </div>
           <div>
             <article class="tracking-item"><h3>Richer agent inventory</h3><p>Show more agent ownership and component details from environments where makers have granted access, while keeping unavailable information clearly unknown.</p><div class="tracking-meta"><span>Next · Planned</span><a href="https://github.com/pavecer/mcs-transcript-analyzer/blob/main/docs/permissions-and-inventory.md">Tracking</a></div></article>
-            <div class="tracking-item"><h3>Production-ready code app</h3><p>Improve accessibility, lifecycle management, licensing guidance, and upgrade reliability before the preview becomes a supported experience.</p><div class="tracking-meta"><span>Later · Preview</span><a href="https://github.com/pavecer/mcs-transcript-analyzer/blob/main/docs/release-automation.md">Tracking</a></div></div>
             <div class="tracking-item"><h3>More governance controls</h3><p>Add controls only when documented platform APIs support secure authorization, auditing, conflict checks, and recovery guidance.</p><div class="tracking-meta"><span>Later · Discovery</span><a href="https://github.com/pavecer/mcs-transcript-analyzer/blob/main/docs/credit-reporting.md">Tracking</a></div></div>
           </div>
         </div>
@@ -613,7 +612,7 @@
         </div>
         <div class="install-layout">
           <div class="steps" data-reveal>
-            <article class="step"><h3>Fresh install</h3><p>Enable <strong>Power Apps Code Apps &gt; Enable code apps</strong> only if you will install the preview. Import core, then optional Credits, then the optional code app. Configure connections and roles, smoke-test the apps and connections, then activate the scheduled flows.</p></article>
+            <article class="step"><h3>Fresh install</h3><p>Enable <strong>Power Apps Code Apps &gt; Enable code apps</strong> only if you will install the optional code app. Import core, then optional Credits, then the code app. Configure connections and roles, smoke-test the apps and connections, then activate the scheduled flows.</p></article>
             <article class="step"><h3>Upgrade from 2.0.0.5</h3><p>Upgrade core and, if installed, the optional code app. Credits is unchanged and should not be reimported.</p></article>
             <article class="step"><h3>Upgrade from 1.4.0.15</h3><p>Import Credits first, apply the core managed upgrade second, and upgrade the code app last if you use it.</p></article>
           </div>
@@ -666,8 +665,8 @@
         </div>
 
         <div class="notice" data-reveal>
-          <strong>The preview code app is a separate optional managed package.</strong>
-          The core package installs the supported model-driven experience. The downloadable React code-app package remains an unsupported preview and should be tested in a sandbox.
+          <strong>The supported code app is a separate optional managed package.</strong>
+          The core package installs the supported model-driven experience. The downloadable React code-app package is maintainer-supported, contains reviewed custom code, and should be tested in a sandbox.
         </div>
 
         <div class="notice" data-reveal>
@@ -680,31 +679,32 @@
           <button class="icon-button" id="copy-command" type="button" title="Copy import command" aria-label="Copy import command"><i data-lucide="copy" aria-hidden="true"></i></button>
         </div>
 
-        <div class="preview-release" id="preview-download">
-          <div class="preview-copy">
-            <span class="section-kicker">Optional preview</span>
+        <div class="codeapp-release" id="codeapp-download">
+          <div class="codeapp-copy">
+            <span class="section-kicker">Optional code app</span>
             <h3>Conversation Insights Explorer code app</h3>
-            <p>The React code app adds conversation replay, trends, tool and flow drill-down, a visual execution map, and scoped Copilot Credit analysis. It is packaged separately so production users can install the supported model-driven solution without taking a dependency on preview technology.</p>
+            <p>The React code app adds conversation replay, trends, tool and flow drill-down, a visual execution map, and scoped Copilot Credit analysis. It is packaged separately for optional installation and an independent application lifecycle.</p>
             <ul>
               <li>Enable Code Apps in the environment before importing any package, then import the core managed solution first.</li>
-              <li>Code apps and their ALM support are currently preview features.</li>
-              <li>Premium licensing and tenant preview availability may be required.</li>
+              <li>Power Apps Premium is required for every runner.</li>
+              <li>Documented platform limitations apply, including no Power Platform Git, Power Apps for Windows, Power BI integration, or SharePoint forms integration.</li>
+              <li>Use Conditional Access for IP and location controls on the public asset endpoint.</li>
               <li>Validate behavior, security roles, and data access in a sandbox.</li>
             </ul>
           </div>
-          <aside class="package preview-package" aria-label="Preview code app download details">
-            <span class="preview-badge">Preview · unsupported</span>
+          <aside class="package codeapp-package" aria-label="Optional supported code app download details">
+            <span class="codeapp-badge">Optional · supported</span>
             <h3>Conversation Insights Explorer</h3>
             <div class="package-meta">Managed code-app solution · version <span data-release-version="codeApp">2.1.0.0</span></div>
             <div class="trust-panel">
-              <div class="trust-head"><i data-lucide="triangle-alert" aria-hidden="true"></i><strong>Understand the preview risk</strong></div>
-              <p>This package uses Power Apps code apps and preview ALM capabilities. Preview features can change, have limited support, or become unavailable.</p>
+              <div class="trust-head"><i data-lucide="shield-alert" aria-hidden="true"></i><strong>Review the supported code app</strong></div>
+              <p>This maintainer-supported code app uses fully supported Microsoft technologies and contains custom code that runs with permissions granted in your environment.</p>
               <label class="trust-check" for="trust-codeapp">
                 <input id="trust-codeapp" type="checkbox" aria-controls="download-codeapp">
-                <span>I understand this is an unsupported preview, have reviewed the <a href="https://github.com/pavecer/mcs-transcript-analyzer/tree/main/codeapp" target="_blank" rel="noopener noreferrer">code app source</a>, and will test it in a sandbox first.</span>
+                <span>I understand this is a supported code app, have reviewed the <a href="https://github.com/pavecer/mcs-transcript-analyzer/tree/main/codeapp" target="_blank" rel="noopener noreferrer">code app source</a>, trust the custom code, and will test it in a sandbox first.</span>
               </label>
             </div>
-            <button class="button primary" id="download-codeapp" type="button" data-artifact="codeApp" disabled><i data-lucide="download" aria-hidden="true"></i>Download preview ZIP</button>
+            <button class="button primary" id="download-codeapp" type="button" data-artifact="codeApp" disabled><i data-lucide="download" aria-hidden="true"></i>Download code app ZIP</button>
           </aside>
         </div>
       </div>

@@ -39,7 +39,7 @@ separate GitHub Copilot product billing APIs.
 
 ## What operators can do
 
-| Area | In the model-driven app | In the preview code app |
+| Area | In the model-driven app | In the optional supported code app |
 | --- | --- | --- |
 | Resource usage | Review billed/non-billed source facts, unresolved resources, and source lineage | Compare global and selected-agent source-period trends without double-counting user facts |
 | User usage | Review tenant-wide user source facts and shared disclosure status | Search users, approve/revoke shared name disclosure, and correlate observed users/agents without allocating charges |

@@ -17,6 +17,8 @@ roadmap review.
    LinkedIn announcement version. Credits and code app may retain independent versions.
    Mixed-version stable manifests are valid.
 - `site/downloads/release-manifest.json` records the exact published ZIP checksums and provenance.
+- `pvConversationInsightsCodeApp` is the optional supported code-app artifact. Its separate solution
+   exists for optional installation and an independent application lifecycle, not preview status.
 - `config/release-evidence.json` records changed candidate identity and the independent PVE,
   hosted UI, manual TPM, and exact-byte clean-install gates for the published release. Schema 2
   requires a positive numeric `candidateRunId` for each changed artifact.

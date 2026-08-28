@@ -171,7 +171,7 @@ jobs:
             --environment "$POWER_PLATFORM_ENVIRONMENT_URL"
           pac org who
 
-      - name: Deploy committed preview code app
+      - name: Deploy committed code app
         if: steps.changes.outputs.changed == 'true' && inputs.export_only != true && steps.changes.outputs.artifact == 'codeApp'
         working-directory: codeapp
         run: >-

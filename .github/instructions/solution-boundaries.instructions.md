@@ -13,9 +13,9 @@ This repository has exactly three managed product solutions:
    reference, and transcript cloud flow, including `PVCI Collect Central Transcripts (scheduled)`.
 2. `pvConversationInsightsCredits` is the optional credit runtime add-on. It owns only the two
    licensing HTTP connection references and the three credit collection/governance cloud flows.
-3. `pvConversationInsightsCodeApp` contains only the separate preview code app and its dependencies.
-   It is separate because Power Apps code apps are preview, not because runtime components are
-   optional or tenant-local.
+3. `pvConversationInsightsCodeApp` contains only the separate optional supported code app and its
+   dependencies. It is separate for optional installation and an independent application lifecycle;
+   it owns no backend runtime, schema, flows, plugins, APIs, or roles.
 
 Never create a fourth product solution. Never duplicate a supported flow or connection reference
 across product solutions, leave it only in the default solution, or generate it after import.

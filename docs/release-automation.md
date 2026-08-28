@@ -7,7 +7,7 @@ app are `2.1.0.0`; Credits remains byte-identical at `2.0.0.5`:
 | --- | --- | --- | --- |
 | Core | `pvConversationInsights` | Required transcript/shared runtime and supported model-driven experience | First for clean install; second for `1.4.0.15` upgrade |
 | Credits | `pvConversationInsightsCredits` | Optional licensing runtime only | Second for clean install; first for `1.4.0.15` upgrade |
-| Code app | `pvConversationInsightsCodeApp` | Optional Power Apps code-app preview, unsupported | Last |
+| Code app | `pvConversationInsightsCodeApp` | Optional supported Power Apps code app | Last |
 
 For a fresh target that includes the optional code app, **Enable code apps** must be saved and
 independently reloaded as On before any package import. Follow the authoritative
@@ -17,9 +17,11 @@ separate gates, and direct runtime loading is diagnostic only.
 Core intentionally retains every table, plugin, Custom API, role, the model-driven app, four
 transcript/shared flows, and three non-licensing references. Credits owns only three credit flows,
 two licensing references, and the required credit tenant variable definition; managed packages
-must contain no environment-variable current value. The code app stays separate so environments can use the supported
-model-driven app without preview technology. This release passed PVE package and live-runtime
-validation and the user-performed manual Contoso TPM upgrade.
+must contain no environment-variable current value. The code app stays separate for optional
+installation and an independent application lifecycle; it owns no backend runtime. It is
+maintainer-supported, requires Power Apps Premium and environment enablement, and retains the
+documented platform limitations. This release passed PVE package and live-runtime validation and
+the user-performed manual Contoso TPM upgrade.
 
 The core artifact version is the stable release identity: the stable Git tag and LinkedIn
 announcement use that version. Credits and code app versions remain independent, so a stable

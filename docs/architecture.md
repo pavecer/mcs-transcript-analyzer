@@ -11,12 +11,13 @@ exact-byte clean installation. Core and code app are `2.1.0.0`; Credits remains 
 | --- | --- |
 | `pvConversationInsights` | Required transcript/shared core. Owns every table, plugin, Custom API, role, the model-driven app, inventory and transcript runtime, four transcript/shared flows, and three non-licensing connection references. |
 | `pvConversationInsightsCredits` | Optional credit runtime add-on. Owns only three credit flows, `pvci_licensinghttp`, `pvci_powerplatformapi`, and the required `pvci_CreditReportingTenantId` definition; it contains no table schema, plugin, API, role, or app. |
-| `pvConversationInsightsCodeApp` | Optional unsupported preview. Owns only the code app and its declared dependencies. |
+| `pvConversationInsightsCodeApp` | Optional supported code app. Owns only the code app and its declared dependencies. |
 
 Keeping all schema and server-side runtime in core avoids destructive data migration. Clean
-installations use core, optional credits, then optional code app. Upgrades from `1.4.0.15` install credits first,
-apply the core managed upgrade second, and upgrade the code app last. The order lets the add-on
-claim the existing credit workflow identities before core relinquishes solution ownership.
+installations use core, optional credits, then optional code app. The code app remains separate for
+optional installation and an independent application lifecycle. Upgrades from `1.4.0.15` install
+credits first, apply the core managed upgrade second, and upgrade the code app last. The order lets
+the add-on claim the existing credit workflow identities before core relinquishes solution ownership.
 
 The code app detects the optional runtime without making licensing access a transcript-analysis
 dependency. Credits remains a visible destination with `Unavailable`, `Setup required`, and
@@ -33,7 +34,7 @@ successful credit-sync record are both observed.
 | `sync_transcripts.py` | Local / CI | Same logic, uncapped — bulk backfill and re-derivation |
 | `fetch_flow_run_details.py` | Local / CI | Pulls per-action inputs and outputs from the Power Automate API |
 | PCF `JsonViewer` | Model-driven forms | Collapsible, searchable JSON rendering |
-| Code app | Browser (preview) | Replay timeline, trends, tool and flow drill-down |
+| Code app | Power Apps host | Supported replay timeline, trends, tool and flow drill-down |
 | `PVCI Collect Copilot Credit Usage` | Power Automate | Daily read-only PPAC resource usage and capacity collection with seven-day overlap |
 | `PVCI Collect Tenant Agent Inventory` | Power Automate | Daily environment and agent inventory independent of credit activity |
 | `PVCI Collect Credit Governance` | Power Automate | Daily read-only collection of per-agent threshold and enforcement state |
@@ -240,9 +241,10 @@ that the parser is ours to maintain. It is deliberately minimal — no streaming
 **Noise filtering on by default.** `trace` activities and `DialogTracing` events are ~79% of
 volume and are skipped. `IncludeTraces` keeps them at roughly 4× the row count.
 
-**Two UI surfaces, not one.** The model-driven app is GA and standard-licensed — the
-supportable option. The code app is preview and premium, but can do things forms cannot, such
-as interleaving messages and reasoning in one chronological replay.
+**Two UI surfaces, not one.** The model-driven app is the required standard-licensed experience.
+The optional code app is maintainer-supported, requires Power Apps Premium and environment
+enablement, and can do things forms cannot, such as interleaving messages and reasoning in one
+chronological replay. Documented Code Apps limitations still apply.
 
 The code app starts in local-only mode. It obtains the host environment ID from Power Apps context,
 scopes Sessions, Trends, and Credits resource reporting to that environment, and hides their
@@ -311,8 +313,8 @@ single Dataverse connection reference, and generic central flow. Environment ide
 enablement remain Dataverse rows, not solution metadata. In the `2.0.0.5` release, core derives
 inventory tenant scope from current-organization metadata and has no dependency on the credit tenant
 variable. The optional credit add-on contains its required variable definition, three flows, and two
-licensing references, while the third managed solution contains only the preview code app and its
-declared dependencies.
+licensing references, while the third managed solution contains only the optional supported code
+app and its declared dependencies.
 
 **Payload size guards.** Memo columns cap at 1,048,576 characters; writes are capped at 900,000
 with pretty-print falling back to compact and then truncation, flagged by `PayloadTruncated`.

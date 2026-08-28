@@ -22,8 +22,8 @@ records prioritized work and explicit product boundaries; update both with the p
    Never overwrite a published package at the same version.
 3. Ensure every new core component is a root component of `pvConversationInsights`. In
    particular, do not leave forms depending on a PCF control from the Active solution.
-4. Keep the preview code app in `pvConversationInsightsCodeApp`; do not add it to the core
-   package.
+4. Keep the optional supported code app in `pvConversationInsightsCodeApp`; do not add it to the
+   core package. Its separate solution provides optional installation and an independent lifecycle.
 5. Export fresh **managed** candidates only for changed artifacts from the approved development environment into
    `output/candidate/`:
 
@@ -69,8 +69,8 @@ records prioritized work and explicit product boundaries; update both with the p
 8. Refresh `assets/conversation-insights-preview.png` when the visible product changes. Use
    anonymized sample data only; never capture a real tenant, transcript, user, or environment.
 9. Test both independent acknowledgment gates and the public Credits section at desktop and mobile widths.
-10. For a clean sandbox, import core, optional credits, then preview. For an upgrade from
-   `1.4.0.15`, import credits first, apply the core managed upgrade second, and upgrade preview last.
+10. For a clean sandbox, import core, optional credits, then the code app. For an upgrade from
+   `1.4.0.15`, import credits first, apply the core managed upgrade second, and upgrade the code app last.
    Bind all
    target-local connection references, set required environment variables, smoke-test all 7 flows,
    and verify both apps open. Also test an upgrade over the previous public version when

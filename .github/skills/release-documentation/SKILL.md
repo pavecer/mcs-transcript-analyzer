@@ -33,6 +33,9 @@ boundaries.
 4. Preserve the reporting truth boundary: resource credits, user credits, capacity, inventory,
    thresholds, transcripts, and evaluations are separate evidence unless a documented source key
    joins them. Never present correlation as billing allocation.
+   Preserve the application boundary too: the model-driven experience is required, while
+   `pvConversationInsightsCodeApp` is an optional supported code app in a separate solution for
+   optional installation and independent lifecycle management.
 5. If a product input changed, review every indexed surface, run
    `python3 scripts/validate_documentation.py --print-digest`, and update
    `productSourceDigest` only after the documentation review is complete.

@@ -199,7 +199,7 @@ def main() -> None:
 
     code_app = json.loads(CODE_APP_CONFIG_SAMPLE.read_text(encoding="utf-8"))
     if code_app.get("appType") != "CodeApp":
-        fail("Preview solution source is not a Power Apps code app")
+        fail("Code-app solution source is not a Power Apps code app")
     expected_services = {
         service_filename(table)
         for table in (
@@ -260,8 +260,8 @@ def main() -> None:
 
     print(
         "PASS: exactly three product solutions; core owns transcript/shared runtime, the optional "
-        "credit add-on owns only licensing references and credit flows, and the separate preview "
-        "solution owns only the code app dependency surface; candidate "
+        "credit add-on owns only licensing references and credit flows, and the separate optional "
+        "code-app solution owns only the app dependency surface; candidate "
         "automation is artifact-only and development writes are tenant-ID guarded"
     )
 
