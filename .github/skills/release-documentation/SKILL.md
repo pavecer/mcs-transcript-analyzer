@@ -26,6 +26,10 @@ boundaries.
    - `docs/data-model.md` and `docs/architecture.md` for component/data-flow changes;
    - `scripts/transcript_insights/README.md` for contributor commands;
    - `site/index.html` for concise public-facing capabilities, boundaries, and install links.
+   Keep `site/index.html` maker-facing: never include internal environment names, tenant test
+   evidence, component or test counts, browser-tool failures, exact-byte notes, or
+   candidate/promotion/provenance mechanics. Keep those details in `CHANGELOG.md`, `ROADMAP.md`,
+   `docs/`, or release evidence as appropriate.
 4. Preserve the reporting truth boundary: resource credits, user credits, capacity, inventory,
    thresholds, transcripts, and evaluations are separate evidence unless a documented source key
    joins them. Never present correlation as billing allocation.

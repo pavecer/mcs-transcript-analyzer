@@ -21,7 +21,11 @@ from validate_release_evidence import (
     required_gates,
     valid_candidate_run_id,
 )
-from validate_site import expected_published_artifacts
+from validate_site import (
+    PUBLIC_COPY_FORBIDDEN_PHRASES,
+    expected_published_artifacts,
+    public_copy_violations,
+)
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -32,6 +36,21 @@ LINKEDIN_WORKFLOW = (ROOT / ".github" / "workflows" / "linkedin-release.yml").re
 
 
 class ComponentReleaseTests(unittest.TestCase):
+    def test_public_site_rejects_internal_release_details(self) -> None:
+        for phrase in PUBLIC_COPY_FORBIDDEN_PHRASES:
+            with self.subTest(phrase=phrase):
+                self.assertEqual([phrase], public_copy_violations(f"<p>{phrase}</p>"))
+
+    def test_public_site_allows_maker_facing_environment_terms(self) -> None:
+        html = "<p>Test in a sandbox, choose your tenant, and complete validation.</p>"
+
+        self.assertEqual([], public_copy_violations(html))
+
+    def test_public_site_contains_no_internal_release_details(self) -> None:
+        html = (ROOT / "site" / "index.html").read_text(encoding="utf-8")
+
+        self.assertEqual([], public_copy_violations(html))
+
     def test_refresh_embedded_python_blocks_compile(self) -> None:
         blocks = re.findall(r"python3 - <<'PY'\n(.*?)\n\s*PY", REFRESH_WORKFLOW, re.DOTALL)
 

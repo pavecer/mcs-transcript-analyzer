@@ -209,6 +209,7 @@
     .section-intro { margin: 0; color: var(--cp-text-muted); font-size: 19px; }
 
     .feature-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: var(--cp-border); border: 1px solid var(--cp-border); }
+    .credit-feature-grid { grid-template-columns: repeat(4, 1fr); }
     .feature {
       min-height: 220px;
       padding: 28px;
@@ -366,6 +367,7 @@
       .signal:nth-child(-n+2) { border-bottom: 1px solid var(--cp-highlight); }
       .section-head { grid-template-columns: 1fr; gap: 18px; }
       .feature-grid { grid-template-columns: repeat(2, 1fr); }
+      .credit-feature-grid { grid-template-columns: repeat(2, 1fr); }
       .credit-row { grid-template-columns: 1fr; }
       .credit-row > div { border-right: 0; border-bottom: 1px solid var(--cp-border); }
       .credit-row > div:last-child { border-bottom: 0; }
@@ -395,6 +397,7 @@
       .signal strong { font-size: 18px; }
       .section { padding: 66px 0; }
       .feature-grid { grid-template-columns: 1fr; }
+      .credit-feature-grid { grid-template-columns: 1fr; }
       .feature { min-height: 180px; }
       .feature h3 { margin-top: 30px; }
       .comparison th, .comparison td { min-width: 170px; padding: 13px 14px; }
@@ -462,12 +465,12 @@
           <p class="section-intro">The standard Monitor export summarizes a session. MCS Transcript Analyzer preserves the activity stream and turns it into a support-ready investigation surface.</p>
         </div>
         <div class="feature-grid" data-reveal>
-          <article class="feature"><i class="feature-icon" data-lucide="user-round-check" aria-hidden="true"></i><h3>End-user attribution</h3><p>Resolve <code>from.aadObjectId</code> to the corresponding Dataverse system user.</p></article>
+          <article class="feature"><i class="feature-icon" data-lucide="user-round-check" aria-hidden="true"></i><h3>End-user attribution</h3><p>Link conversations to the corresponding Dataverse user when identity evidence is available.</p></article>
           <article class="feature"><i class="feature-icon" data-lucide="timer" aria-hidden="true"></i><h3>Response latency</h3><p>Track first, average, and slowest replies, plus the delay on each conversation turn.</p></article>
-          <article class="feature"><i class="feature-icon" data-lucide="route" aria-hidden="true"></i><h3>Agent reasoning</h3><p>Inspect DynamicPlan events to understand which topic or action the orchestrator selected.</p></article>
-          <article class="feature"><i class="feature-icon" data-lucide="wrench" aria-hidden="true"></i><h3>Tool-call diagnostics</h3><p>Review connector and AI Builder invocations, duration, output, and exceptions where available.</p></article>
+          <article class="feature"><i class="feature-icon" data-lucide="route" aria-hidden="true"></i><h3>Agent reasoning</h3><p>See which topics and actions the orchestrator selected and how the plan progressed.</p></article>
+          <article class="feature"><i class="feature-icon" data-lucide="wrench" aria-hidden="true"></i><h3>Tool-call diagnostics</h3><p>Review connector and AI Builder calls, duration, results, and failures where available.</p></article>
           <article class="feature"><i class="feature-icon" data-lucide="workflow" aria-hidden="true"></i><h3>Flow correlation</h3><p>Match Power Automate runs to session windows and surface failed or unusually slow actions.</p></article>
-          <article class="feature"><i class="feature-icon" data-lucide="gauge" aria-hidden="true"></i><h3>Copilot inventory and credits</h3><p>Filter GitHub harness and spend risk, review human-readable controls, and submit audited agent-limit changes.</p></article>
+          <article class="feature"><i class="feature-icon" data-lucide="gauge" aria-hidden="true"></i><h3>Copilot inventory and credits</h3><p>Review environments, agents, usage, capacity, spend risk, and audited agent-limit changes.</p></article>
           <article class="feature"><i class="feature-icon" data-lucide="network" aria-hidden="true"></i><h3>Consent-based collection</h3><p>Local sync is automatic. Discovery and verification are not consent; enabling a verified remote source explicitly approves copying and retaining its transcripts in the installed Dataverse environment.</p></article>
         </div>
       </div>
@@ -477,47 +480,25 @@
       <div class="shell">
         <div class="section-head" data-reveal>
           <div><span class="section-kicker">Copilot Credit operations</span><h2>Usage truth and guarded controls</h2></div>
-          <p class="section-intro">The optional stable 2.0 credit add-on separates licensing runtime from transcript analysis while keeping billing facts, tenant inventory, threshold state, and audited changes distinct.</p>
+          <p class="section-intro">Add the optional Credits package when makers need usage, capacity, inventory, and controlled agent-limit changes alongside conversation analysis.</p>
         </div>
-        <div class="credit-offer" data-reveal>
-          <article class="credit-row">
-            <div><span class="credit-source">Licensing API</span><h3>Usage and capacity</h3></div>
-            <div><p><strong>Actual billed and non-billed</strong> resource facts, tenant-wide user facts, environment capacity, source-period trends, and collector freshness.</p></div>
-            <div><p>Resource and user projections remain separate totals. They are not assigned to one conversation, evaluation, or user-agent pair.</p></div>
-          </article>
-          <article class="credit-row">
-            <div><span class="credit-source">Admin V2 + One Inventory</span><h3>Environment and agent inventory</h3></div>
-            <div><p>Human-readable environments and agents remain visible even with zero credit usage. Direct <code>isCLIAgent</code> evidence supports GitHub, not-GitHub, and Unknown filters.</p></div>
-            <div><p>Missing evidence stays Unknown. A false value means only Not GitHub Copilot harness; no alternative harness is guessed.</p></div>
-          </article>
-          <article class="credit-row">
-            <div><span class="credit-source">Power Platform API</span><h3>Threshold governance</h3></div>
-            <div><p>Review monthly limit, consumption, notification percentage, stop-at-limit, explicit stop, and <strong>Spend-risk bands</strong>: Critical, High, Watch, Healthy, or No limit.</p></div>
-            <div><p>Risk is a triage calculation over the latest threshold snapshot, not a billing severity returned by Microsoft.</p></div>
-          </article>
-          <article class="credit-row">
-            <div><span class="credit-source">Dataverse request + processor</span><h3>Audited agent changes</h3></div>
-            <div><p>Credit Administrators submit desired and expected state with justification. A privileged serial processor re-reads current state, changes one agent threshold, reads back, and stores before/after evidence.</p></div>
-            <div><p>The browser never receives licensing API authority. Active requests disable duplicate submissions, and stale state is rejected before a write.</p></div>
-          </article>
-        </div>
-        <div class="credit-lifecycle" data-reveal aria-label="Threshold request lifecycle">
-          <div class="credit-state"><strong>Requested</strong><span>Persisted as Pending with server time; waiting for the processor.</span></div>
-          <div class="credit-state"><strong>Processing</strong><span>Current platform state and every expected value are being validated.</span></div>
-          <div class="credit-state"><strong>Terminal outcome</strong><span>Applied, Review needed, Failed, or Verify applied. The last state means a PUT was attempted but read-back did not complete.</span></div>
+        <div class="feature-grid credit-feature-grid" data-reveal>
+          <article class="feature"><i class="feature-icon" data-lucide="circle-dollar-sign" aria-hidden="true"></i><h3>Usage and capacity</h3><p>Review billed and non-billed consumption, available capacity, trends, and collector freshness.</p></article>
+          <article class="feature"><i class="feature-icon" data-lucide="bot" aria-hidden="true"></i><h3>Agent inventory</h3><p>Find environments and agents even when they have no reported credit usage.</p></article>
+          <article class="feature"><i class="feature-icon" data-lucide="gauge" aria-hidden="true"></i><h3>Spend risk</h3><p>Prioritize agents by current consumption, configured limits, and stop behavior.</p></article>
+          <article class="feature"><i class="feature-icon" data-lucide="clipboard-check" aria-hidden="true"></i><h3>Audited changes</h3><p>Submit guarded agent-limit requests and retain their before, after, and outcome evidence.</p></article>
         </div>
         <div class="credit-boundary" data-reveal>
           <div>
-            <h3>What the solution does not claim</h3>
-            <p>No reviewed source exposes a billing-event ID shared with transcripts or evaluations. Per-user limits are not available from a documented Copilot Studio API, so PVCI reports user consumption but does not invent configurable user controls.</p>
+            <h3>Reporting boundary</h3>
+            <p>Credits, conversations, users, and evaluations remain separate evidence. The solution does not claim exact billing allocation between them.</p>
           </div>
           <ul>
-            <li>No environment allocation, TenantPool, or PayGo mutation</li>
-            <li>No exact session, tool, evaluation, or user-agent credit allocation</li>
-            <li>No separate human approval stage; role assignment is the authorization gate</li>
+            <li>Per-user limits are not available</li>
+            <li>Agent-limit changes require the Credit Administrator role</li>
           </ul>
         </div>
-        <p class="arch-detail" data-reveal>Read the full <a href="https://github.com/pavecer/mcs-transcript-analyzer/blob/main/docs/credit-reporting.md">Copilot Credit reporting guide</a> for API grain, risk rules, privacy, request states, security roles, and setup boundaries.</p>
+        <p class="arch-detail" data-reveal>See the <a href="https://github.com/pavecer/mcs-transcript-analyzer/blob/main/docs/credit-reporting.md">Copilot Credit reporting guide</a> for data boundaries, roles, controls, and setup.</p>
       </div>
     </section>
 
@@ -556,7 +537,7 @@
           <article class="arch-node"><span class="node-label">Investigation</span><h3>Conversation Insights</h3><p>Dataverse tables, model-driven app, forms, views, and searchable JSON.</p></article>
         </div>
         <p class="arch-detail" data-reveal><strong>Additive by default.</strong> Finalized transcripts are treated as immutable. Reprocessing is an explicit operation, and the watermark freezes when a batch fails so a bad record cannot be silently skipped.</p>
-        <div class="tracking-boundary" data-reveal><strong>2.1.0.0 stable architecture</strong> Exactly three managed packages are published: required <code>pvConversationInsights</code> transcript/shared core at <code>2.1.0.0</code>, unchanged optional <code>pvConversationInsightsCredits</code> licensing runtime at <code>2.0.0.5</code>, and optional unsupported <code>pvConversationInsightsCodeApp</code> at <code>2.1.0.0</code>. Core retains all schema, APIs, roles, the model-driven app, four transcript/shared flows, and three non-licensing references. The credit add-on owns only three credit flows, two licensing references, and the required credit tenant variable definition; core does not prompt for it. Sessions, Trends, and Credits resource reporting remain host-scoped without environment selectors until an administrator enables a verified remote source; credit user usage and recent governance request history remain tenant-wide. PVE package/runtime and hosted scenario validation, manual target-tenant upgrade, and exact-byte clean installation passed before stable promotion.</div>
+        <div class="tracking-boundary" data-reveal><strong>Choose the packages you need.</strong> Install the required <code>pvConversationInsights</code> core for transcript collection and the supported model-driven app. Add <code>pvConversationInsightsCredits</code> when makers need Copilot Credit usage, capacity, and governance. Add the optional unsupported <code>pvConversationInsightsCodeApp</code> preview for the richer investigation experience when preview Code Apps and Premium licensing are appropriate.</div>
       </div>
     </section>
 
@@ -564,18 +545,17 @@
       <div class="shell">
         <div class="section-head" data-reveal>
           <div><span class="section-kicker">Release history</span><h2>What shipped</h2></div>
-          <p class="section-intro">Every managed package version is immutable. The repository changelog records the user-visible changes, while the release manifest records the exact ZIP checksums and source provenance.</p>
+          <p class="section-intro">A brief maker-facing summary of each release. See the changelog for complete implementation history.</p>
         </div>
-        <div class="tracking-grid" data-reveal>
-          <div>
+        <div class="tracking-list" data-reveal>
             <div class="tracking-item">
               <h3>2.1.0.0</h3>
-              <p>Decision-first conversation investigation with availability-aware telemetry, planned-versus-exact tool and flow evidence, clearer knowledge/topic classification, parser parity, stale projection cleanup, and deterministic clean-install validation.</p>
+              <p>Adds a decision-first conversation overview, clearer knowledge and failure timelines, availability-aware telemetry, and more reliable reprocessing.</p>
               <div class="tracking-meta"><span>Released 2026-08-28</span><a href="https://github.com/pavecer/mcs-transcript-analyzer/blob/main/CHANGELOG.md">Full changelog</a></div>
             </div>
             <div class="tracking-item">
               <h3>2.0.0.5</h3>
-              <p>Stable three-package architecture with required transcript core, optional Credits runtime, and optional unsupported preview code app, validated through PVE hosted smoke and a user-performed Contoso TPM upgrade.</p>
+              <p>Introduces a required transcript core, optional Credits add-on, and optional unsupported preview code app so makers install only the experiences they need.</p>
               <div class="tracking-meta"><span>Released 2026-08-25</span><a href="https://github.com/pavecer/mcs-transcript-analyzer/blob/main/CHANGELOG.md">Full changelog</a></div>
             </div>
             <div class="tracking-item">
@@ -598,8 +578,6 @@
               <p>Versions 1.0.0.0, 1.1.0.0, and 1.2.0.0 remain available for upgrade testing and historical comparison.</p>
               <div class="tracking-meta"><a href="https://github.com/pavecer/mcs-transcript-analyzer/tags">Version tags</a><a href="downloads/release-manifest.json">Release manifest</a></div>
             </div>
-          </div>
-          <div class="tracking-boundary"><strong>Release discipline</strong> Stable releases increment only changed package versions and preserve unchanged package bytes, versions, hashes, and provenance. Changed packages require fresh managed exports, updated documentation, validated checksums, and clean-install plus upgrade tests. Candidate ZIPs remain outside public downloads until manual target-tenant approval and byte-identical promotion.</div>
         </div>
       </div>
     </section>
@@ -608,24 +586,19 @@
       <div class="shell">
         <div class="section-head" data-reveal>
           <div><span class="section-kicker">Roadmap</span><h2>What comes next</h2></div>
-          <p class="section-intro">Last reviewed 2026-08-28. The roadmap distinguishes shipped releases, planned improvements, and capabilities outside the current product boundary.</p>
-        </div>
-        <div class="tracking-boundary" data-reveal>
-          <strong>2.1.0.0 shipped architecture</strong>
-          This mixed-version release uses core and code app <code>2.1.0.0</code> with unchanged Credits <code>2.0.0.5</code>. Its decision-first analyzer distinguishes observed zero from unavailable telemetry, separates MCP/Jira plans and candidate flows from exact execution, classifies knowledge, topics, flows, and failures, and clears stale nullable and user lookup projections during explicit reprocessing. Signed-in PVE Dev visual validation, parser/runtime tests, all 38 code-app tests, lint, and build passed. Exact retained core and code-app bytes passed component and tenant-neutral package validation and were promoted after the approved target-tenant upgrade. A fresh Sandbox pre-enabled Code Apps, synchronously imported core, Credits, and code app, passed the 79/6/1 structural contract, activated the target-generated app, and returned HTTP 200 for launch and runtime documents. The shared VS Code browser still aborted the cross-origin host iframe; direct runtime loading lacks the parent host token, so this does not claim a full fresh authenticated data-tab smoke. Workday is configured but available sessions are greeting-only, a known evidence gap outside the Conversation Investigation exit criteria.
+          <p class="section-intro">Concise future outcomes for makers. Detailed status, boundaries, and technical criteria remain in the full roadmap.</p>
         </div>
         <div class="tracking-grid" data-reveal>
           <div class="tracking-list">
-            <article class="tracking-item"><h3>Replace pre-authorized collection with zero-touch onboarding</h3><p>Source-managed audited verification is implemented. Completion still requires automatic administrator bootstrap, removal proof for temporary elevation, and continuous least-privilege reconciliation.</p><div class="tracking-meta"><span>Now · Incomplete</span><a href="https://github.com/pavecer/mcs-transcript-analyzer/blob/main/docs/permissions-and-inventory.md">Tracking</a></div></article>
-            <article class="tracking-item"><h3>Central transcript batch collector</h3><p>Source-managed collection and signed-in unavailable/no-flow telemetry validation have passed. Completion remains coupled to automated least-privilege source onboarding; manual role assignment in every environment is not accepted.</p><div class="tracking-meta"><span>Next · Incomplete</span><a href="https://github.com/pavecer/mcs-transcript-analyzer/blob/main/docs/cross-environment-credit-consumption-design.md">Tracking</a></div></article>
-            <article class="tracking-item"><h3>Agent and user conversation behavior telemetry</h3><p>Provide bounded, freshness-aware operational aggregates that preserve telemetry availability and privacy boundaries, with every aggregate drilling into supporting sessions.</p><div class="tracking-meta"><span>Next · Discovery</span><a href="https://github.com/pavecer/mcs-transcript-analyzer/blob/main/docs/operations.md">Tracking</a></div></article>
-            <article class="tracking-item"><h3>In-platform flow-run detail enrichment</h3><p>Move action and loop-iteration detail enrichment into an approved DLP/custom-connector path, with a credential-free sandbox run required before completion.</p><div class="tracking-meta"><span>Next · Policy validation</span><a href="https://github.com/pavecer/mcs-transcript-analyzer/blob/main/docs/flow-run-detail-findings.md">Tracking</a></div></article>
+            <article class="tracking-item"><h3>Zero-touch source onboarding</h3><p>Automate least-privilege setup and clearly show makers when each selected environment is ready, blocked, or needs action.</p><div class="tracking-meta"><span>Now · In progress</span><a href="https://github.com/pavecer/mcs-transcript-analyzer/blob/main/docs/permissions-and-inventory.md">Tracking</a></div></article>
+            <article class="tracking-item"><h3>Easier central transcript collection</h3><p>Make approved cross-environment collection easier to start and maintain without repeated manual role setup.</p><div class="tracking-meta"><span>Next · Planned</span><a href="https://github.com/pavecer/mcs-transcript-analyzer/blob/main/docs/cross-environment-credit-consumption-design.md">Tracking</a></div></article>
+            <article class="tracking-item"><h3>Agent and user behavior trends</h3><p>Add privacy-aware operational trends by agent, environment, channel, topic, and approved user dimensions, with drill-down to supporting sessions.</p><div class="tracking-meta"><span>Next · Discovery</span><a href="https://github.com/pavecer/mcs-transcript-analyzer/blob/main/docs/operations.md">Tracking</a></div></article>
+            <article class="tracking-item"><h3>Deeper flow-run details</h3><p>Bring Power Automate action and loop details into the investigation experience where platform policy permits.</p><div class="tracking-meta"><span>Next · Planned</span><a href="https://github.com/pavecer/mcs-transcript-analyzer/blob/main/docs/flow-run-detail-findings.md">Tracking</a></div></article>
           </div>
           <div>
-            <article class="tracking-item"><h3>Detailed cross-environment agent enrichment</h3><p>Add per-environment Dataverse metadata only where explicit access exists, preserving unavailable metadata as unknown rather than reporting a missing agent.</p><div class="tracking-meta"><span>Next · Planned</span><a href="https://github.com/pavecer/mcs-transcript-analyzer/blob/main/docs/permissions-and-inventory.md">Tracking</a></div></article>
-            <div class="tracking-item"><h3>Make the code app supported</h3><p>Stabilize the preview code app's accessibility, ALM, licensing, data-source contract, and upgrade path before changing its unsupported status.</p><div class="tracking-meta"><span>Later · Preview</span><a href="https://github.com/pavecer/mcs-transcript-analyzer/blob/main/docs/release-automation.md">Tracking</a></div></div>
-            <div class="tracking-item"><h3>Governance API discovery</h3><p>Evaluate additional control surfaces only where documented APIs support narrow authorization, stale-state protection, before/after audit, and rollback guidance.</p><div class="tracking-meta"><span>Later · Discovery</span><a href="https://github.com/pavecer/mcs-transcript-analyzer/blob/main/docs/credit-reporting.md">Tracking</a></div></div>
-            <div class="tracking-boundary"><strong>Explicitly out of scope for now</strong> Per-user Copilot Studio limits, exact credit allocation to conversations or users, and environment allocation, TenantPool, or PayGo mutation are not presented as planned features.</div>
+            <article class="tracking-item"><h3>Richer agent inventory</h3><p>Show more agent ownership and component details from environments where makers have granted access, while keeping unavailable information clearly unknown.</p><div class="tracking-meta"><span>Next · Planned</span><a href="https://github.com/pavecer/mcs-transcript-analyzer/blob/main/docs/permissions-and-inventory.md">Tracking</a></div></article>
+            <div class="tracking-item"><h3>Production-ready code app</h3><p>Improve accessibility, lifecycle management, licensing guidance, and upgrade reliability before the preview becomes a supported experience.</p><div class="tracking-meta"><span>Later · Preview</span><a href="https://github.com/pavecer/mcs-transcript-analyzer/blob/main/docs/release-automation.md">Tracking</a></div></div>
+            <div class="tracking-item"><h3>More governance controls</h3><p>Add controls only when documented platform APIs support secure authorization, auditing, conflict checks, and recovery guidance.</p><div class="tracking-meta"><span>Later · Discovery</span><a href="https://github.com/pavecer/mcs-transcript-analyzer/blob/main/docs/credit-reporting.md">Tracking</a></div></div>
           </div>
         </div>
         <p class="arch-detail" data-reveal>See the <a href="https://github.com/pavecer/mcs-transcript-analyzer/blob/main/ROADMAP.md">full roadmap</a> for exit criteria and the <a href="https://github.com/pavecer/mcs-transcript-analyzer/blob/main/CHANGELOG.md">changelog</a> for shipped release details.</p>
@@ -636,16 +609,13 @@
       <div class="shell">
         <div class="section-head" data-reveal>
           <div><span class="section-kicker">Install</span><h2>Import the solution</h2></div>
-          <p class="section-intro">These controls download stable core 2.1.0.0, unchanged optional Credits 2.0.0.5, and optional unsupported preview 2.1.0.0 from the published manifest.</p>
+          <p class="section-intro">Choose the path that matches your current installation. Use the <a href="https://github.com/pavecer/mcs-transcript-analyzer/blob/main/docs/clean-install.md">clean-install runbook</a> for exact prerequisites and the <a href="https://github.com/pavecer/mcs-transcript-analyzer/blob/main/docs/operations.md">operations guide</a> for connector mapping and post-import setup. <a href="downloads/release-manifest.json">Release manifest and checksums</a></p>
         </div>
         <div class="install-layout">
           <div class="steps" data-reveal>
-            <article class="step"><h3>Pre-enable the optional code app</h3><p>Before importing any package into a fresh target that will use the preview app, set <strong>Power Apps Code Apps &gt; Enable code apps</strong> to <strong>On</strong>, save, and independently reload it. Follow the <a href="https://github.com/pavecer/mcs-transcript-analyzer/blob/main/docs/clean-install.md">clean-install runbook</a>.</p></article>
-            <article class="step"><h3>Download the managed ZIP</h3><p>Keep the archive intact. Power Apps imports the ZIP directly; do not extract it.</p></article>
-            <article class="step"><h3>Import in Power Apps</h3><p>Open <strong>Solutions</strong>, choose <strong>Import solution</strong>, upload the ZIP, and complete the import wizard.</p></article>
-            <article class="step"><h3>Configure connections</h3><p>For core, bind <code>pvci_dataversesync</code> and <code>pvci_centralcollector</code> to Dataverse and <code>pvci_powerplatformadminv2</code> to Power Platform for Admins V2. When installing the optional Credits add-on, also bind <code>pvci_licensinghttp</code> and <code>pvci_powerplatformapi</code> to the licensing API and set <code>pvci_CreditReportingTenantId</code>. The two licensing references may share one valid physical connection.</p></article>
-            <article class="step"><h3>Activate and run the flows</h3><p>Verify the core transcript and inventory flows before scheduling. With the optional Credits add-on, also verify the credit and governance flows and test the threshold processor with a no-op request.</p></article>
-            <article class="step"><h3>Assign and verify source access</h3><p>Grant app access, then follow the <a href="https://github.com/pavecer/mcs-transcript-analyzer/blob/main/docs/permissions-and-inventory.md">permissions and inventory checklist</a>. Each selected source must enable the collector identity and grant organization-level Read on Conversation Transcript before verification and collection can succeed.</p></article>
+            <article class="step"><h3>Fresh install</h3><p>Enable <strong>Power Apps Code Apps &gt; Enable code apps</strong> only if you will install the preview. Import core, then optional Credits, then the optional code app. Configure connections and roles, smoke-test the apps and connections, then activate the scheduled flows.</p></article>
+            <article class="step"><h3>Upgrade from 2.0.0.5</h3><p>Upgrade core and, if installed, the optional code app. Credits is unchanged and should not be reimported.</p></article>
+            <article class="step"><h3>Upgrade from 1.4.0.15</h3><p>Import Credits first, apply the core managed upgrade second, and upgrade the code app last if you use it.</p></article>
           </div>
           <aside class="package" data-reveal aria-label="Download package details">
             <h3>PV Conversation Insights</h3>
@@ -665,7 +635,6 @@
               </label>
             </div>
             <button class="button primary" id="download-package" type="button" data-artifact="core" disabled><i data-lucide="download" aria-hidden="true"></i>Download solution ZIP</button>
-            <p class="hash">SHA-256: <span id="package-hash">loading…</span></p>
           </aside>
         </div>
 
@@ -674,12 +643,7 @@
             <span class="section-kicker">Optional add-on</span>
             <h3>Copilot Credit runtime</h3>
             <p>Install <code>pvConversationInsightsCredits-managed-2.0.0.5.zip</code> when the environment needs Copilot Credit usage, capacity, and audited threshold governance. Transcript-only operation can omit it and requires no licensing-administrator access.</p>
-            <ul>
-              <li>For a clean installation, import core first and Credits second.</li>
-              <li>For a 1.4.0.15 upgrade, import Credits first and apply the core managed upgrade second.</li>
-              <li>Map both licensing connection references and set the target tenant ID.</li>
-              <li>Credits remains Setup required until successful credit-sync evidence exists.</li>
-            </ul>
+            <p>Follow the install path above, then use the operations guide to map the required connections and complete setup.</p>
           </div>
           <aside class="package credits-package" aria-label="Credits add-on download details">
             <h3>PV Conversation Insights Credits</h3>
@@ -693,23 +657,17 @@
               </label>
             </div>
             <button class="button primary" id="download-credits" type="button" data-artifact="credits" disabled><i data-lucide="download" aria-hidden="true"></i>Download Credits ZIP</button>
-            <p class="hash">SHA-256: <span id="credits-package-hash">loading…</span></p>
           </aside>
         </div>
 
         <div class="notice" data-reveal>
-          <strong>Installing the optional Credits add-on shows &quot;Invalid connection&quot;?</strong>
-          Do not select an existing entry whose <code>BaseResourceUrl</code> is blank. Open the row menu, choose <b>Add new connection</b>, and create <b>HTTP with Microsoft Entra ID (preauthorized)</b>. For commercial cloud, enter <code>https://licensing.powerplatform.microsoft.com/</code> for both <b>Base Resource URL</b> and <b>Microsoft Entra ID Resource URI</b>, then sign in with the intended licensing administrator. Return to the import wizard, refresh if needed, and select that valid connection for both <code>pvci_licensinghttp</code> and <code>pvci_powerplatformapi</code>. The &quot;Power Platform API&quot; row is the licensing-governance reference; it does not use <code>api.powerplatform.com</code>. See the <a href="https://github.com/pavecer/mcs-transcript-analyzer/blob/main/docs/permissions-and-inventory.md#first-import-connection-wizard">first-import connection checklist</a> for roles, DLP requirements, and recovery steps.
+          <strong>Connection setup.</strong>
+          Core uses Microsoft Dataverse and Power Platform for Admins V2. The optional Credits add-on also uses HTTP with Microsoft Entra ID. See the <a href="https://github.com/pavecer/mcs-transcript-analyzer/blob/main/docs/operations.md">operations guide</a> for exact prerequisites, connector mapping, permissions, and troubleshooting.
         </div>
 
         <div class="notice" data-reveal>
           <strong>The preview code app is a separate optional managed package.</strong>
           The core package installs the supported model-driven experience. The downloadable React code-app package remains an unsupported preview and should be tested in a sandbox.
-        </div>
-
-        <div class="notice" data-reveal>
-          <strong>About the stable 2.1 release.</strong>
-          Clean installations import core 2.1.0.0, optional Credits 2.0.0.5, then optional code app 2.1.0.0. Upgrades from stable 2.0.0.5 upgrade core and the optional code app; the Credits package is unchanged and is not reimported. The special 1.4.0.15 migration still imports the credit add-on first, applies the core managed upgrade second, and upgrades the code app last. Transcript-only use can omit the credit add-on and needs no licensing-administrator access. Credits is unavailable without the add-on, setup-required until successful sync evidence exists, and ready only after both conditions are met.
         </div>
 
         <div class="notice" data-reveal>
@@ -728,7 +686,7 @@
             <h3>Conversation Insights Explorer code app</h3>
             <p>The React code app adds conversation replay, trends, tool and flow drill-down, a visual execution map, and scoped Copilot Credit analysis. It is packaged separately so production users can install the supported model-driven solution without taking a dependency on preview technology.</p>
             <ul>
-              <li>Enable Code Apps in the exact target before importing any package, then import the core managed solution first.</li>
+              <li>Enable Code Apps in the environment before importing any package, then import the core managed solution first.</li>
               <li>Code apps and their ALM support are currently preview features.</li>
               <li>Premium licensing and tenant preview availability may be required.</li>
               <li>Validate behavior, security roles, and data access in a sandbox.</li>
@@ -747,7 +705,6 @@
               </label>
             </div>
             <button class="button primary" id="download-codeapp" type="button" data-artifact="codeApp" disabled><i data-lucide="download" aria-hidden="true"></i>Download preview ZIP</button>
-            <p class="hash">SHA-256: <span id="codeapp-package-hash">loading…</span></p>
           </aside>
         </div>
       </div>
@@ -808,9 +765,6 @@
       })
       .then((manifest) => {
         Object.assign(artifacts, manifest.artifacts);
-        document.getElementById("package-hash").textContent = artifacts.core.sha256;
-        document.getElementById("credits-package-hash").textContent = artifacts.credits.sha256;
-        document.getElementById("codeapp-package-hash").textContent = artifacts.codeApp.sha256;
         document.querySelectorAll('[data-release-version="core"]').forEach((element) => {
           element.textContent = artifacts.core.version;
         });
@@ -823,11 +777,7 @@
         document.getElementById("import-command").textContent =
           `pac solution import --path ${artifacts.core.filename}`;
       })
-      .catch(() => {
-        document.getElementById("package-hash").textContent = "see release manifest";
-        document.getElementById("credits-package-hash").textContent = "see release manifest";
-        document.getElementById("codeapp-package-hash").textContent = "see release manifest";
-      });
+      .catch(() => {});
 
     document.getElementById("copy-command").addEventListener("click", async (event) => {
       await navigator.clipboard.writeText(document.getElementById("import-command").textContent);
