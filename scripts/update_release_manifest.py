@@ -31,6 +31,12 @@ def service_filename(table_name: str) -> str:
     return f"{plural_name[0].upper()}{plural_name[1:]}Service.ts"
 
 
+def expected_codeapp_package_tables(config: dict[str, Any]) -> set[str]:
+    return set(config["requiredCoreTables"]) | set(
+        config.get("requiredPackageSystemTables", [])
+    )
+
+
 def validate_release_config(config: dict[str, Any]) -> None:
     if set(config) != set(ARTIFACT_KEYS):
         raise RuntimeError(f"Expected release artifacts {ARTIFACT_KEYS}, got {sorted(config)}")
@@ -270,7 +276,7 @@ def inspect_package(key: str, config: dict[str, Any]) -> dict[str, Any]:
             for item in root_components
         ):
             raise RuntimeError("Code-app package does not contain the configured code app")
-        expected_tables = set(config["requiredCoreTables"])
+        expected_tables = expected_codeapp_package_tables(config)
         required_tables = {
             item.get("schemaName")
             for item in missing_dependencies
