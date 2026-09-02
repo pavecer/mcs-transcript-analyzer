@@ -58,15 +58,17 @@
   },
   "codeApp": {
     "solutionUniqueName": "pvConversationInsightsCodeApp",
-    "version": "2.1.0.0",
-    "filename": "pvConversationInsightsCodeApp-managed-2.1.0.0.zip",
+    "version": "2.2.0.0",
+    "filename": "pvConversationInsightsCodeApp-managed-2.2.0.0.zip",
     "dependsOn": [
       "core"
     ],
     "appId": "cdab27a0-70fe-4819-a0c1-230e6ca99cc4",
     "componentSchemaName": "pve_conversationinsightsexplorer_a5d19",
     "requiredSystemTables": [
-      "solution"
+      "solution",
+      "workflow",
+      "connectionreference"
     ],
     "requiredCoreTables": [
       "pvci_agentinventory",
@@ -82,6 +84,7 @@
       "pvci_governancesyncrun",
       "pvci_thresholdchangerequest",
       "pvci_inventorysyncrun",
+      "pvci_syncstate",
       "pvci_transcriptsession",
       "pvci_transcriptturn"
     ]

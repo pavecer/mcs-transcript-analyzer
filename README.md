@@ -226,9 +226,12 @@ npx power-apps add-data-source --api-id dataverse --resource-name pvci_creditpri
 npx power-apps add-data-source --api-id dataverse --resource-name pvci_environmentinventory --org-url <org-url>
 npx power-apps add-data-source --api-id dataverse --resource-name pvci_transcriptaccessrequest --org-url <org-url>
 npx power-apps add-data-source --api-id dataverse --resource-name pvci_inventorysyncrun --org-url <org-url>
+npx power-apps add-data-source --api-id dataverse --resource-name pvci_syncstate --org-url <org-url>
 npx power-apps add-data-source --api-id dataverse --resource-name pvci_agentthresholdsnapshot --org-url <org-url>
 npx power-apps add-data-source --api-id dataverse --resource-name pvci_governancesyncrun --org-url <org-url>
 npx power-apps add-data-source --api-id dataverse --resource-name pvci_thresholdchangerequest --org-url <org-url>
+npx power-apps add-data-source --api-id dataverse --resource-name workflow --org-url <org-url>
+npx power-apps add-data-source --api-id dataverse --resource-name connectionreference --org-url <org-url>
 npm run build && npx power-apps push
 ```
 

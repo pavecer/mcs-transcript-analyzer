@@ -5,6 +5,7 @@
 
 // Models
 export * as CommonModels from './models/CommonModels';
+export * as ConnectionreferencesModel from './models/ConnectionreferencesModel';
 export * as Pvci_agentinventoriesModel from './models/Pvci_agentinventoriesModel';
 export * as Pvci_agentthresholdsnapshotsModel from './models/Pvci_agentthresholdsnapshotsModel';
 export * as Pvci_creditcapacitysnapshotsModel from './models/Pvci_creditcapacitysnapshotsModel';
@@ -16,13 +17,16 @@ export * as Pvci_environmentinventoriesModel from './models/Pvci_environmentinve
 export * as Pvci_flowrundetailsModel from './models/Pvci_flowrundetailsModel';
 export * as Pvci_governancesyncrunsModel from './models/Pvci_governancesyncrunsModel';
 export * as Pvci_inventorysyncrunsModel from './models/Pvci_inventorysyncrunsModel';
+export * as Pvci_syncstatesModel from './models/Pvci_syncstatesModel';
 export * as Pvci_thresholdchangerequestsModel from './models/Pvci_thresholdchangerequestsModel';
 export * as Pvci_transcriptaccessrequestsModel from './models/Pvci_transcriptaccessrequestsModel';
 export * as Pvci_transcriptsessionsModel from './models/Pvci_transcriptsessionsModel';
 export * as Pvci_transcriptturnsModel from './models/Pvci_transcriptturnsModel';
 export * as SolutionsModel from './models/SolutionsModel';
+export * as WorkflowsModel from './models/WorkflowsModel';
 
 // Services
+export * from './services/ConnectionreferencesService';
 export * from './services/Pvci_agentinventoriesService';
 export * from './services/Pvci_agentthresholdsnapshotsService';
 export * from './services/Pvci_creditcapacitysnapshotsService';
@@ -34,8 +38,10 @@ export * from './services/Pvci_environmentinventoriesService';
 export * from './services/Pvci_flowrundetailsService';
 export * from './services/Pvci_governancesyncrunsService';
 export * from './services/Pvci_inventorysyncrunsService';
+export * from './services/Pvci_syncstatesService';
 export * from './services/Pvci_thresholdchangerequestsService';
 export * from './services/Pvci_transcriptaccessrequestsService';
 export * from './services/Pvci_transcriptsessionsService';
 export * from './services/Pvci_transcriptturnsService';
 export * from './services/SolutionsService';
+export * from './services/WorkflowsService';

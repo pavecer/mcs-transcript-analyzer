@@ -12,7 +12,7 @@ export function Trends({ sessions, loading, allowEnvironmentSelection }: {
 }) {
   const [agent, setAgent] = useState<string>("*");
   const [hideTest, setHideTest] = useState(true);
-  const [essOnly, setEssOnly] = useState(true);
+  const [essOnly, setEssOnly] = useState(false);
   const [environment, setEnvironment] = useState("*");
   const [grain, setGrain] = useState<Grain | "auto">("auto");
 

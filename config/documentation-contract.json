@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "productSourceDigest": "a7147bfdda817bd4d24769039388c20052ed6741cd7aedcb2278eb2d98722f4f",
+  "productSourceDigest": "cc349a6424b0a3e1637fb3dfd2c9fc7e6380bff85fea4939f3b9d2e972004142",
   "productInputs": [
     "config/clean-install-contract.json",
     "config/release-packages.json",
@@ -8,6 +8,8 @@
     "codeapp/src/App.tsx",
     "codeapp/src/components/Credits.tsx",
     "codeapp/src/components/InventoryManagement.tsx",
+    "codeapp/src/components/OperationsOverview.tsx",
+    "codeapp/src/lib/flowOperations.ts",
     "codeapp/src/lib/transcriptScope.ts",
     "codeapp/src/lib/thresholdRequestState.ts",
     "codeapp/src/lib/creditCapability.ts",

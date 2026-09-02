@@ -15,6 +15,7 @@ import { EssOps } from "./components/EssOps";
 import { Trends } from "./components/Trends";
 import { Credits } from "./components/Credits";
 import { InventoryManagement } from "./components/InventoryManagement";
+import { OperationsOverview } from "./components/OperationsOverview";
 import { classifyCreditCapability, withTimeout, type CreditCapability } from "./lib/creditCapability";
 import { formatObservedPair } from "./lib/telemetryAvailability";
 import { buildSessionAlerts } from "./lib/sessionAlerts";
@@ -70,7 +71,7 @@ const TURN_FIELDS = [
 
 type Tab = "essops" | "replay" | "tools" | "knowledge" | "flows" | "conversation" | "reasoning" | "raw";
 type Theme = "light" | "dark";
-type View = "sessions" | "trends" | "inventory" | "credits";
+type View = "sessions" | "trends" | "operations" | "inventory" | "credits";
 type CreditCapabilityState = "idle" | "checking" | "error" | CreditCapability;
 
 const THEME_STORAGE_KEY = "pvci-theme";
@@ -106,7 +107,7 @@ export default function App() {
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [hideTest, setHideTest] = useState(false);
-  const [essOnly, setEssOnly] = useState(true);
+  const [essOnly, setEssOnly] = useState(false);
   const [environmentFilter, setEnvironmentFilter] = useState("*");
   const [tab, setTab] = useState<Tab>("essops");
   const [jsonFilter, setJsonFilter] = useState("");
@@ -314,6 +315,8 @@ export default function App() {
             ? `${sessions.length} sessions`
             : view === "trends"
               ? "Quality and latency"
+              : view === "operations"
+                ? "Flow health and runs"
               : view === "inventory"
                 ? "Environment readiness"
                 : "Usage and governance"}</span>
@@ -321,6 +324,7 @@ export default function App() {
         <nav className="viewswitch app-navigation" aria-label="Primary navigation">
           <button type="button" className={view === "sessions" ? "on" : ""} aria-current={view === "sessions" ? "page" : undefined} onClick={() => setView("sessions")}>Sessions</button>
           <button type="button" className={view === "trends" ? "on" : ""} aria-current={view === "trends" ? "page" : undefined} onClick={() => setView("trends")}>Trends</button>
+          <button type="button" className={view === "operations" ? "on" : ""} aria-current={view === "operations" ? "page" : undefined} onClick={() => setView("operations")}>Operations</button>
           <button type="button" className={view === "inventory" ? "on" : ""} aria-current={view === "inventory" ? "page" : undefined} onClick={() => setView("inventory")}>Inventory</button>
           <button type="button" className={view === "credits" ? "on" : ""} aria-current={view === "credits" ? "page" : undefined} onClick={() => setView("credits")}>Credits</button>
         </nav>
@@ -426,6 +430,8 @@ export default function App() {
             <Trends key={crossEnvironmentEnabled ? "cross" : "local"} sessions={visibleSessions} loading={loadingSessions} allowEnvironmentSelection={crossEnvironmentEnabled} />
           </>
         )}
+
+        {view === "operations" && <OperationsOverview hostEnvironmentId={hostEnvironmentId} onNavigate={(destination) => setView(destination)} />}
 
         {view === "credits" && creditCapability === "checking" && (
           <div className="capability-state muted">Checking Copilot Credit availability…</div>

@@ -50,7 +50,7 @@ There are three independent permission boundaries:
 | Read agent credit threshold controls | Owner of `pvci_powerplatformapi` with Power Platform licensing administration access | Read-only collector/reference packaged; target connection/role external |
 | Submit agent threshold changes | **PVCI Credit Administrator** plus app sharing | Role/request table/processor packaged; privileged flow connection external |
 | Read detailed agent configuration in every environment | Inventory identity with appropriate Dataverse access in every source environment | Detailed enrichment not implemented in `1.3.0.0` |
-| Open the apps as an analyst | **PVCI Analyst** plus model-driven/code-app sharing | Role packaged; assignments and code-app sharing external |
+| Open the apps as an analyst | **PVCI Analyst** plus model-driven/code-app sharing | Role packaged; assignments and code-app sharing external; Operations reads packaged workflow/configuration metadata and shows unavailable when platform access is withheld |
 | Reveal or revoke stored user names | **PVCI Privacy Approver** plus app sharing | Role and audited plug-in packaged; assignment external |
 
 Do not assign Global Administrator for routine collection. Use a dedicated account, the least
