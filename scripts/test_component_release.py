@@ -13,7 +13,11 @@ from validate_candidate_packages import (
     candidate_manifest_name,
     commits_match_artifact_inputs,
 )
-from update_release_manifest import existing_artifact_source_commit, release_artifacts_for_update
+from update_release_manifest import (
+    existing_artifact_source_commit,
+    expected_codeapp_package_tables,
+    release_artifacts_for_update,
+)
 from validate_release_promotion import PROMOTABLE_ARTIFACTS, candidate_scope_errors, published_source_commit
 from validate_release_evidence import (
     REQUIRED_GATES,
@@ -117,6 +121,18 @@ class ComponentReleaseTests(unittest.TestCase):
             REFRESH_WORKFLOW,
         )
         self.assertIn("codeapp ':(exclude,glob)**/*.md'", REFRESH_WORKFLOW)
+
+    def test_code_app_package_dependencies_exclude_runtime_only_system_tables(self) -> None:
+        config = {
+            "requiredCoreTables": ["pvci_transcriptsession"],
+            "requiredSystemTables": ["solution", "workflow", "connectionreference"],
+            "requiredPackageSystemTables": ["connectionreference"],
+        }
+
+        self.assertEqual(
+            {"pvci_transcriptsession", "connectionreference"},
+            expected_codeapp_package_tables(config),
+        )
 
     @patch("validate_candidate_packages.subprocess.run")
     def test_equivalent_candidate_provenance_requires_no_artifact_diff(self, run) -> None:
