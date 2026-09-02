@@ -292,6 +292,74 @@ plan-step envelope, **run time** is the Power Automate execution duration, and *
 only the difference between their start timestamps used for matching. Do not add these values or
 treat start delta as measured backend waiting time.
 
+## Telemetry flow operations
+
+The optional code app's **Operations** workspace consolidates the retained operational evidence for
+all seven packaged flows:
+
+- local transcript sync from `pvci_syncstate`;
+- central transcript collection from each enabled `pvci_environmentinventory` source;
+- tenant inventory from `pvci_inventorysyncrun`;
+- source-access verification from `pvci_transcriptaccessrequest`;
+- optional credit usage and governance collection from their sync-run tables; and
+- optional governance request processing from `pvci_thresholdchangerequest`.
+
+Use the decision band to find the highest-priority exception, then select a flow row to inspect its
+review workspace above the flow list. The review presents impact, remediation, recent retained
+evidence, and a target-environment **Open flow** link to the packaged workflow in Power Automate.
+**Healthy**, **Failed**, **Overdue**, **Attention**, **Unknown**, **Unavailable**, and **Not
+installed** are distinct states. A stored zero remains an observed zero; a missing count is shown as
+unavailable. The refresh command re-queries Dataverse and does not start a flow.
+
+For collectors with invocation rows, the review also distinguishes last attempt from last success,
+counts the current failure streak, computes the latest duration against prior successful runs, and
+renders the ten most recent outcomes. Source-access and governance processors show pending and
+overdue request counts. Transcript sync and central collection retain latest projections rather than
+invocation history, so their failure streak and duration baseline remain explicitly unavailable.
+
+Configuration readiness is separate from runtime health. The code app reads the existing Dataverse
+`workflow` and `connectionreference` system tables to identify Draft, Activated, Suspended, company
+DLP violation, and unmapped packaged connections. An unavailable system-table read remains
+**Unavailable** and does not convert missing evidence into a healthy state. Quick filters isolate
+review-needed, failed/overdue, pending, Core, and Credits flows. Optional 60-second auto-refresh is
+off by default, pauses while the page is hidden, and refreshes when visibility returns. **Copy
+diagnostics** produces flow identity, environment, package, cadence, state, timestamps, summary,
+queue/history counts, bounded error, and the maker link; it excludes transcript and flow payloads.
+
+The packaged flows currently expose recurrence triggers only. They are not invokable Power Apps
+flows and there is no audited run-command contract, so the code app deliberately does not offer a
+misleading **Run now** control. Manual execution remains an administrator action in Power Automate.
+A future in-app trigger requires core- or Credits-owned command contracts with authorization,
+idempotency, request status, and bounded outcomes; that runtime must not be added to the separate
+code-app solution.
+
+### Audited Run now contract
+
+Direct execution remains a planned backend feature, not a code-app shortcut. The implementation
+contract is:
+
+1. Core owns one `pvci_flowrunrequest` table because the Credits add-on owns no schema. Requests use
+    an alternate idempotency key, an allowlisted operation code, requester, reason, requested time,
+    status, processor lease, completion time, resulting run ID, bounded result summary, and bounded
+    error. Arbitrary workflow IDs and trigger inputs are rejected.
+2. A core pre-operation guard authorizes Core operations separately from Credits operations, rejects
+    duplicate active requests, enforces a cooldown, and prevents clients from writing processor-owned
+    outcome fields.
+3. Existing scheduled collectors are refactored into reusable solution-aware execution units. Their
+    recurrence wrappers and request processors call the same units so **Run now** cannot drift from
+    scheduled behavior. Core owns transcript/inventory execution; Credits owns only its credit
+    execution flows and licensing references.
+4. Core and Credits request processors claim one bounded request at a time, update status through
+    Requested, Processing, Succeeded, Failed, or Rejected, and persist the actual downstream run ID.
+    Retries reuse the idempotency key and never launch concurrent copies of the same operation.
+5. The code app offers **Run now** only when configuration is Ready and the caller can create the
+    authorized request. Confirmation names the flow and data movement, requires a reason, then shows
+    queue and final outcome. It never calls an undocumented Power Automate test endpoint.
+
+This contract requires a coordinated Core, Credits, and code-app candidate with clean-install,
+upgrade, least-privilege, duplicate-request, processor-recovery, and PVE execution evidence before
+the current recurrence-only notice can be removed.
+
 To reproduce one run:
 
 ```bash

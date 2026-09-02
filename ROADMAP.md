@@ -77,6 +77,20 @@ in the current product documentation.
 
 ## Now
 
+### Telemetry flow operations workspace
+
+- **Status:** In progress for code app `2.2.0.0`. The source now consolidates configuration readiness, health, last attempt/success, failure streak, duration regression, pending/overdue requests, and retained run evidence for all seven packaged flows; it adds review filters, visibility-aware auto-refresh, payload-free diagnostic copy, top-positioned review, direct maker links, and Inventory/Credits remediation. All 52 code-app tests, lint, build, PVE Dev redeployment, and direct deployed-asset checks pass at `1440x1000` and `390x844`, including filter counts, auto-refresh control, diagnostic copy, review ordering, local-only filter scrolling, and document/container geometry. The audited Run now backend contract is documented but intentionally not implemented against recurrence-only flows. The signed-in Power Apps shell still hides the runtime iframe at `0x0`, so representative authenticated configuration/run data states, candidate packaging, and manual target-tenant upgrade remain open.
+- **Goal:** Let an operator identify failed or overdue telemetry collection, inspect recent retained evidence, and reach the correct remediation workspace without scanning separate pages or mistaking data refresh for flow execution.
+- **Exit criteria:** All seven packaged flows appear with truthful freshness and availability states; observed zero remains distinct from unavailable; one failed, stale, optional-add-on-absent, loading, and empty/requestless state passes the signed-in PVE Dev matrix at `1440x1000` and `390x844`; the app never labels recurrence-only flows as directly invokable; and the changed code-app candidate passes package validation plus manual target-tenant upgrade.
+- **Tracking:** [Operations guide](docs/operations.md) and the [code app](codeapp/)
+
+### Audited telemetry flow execution
+
+- **Status:** Design complete; implementation not started. The current seven collectors are recurrence-triggered and expose no supported shared execution unit or audited command surface.
+- **Goal:** Let authorized operators queue a bounded, idempotent Run now request for an allowlisted packaged operation and observe the real resulting run without accepting arbitrary flow IDs or inputs.
+- **Exit criteria:** Core-owned request schema and guard, Core/Credits-owned processors, shared scheduled/manual execution units, least-privilege roles, cooldown and duplicate prevention, crash recovery, bounded outcomes, code-app confirmation/reason/status UX, and PVE plus clean-install/upgrade evidence all pass; no undocumented test endpoint or runtime in the code-app solution is used.
+- **Tracking:** [Audited Run now contract](docs/operations.md#audited-run-now-contract)
+
 ### Replace pre-authorized collection with zero-touch onboarding
 
 - **Status:** Source-managed request/status backend, code-app workflow, and packaged verifier are implemented and smoke-tested in PVE Dev; external administrator-bootstrap reconciliation remains

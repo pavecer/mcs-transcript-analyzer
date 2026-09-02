@@ -5,6 +5,13 @@
  */
 
 export const dataSourcesInfo = {
+  "connectionreferences": {
+    "tableId": "",
+    "version": "",
+    "primaryKey": "connectionreferenceid",
+    "dataSourceType": "Dataverse",
+    "apis": {}
+  },
   "pvci_agentinventories": {
     "tableId": "",
     "version": "",
@@ -82,6 +89,13 @@ export const dataSourcesInfo = {
     "dataSourceType": "Dataverse",
     "apis": {}
   },
+  "pvci_syncstates": {
+    "tableId": "",
+    "version": "",
+    "primaryKey": "pvci_syncstateid",
+    "dataSourceType": "Dataverse",
+    "apis": {}
+  },
   "pvci_thresholdchangerequests": {
     "tableId": "",
     "version": "",
@@ -114,6 +128,13 @@ export const dataSourcesInfo = {
     "tableId": "",
     "version": "",
     "primaryKey": "solutionid",
+    "dataSourceType": "Dataverse",
+    "apis": {}
+  },
+  "workflows": {
+    "tableId": "",
+    "version": "",
+    "primaryKey": "workflowid",
     "dataSourceType": "Dataverse",
     "apis": {}
   }

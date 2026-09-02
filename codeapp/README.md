@@ -2,9 +2,12 @@
 
 This React/Vite Power Apps code app is the optional supported investigation surface for MCS
 Transcript Analyzer. It is supported by the project maintainer and built on fully supported
-Microsoft technologies. It provides Sessions, Trends, Inventory, and Credits workspaces over the
-Dataverse schema owned by the required `pvConversationInsights` core solution. It does not own
-backend runtime, tables, flows, plugins, roles, or Custom APIs.
+Microsoft technologies. It provides Sessions, Trends, Operations, Inventory, and Credits
+workspaces over the Dataverse schema owned by the required `pvConversationInsights` core solution.
+Operations consolidates configuration readiness, health, retained run evidence, failure streaks,
+duration changes, pending request counts, filters, optional auto-refresh, and payload-free diagnostic
+copy for all seven packaged flows. It does not own backend runtime, tables, flows, plugins, roles, or
+Custom APIs, and it cannot directly start the current recurrence-only flows.
 
 ## Prerequisites
 
