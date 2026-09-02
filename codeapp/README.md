@@ -9,6 +9,13 @@ duration changes, pending request counts, filters, optional auto-refresh, and pa
 copy for all seven packaged flows. It does not own backend runtime, tables, flows, plugins, roles, or
 Custom APIs, and it cannot directly start the current recurrence-only flows.
 
+Inventory includes separate **Environments** and **Agents** views. The Agents view groups tenant
+discoveries by environment, keeps authorship evidence independent from managed deployment, and shows
+exact or candidate collected-session evidence only where transcript collection is currently
+available. Environment-scoped display-name matches are always labeled candidate or ambiguous, never
+exact. Each visible session can open its full retained Sessions workspace record. The inventory
+session view is bounded to the 2,000 most recent retained sessions.
+
 ## Prerequisites
 
 - Node.js 22 and npm.

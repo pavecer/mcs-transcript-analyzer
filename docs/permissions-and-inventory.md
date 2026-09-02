@@ -213,6 +213,30 @@ or ignore the incomplete blank-URL connection under **Power Automate > Data > Co
 cannot be repaired by selecting it again in the import wizard. For sovereign clouds, use the
 licensing-service audience documented for that cloud instead of the commercial-cloud URL.
 
+### Discovered agent inventory
+
+The code app's Inventory workspace has separate **Environments** and **Agents** views. Agent rows
+come from tenant-wide `pvci_agentinventory` discoveries and remain grouped by tenant/environment so
+duplicate names in different environments stay distinct. Each environment row links to its filtered
+agent list.
+
+The **Microsoft-provided** marker uses reserved evidence such as an `msdyn_` schema or an explicit
+internal-agent name. Otherwise, **User-created** requires a direct non-empty
+`properties.createdBy` value in the retained One Inventory evidence. The creator identifier is not
+displayed. `properties.isManaged` is shown as a separate Managed/Unmanaged deployment axis: a
+user-created agent imported through a managed solution therefore remains visibly User-created and
+Managed. Missing or malformed evidence stays Unknown rather than being guessed from deployment.
+
+Transcript session attribution uses tenant, environment, and Bot ID for exact matches. Current One
+Inventory resource IDs do not necessarily equal transcript Bot IDs, so environment-scoped display
+name matches are shown only as **Candidate**; duplicate names in one environment are **Ambiguous**.
+Session details are displayed only for the local host environment or a remote source that is
+Verified, readable, and enabled for collection. An unavailable source or failed session query never
+renders as observed zero. **Open session** switches to the selected retained record in the Sessions
+workspace and clears filters that could hide it; opening the record does not promote a candidate
+agent-name match to exact attribution. The code app loads only the 2,000 most recent retained
+sessions for this inventory view and labels that bounded evidence explicitly.
+
 ## Understand the current inventory boundary
 
 The credit collector calls three licensing projections:
