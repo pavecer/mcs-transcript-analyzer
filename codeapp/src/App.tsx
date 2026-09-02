@@ -306,6 +306,24 @@ export default function App() {
       : current.filter((id) => id.toLowerCase() !== environmentId.toLowerCase()));
   };
 
+  const openSessionFromInventory = async (sessionId: string) => {
+    setError(null);
+    try {
+      const existing = sessions.find((session) => session.pvci_transcriptsessionid === sessionId);
+      const session = existing ?? (await Pvci_transcriptsessionsService.get(sessionId, { select: SESSION_FIELDS })).data as unknown as SessionRow;
+      setSessions((current) => [session, ...current.filter((row) => row.pvci_transcriptsessionid !== sessionId)]);
+      setSelected(session);
+      setSearch("");
+      setHideTest(false);
+      setEssOnly(false);
+      setEnvironmentFilter("*");
+      setTab("essops");
+      setView("sessions");
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : String(reason));
+    }
+  };
+
   return (
     <div className={`app ${view}-view`}>
       <header className="app-header">
@@ -466,7 +484,7 @@ export default function App() {
 
         {view === "credits" && creditCapability === "ready" && <Credits key={crossEnvironmentEnabled ? "cross" : "local"} sidebarTarget={creditsSidebarTarget} allowEnvironmentSelection={crossEnvironmentEnabled} hostEnvironmentId={hostEnvironmentId} />}
 
-        {view === "inventory" && <InventoryManagement hostEnvironmentId={hostEnvironmentId} onCollectorStateChange={handleCollectorStateChange} />}
+        {view === "inventory" && <InventoryManagement hostEnvironmentId={hostEnvironmentId} onCollectorStateChange={handleCollectorStateChange} onOpenSession={(sessionId) => void openSessionFromInventory(sessionId)} />}
 
         {view === "sessions" && !activeSession && !loadingSessions && <div className="muted pad">No sessions match the current filters.</div>}
 

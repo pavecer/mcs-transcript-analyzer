@@ -373,6 +373,22 @@ policy cache and returns HTTP `442`; processor packaging continues after that ca
 [Full Power Automate run detail](flow-run-detail-findings.md) for the evidence and deployment
 choices.
 
+## Agent inventory and collected sessions
+
+In the code app, open **Inventory > Agents** to review tenant-discovered Copilot Studio agents by
+environment. Use the authorship filter to isolate user-created, Microsoft-provided, or unknown
+agents, the deployment filter to distinguish managed from unmanaged installation, and the collection filter to identify
+where transcript details are currently available. Authorship and deployment are intentionally
+separate, so managed-solution imports do not hide user-created agents.
+
+Selecting **Review** opens human-readable agent facts and up to ten recent collected sessions from a
+bounded 2,000-session sample. Exact attribution requires matching tenant, environment, and Bot ID.
+Name-only matches are candidate evidence, with duplicate environment-scoped names marked ambiguous.
+If source collection is off, onboarding/access is not verified and readable, or the session query
+fails, session details remain unavailable rather than appearing as zero. Use **Open session** on a
+visible item to switch directly to that retained record's Sessions overview; candidate attribution
+remains candidate after navigation.
+
 ## VS Code Power Platform admin skill
 
 The installed Power Platform plugins provide product-specific flow and Dataverse administration,

@@ -2,9 +2,12 @@ import { useEffect, useMemo, useState } from "react";
 import { Pvci_environmentinventoriesService } from "../generated/services/Pvci_environmentinventoriesService";
 import { Pvci_inventorysyncrunsService } from "../generated/services/Pvci_inventorysyncrunsService";
 import { Pvci_transcriptaccessrequestsService } from "../generated/services/Pvci_transcriptaccessrequestsService";
+import { Pvci_agentinventoriesService } from "../generated/services/Pvci_agentinventoriesService";
 import type { Pvci_environmentinventories } from "../generated/models/Pvci_environmentinventoriesModel";
 import type { Pvci_inventorysyncruns } from "../generated/models/Pvci_inventorysyncrunsModel";
 import type { Pvci_transcriptaccessrequests } from "../generated/models/Pvci_transcriptaccessrequestsModel";
+import type { Pvci_agentinventories } from "../generated/models/Pvci_agentinventoriesModel";
+import { AgentInventory } from "./AgentInventory";
 import { loadAllPages } from "../lib/paging";
 import {
   canEnableTranscriptCollector,
@@ -16,7 +19,7 @@ import {
 } from "../lib/transcriptAccessState";
 
 const ENVIRONMENT_FIELDS = [
-  "pvci_environmentinventoryid", "pvci_environmentid", "pvci_displayname", "pvci_environmenturl",
+  "pvci_environmentinventoryid", "pvci_tenantid", "pvci_environmentid", "pvci_displayname", "pvci_environmenturl",
   "pvci_environmenttype", "pvci_geo", "pvci_state", "pvci_ismanaged", "pvci_hasdataverse",
   "pvci_hasdetailedaccess", "pvci_lastsyncedon", "pvci_transcriptaccessstatus",
   "pvci_transcriptaccessreason", "pvci_transcriptprobeon", "pvci_transcriptsamplecount",
@@ -41,17 +44,28 @@ const ACCESS_REQUEST_FIELDS = [
   "pvci_error", "createdon", "_pvci_environmentinventoryid_value",
 ];
 
+const AGENT_FIELDS = [
+  "pvci_agentinventoryid", "pvci_tenantid", "pvci_environmentid", "pvci_environmentname",
+  "pvci_resourceid", "pvci_botid", "pvci_displayname", "pvci_schemaname", "pvci_authoringorigin",
+  "pvci_published", "pvci_lastsyncedon", "pvci_evidencejson",
+];
+
 function createTranscriptVerificationRequestKey() {
   return `transcript-verify-${crypto.randomUUID()}`;
 }
 
-export function InventoryManagement({ hostEnvironmentId, onCollectorStateChange }: {
+export function InventoryManagement({ hostEnvironmentId, onCollectorStateChange, onOpenSession }: {
   hostEnvironmentId?: string;
   onCollectorStateChange: (environmentId: string, enabled: boolean) => void;
+  onOpenSession: (sessionId: string) => void;
 }) {
   const [environments, setEnvironments] = useState<Pvci_environmentinventories[]>([]);
   const [latestSync, setLatestSync] = useState<Pvci_inventorysyncruns | null>(null);
   const [accessRequests, setAccessRequests] = useState<Pvci_transcriptaccessrequests[]>([]);
+  const [agents, setAgents] = useState<Pvci_agentinventories[]>([]);
+  const [agentError, setAgentError] = useState<string | null>(null);
+  const [inventoryView, setInventoryView] = useState<"environments" | "agents">("environments");
+  const [agentFocusEnvironmentId, setAgentFocusEnvironmentId] = useState<string>();
   const [loading, setLoading] = useState(true);
   const [refreshKey, setRefreshKey] = useState(0);
   const [search, setSearch] = useState("");
@@ -82,11 +96,21 @@ export function InventoryManagement({ hostEnvironmentId, onCollectorStateChange 
         orderBy: ["createdon desc"],
         top: 200,
       }),
-    ]).then(([environmentRows, syncResult, requestResult]) => {
+      loadAllPages((skipToken, maxPageSize) => Pvci_agentinventoriesService.getAll({
+        select: AGENT_FIELDS,
+        orderBy: ["pvci_displayname asc"],
+        maxPageSize,
+        skipToken,
+      })).catch((reason) => {
+        if (!cancelled) setAgentError(reason instanceof Error ? reason.message : String(reason));
+        return [] as Pvci_agentinventories[];
+      }),
+    ]).then(([environmentRows, syncResult, requestResult, agentRows]) => {
       if (cancelled) return;
       setEnvironments(environmentRows);
       setLatestSync(((syncResult.data ?? [])[0] ?? null) as unknown as Pvci_inventorysyncruns | null);
       setAccessRequests((requestResult.data ?? []) as unknown as Pvci_transcriptaccessrequests[]);
+      setAgents(agentRows);
     }).catch((reason) => {
       if (!cancelled) setError(reason instanceof Error ? reason.message : String(reason));
     }).finally(() => {
@@ -136,6 +160,19 @@ export function InventoryManagement({ hostEnvironmentId, onCollectorStateChange 
     ? accessRequests.filter((request) => request.pvci_environmentid?.toLowerCase() === selectedEnvironment.pvci_environmentid?.toLowerCase())
     : [];
   const selectedHasActiveRequest = selectedRequests.some((request) => isActiveTranscriptAccessRequest(request.pvci_status));
+  const agentCounts = useMemo(() => {
+    const counts = new Map<string, number>();
+    agents.forEach((agent) => {
+      const environmentId = agent.pvci_environmentid?.toLowerCase();
+      if (environmentId) counts.set(environmentId, (counts.get(environmentId) ?? 0) + 1);
+    });
+    return counts;
+  }, [agents]);
+
+  const showAgents = (environmentId?: string) => {
+    setAgentFocusEnvironmentId(environmentId);
+    setInventoryView("agents");
+  };
 
   const openOnboarding = (row: Pvci_environmentinventories) => {
     setSelectedEnvironmentId(row.pvci_environmentinventoryid);
@@ -283,6 +320,24 @@ export function InventoryManagement({ hostEnvironmentId, onCollectorStateChange 
         <InventoryKpi label="Not ready" value={metrics.notReady} tone={metrics.notReady ? "warn" : "good"} filter="not-ready" activeFilter={filter} onSelect={setFilter} />
       </section>
 
+      <div className="segmented inventory-view-switch" aria-label="Inventory view">
+        <button type="button" className={inventoryView === "environments" ? "on" : ""} onClick={() => setInventoryView("environments")}>Environments</button>
+        <button type="button" className={inventoryView === "agents" ? "on" : ""} onClick={() => showAgents()}>Agents ({agents.length})</button>
+      </div>
+
+      {inventoryView === "agents" && <AgentInventory
+        key={agentFocusEnvironmentId ?? "all-environments"}
+        agents={agents}
+        environments={environments}
+        hostEnvironmentId={hostEnvironmentId}
+        loading={loading}
+        error={agentError}
+        focusEnvironmentId={agentFocusEnvironmentId}
+        onOpenSession={onOpenSession}
+      />}
+
+      {inventoryView === "environments" && <>
+
       {selectedEnvironment && <section className="onboarding-workspace" aria-label={`Transcript onboarding for ${environmentLabel(selectedEnvironment)}`}>
         <div className="onboarding-head">
           <div>
@@ -363,6 +418,7 @@ export function InventoryManagement({ hostEnvironmentId, onCollectorStateChange 
               <th>Detailed access</th>
               <th>Transcript access</th>
               <th>Onboarding</th>
+              <th>Agents</th>
               <th>Collector</th>
               <th>Last probe</th>
               <th>Watermark</th>
@@ -370,8 +426,8 @@ export function InventoryManagement({ hostEnvironmentId, onCollectorStateChange 
             </tr>
           </thead>
           <tbody>
-            {loading && !environments.length && <tr><td colSpan={11} className="muted">Loading inventory…</td></tr>}
-            {!loading && !filtered.length && <tr><td colSpan={11} className="muted">No environments match the current filter.</td></tr>}
+            {loading && !environments.length && <tr><td colSpan={12} className="muted">Loading inventory…</td></tr>}
+            {!loading && !filtered.length && <tr><td colSpan={12} className="muted">No environments match the current filter.</td></tr>}
             {filtered.map((row) => (
               <tr key={row.pvci_environmentinventoryid}>
                 <td title={row.pvci_environmentid}>
@@ -402,6 +458,9 @@ export function InventoryManagement({ hostEnvironmentId, onCollectorStateChange 
                   </button>
                   <span className="inventory-row-id">{onboardingModeLabel(row.pvci_transcriptonboardingmode)}</span>
                 </td>
+                <td>{row.pvci_environmentid && (agentCounts.get(row.pvci_environmentid.toLowerCase()) ?? 0) > 0
+                  ? <button type="button" className="onboarding-link" onClick={() => showAgents(row.pvci_environmentid)}>{agentCounts.get(row.pvci_environmentid.toLowerCase())} discovered</button>
+                  : <span className="muted">None discovered</span>}</td>
                 <td>
                   {row.pvci_environmentid?.toLowerCase() === hostEnvironmentId?.toLowerCase() ? (
                     <span className="conf high">Local automatic</span>
@@ -424,6 +483,7 @@ export function InventoryManagement({ hostEnvironmentId, onCollectorStateChange 
           </tbody>
         </table>
       </div>
+      </>}
 
     </div>
   );

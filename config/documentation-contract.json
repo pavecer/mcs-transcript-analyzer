@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "productSourceDigest": "3267a5d2f6b5dc306c971886ac3d68c6741a1bf91551ea152601128c4397d8c8",
+  "productSourceDigest": "1e72761e138bc47fd06835f243214fcf4ec877501095c77749d1836e5c276140",
   "productInputs": [
     "config/clean-install-contract.json",
     "config/release-packages.json",
@@ -8,6 +8,8 @@
     "codeapp/src/App.tsx",
     "codeapp/src/components/Credits.tsx",
     "codeapp/src/components/InventoryManagement.tsx",
+    "codeapp/src/components/AgentInventory.tsx",
+    "codeapp/src/lib/agentInventoryPresentation.ts",
     "codeapp/src/components/OperationsOverview.tsx",
     "codeapp/src/lib/flowOperations.ts",
     "codeapp/src/lib/transcriptScope.ts",

@@ -27,7 +27,7 @@ the preauthorized HTTP connection with both licensing-service URLs first.
 | --- | --- |
 | **Dataverse solution** | 17 custom tables, views, forms, 4 application roles, a model-driven app, 3 Custom APIs, and 7 packaged scheduled flows |
 | **Model-driven app** | GA, standard-licensed. Transcript operations, environment collection coverage, Credits and Capacity grids, and evidence forms |
-| **Code app** (optional supported) | React/Vite workspaces for transcript triage, trends, Copilot Credit reporting, and dedicated tenant inventory/transcript-source management |
+| **Code app** (optional supported) | React/Vite workspaces for transcript triage, trends, Copilot Credit reporting, telemetry operations, and tenant environment/agent inventory with qualified collected-session evidence |
 | **Custom APIs + plugin** | Local incremental transcript sync, bounded cross-environment transcript import, and validated idempotent credit import |
 | **Python toolkit** | Bulk backfill, plugin registration, flow-run detail fetch |
 
