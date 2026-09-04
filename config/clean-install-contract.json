@@ -66,6 +66,9 @@
       "environmentGroupRule": {
         "catalogNumber": 23,
         "name": "Power Apps code apps",
+        "ruleSetId": "CodeAppsFeature",
+        "environmentApiVersion": "2024-10-01",
+        "policyApiVersion": "2021-10-01-preview",
         "publishedRulesEnforced": true,
         "locksEnvironmentSetting": true,
         "canSatisfyPerEnvironmentEnablement": true

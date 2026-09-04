@@ -151,6 +151,9 @@ def validate_contract(contract: dict, release: dict) -> None:
         != {
             "catalogNumber": 23,
             "name": "Power Apps code apps",
+            "ruleSetId": "CodeAppsFeature",
+            "environmentApiVersion": "2024-10-01",
+            "policyApiVersion": "2021-10-01-preview",
             "publishedRulesEnforced": True,
             "locksEnvironmentSetting": True,
             "canSatisfyPerEnvironmentEnablement": True,
@@ -357,11 +360,36 @@ class PowerPlatformSettingsReader:
         response.raise_for_status()
         return response.json()
 
+    def get_environment(self, target_environment_id: str, api_version: str) -> dict:
+        response = self.session.get(
+            "https://api.powerplatform.com/environmentmanagement/environments",
+            params={
+                "$filter": f"id eq '{target_environment_id}'",
+                "$select": "id,environmentGroupId,protectionLevel,state",
+                "api-version": api_version,
+            },
+            headers=self.headers,
+            timeout=90,
+        )
+        response.raise_for_status()
+        return response.json()
+
+    def get_group_policies(self, group_id: str, api_version: str) -> dict:
+        response = self.session.get(
+            f"https://api.powerplatform.com/governance/environmentGroups/{group_id}/ruleBasedPolicies",
+            params={"api-version": api_version, "includeCustomerContent": "true"},
+            headers=self.headers,
+            timeout=90,
+        )
+        response.raise_for_status()
+        return response.json()
+
 
 def validate_code_apps_preflight(
     reader: PowerPlatformSettingsReader,
     target_environment_id: str,
     code_apps_contract: dict,
+    expected_tenant_id: str | None = None,
 ) -> dict:
     official_api = code_apps_contract["officialApi"]
     setting = official_api["property"]
@@ -378,16 +406,79 @@ def validate_code_apps_preflight(
     if not isinstance(returned_id, str) or returned_id.lower() != target_environment_id.lower():
         raise RuntimeError("Code Apps preflight response environment does not match the target")
     effective_value = _case_insensitive_value(row, setting)
-    if effective_value is not True:
+    if effective_value is True:
+        return {
+            "status": "ok",
+            "environmentId": returned_id,
+            "setting": setting,
+            "effectiveValue": True,
+            "enablementSource": "environment",
+            "source": "Power Platform Environment Management Settings API",
+        }
+    if effective_value is False:
         raise RuntimeError(
             "Code Apps effective setting is not On; set it directly or add the managed "
             "environment to a group with the published Power Apps code apps rule"
         )
+    group_rule = code_apps_contract["environmentGroupRule"]
+    environment_response = reader.get_environment(
+        target_environment_id,
+        group_rule["environmentApiVersion"],
+    )
+    environments = environment_response.get("value")
+    if not isinstance(environments, list) or len(environments) != 1 or not isinstance(environments[0], dict):
+        raise RuntimeError("Code Apps inherited preflight did not return exactly one target environment")
+    environment = environments[0]
+    grouped_environment_id = _case_insensitive_value(environment, "id")
+    if (
+        not isinstance(grouped_environment_id, str)
+        or grouped_environment_id.lower() != target_environment_id.lower()
+    ):
+        raise RuntimeError("Code Apps inherited preflight environment does not match the target")
+    group_id = _case_insensitive_value(environment, "environmentGroupId")
+    if not isinstance(group_id, str) or not ENVIRONMENT_ID_PATTERN.fullmatch(group_id):
+        raise RuntimeError("Code Apps setting is unresolved and the target has no environment group")
+    if _case_insensitive_value(environment, "protectionLevel") != "Standard":
+        raise RuntimeError("Code Apps environment-group target is not a Managed Environment")
+    policies_response = reader.get_group_policies(group_id, group_rule["policyApiVersion"])
+    policies = policies_response.get("value")
+    if not isinstance(policies, list):
+        raise RuntimeError("Code Apps environment-group policies are unavailable")
+    matching_rule_sets: list[dict] = []
+    for policy in policies:
+        if not isinstance(policy, dict):
+            continue
+        policy_tenant_id = _case_insensitive_value(policy, "tenantId")
+        if (
+            expected_tenant_id
+            and isinstance(policy_tenant_id, str)
+            and policy_tenant_id.lower() != expected_tenant_id.lower()
+        ):
+            raise RuntimeError("Code Apps environment-group policy tenant does not match")
+        rule_sets = _case_insensitive_value(policy, "ruleSets")
+        if not isinstance(rule_sets, list):
+            continue
+        matching_rule_sets.extend(
+            rule_set
+            for rule_set in rule_sets
+            if isinstance(rule_set, dict)
+            and _case_insensitive_value(rule_set, "id") == group_rule["ruleSetId"]
+        )
+    if len(matching_rule_sets) != 1:
+        raise RuntimeError("Code Apps environment-group policy is missing or ambiguous")
+    inputs = _case_insensitive_value(matching_rule_sets[0], "inputs")
+    inherited_value = (
+        _case_insensitive_value(inputs, setting) if isinstance(inputs, dict) else None
+    )
+    if inherited_value is not True:
+        raise RuntimeError("Code Apps environment-group policy does not enable code apps")
     return {
         "status": "ok",
         "environmentId": returned_id,
         "setting": setting,
         "effectiveValue": True,
+        "enablementSource": "environmentGroup",
+        "environmentGroupId": group_id,
         "source": "Power Platform Environment Management Settings API",
     }
 
@@ -636,6 +727,7 @@ def main() -> None:
             PowerPlatformSettingsReader(token),
             args.environment_id,
             contract["prerequisites"]["codeApps"],
+            config["tenantId"],
         )
         print(json.dumps(result, indent=2))
         return
