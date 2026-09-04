@@ -16,6 +16,7 @@ from scripts.validate_clean_install import (
     RELEASE_CONFIG,
     environment_url,
     environment_id,
+    enable_code_apps,
     extract_access_token,
     load_contract,
     token_tenant_id,
@@ -33,6 +34,12 @@ class SettingsReader:
     def get_settings(self, target_environment_id: str, api_version: str, setting: str) -> dict:
         self.calls.append((target_environment_id, api_version, setting))
         return self.response
+
+    def update_settings(
+        self, target_environment_id: str, api_version: str, settings: dict
+    ) -> dict:
+        self.calls.append(("update", target_environment_id, api_version, settings))
+        return {"objectResult": []}
 
     def get_environment(self, target_environment_id: str, api_version: str) -> dict:
         self.calls.append(("environment", target_environment_id, api_version))
@@ -123,6 +130,10 @@ class ValidateCleanInstallTests(unittest.TestCase):
             "--preflight-only",
             contract["prerequisites"]["codeApps"]["preflightCommand"],
         )
+        self.assertIn(
+            "--enable-code-apps",
+            contract["prerequisites"]["codeApps"]["enableAndVerifyCommand"],
+        )
         self.assertEqual(
             contract["evidence"]["cleanup"]["completionCriteria"],
             {
@@ -151,7 +162,29 @@ class ValidateCleanInstallTests(unittest.TestCase):
             [(target, "2024-10-01", "powerApps_AllowCodeApps")],
         )
 
-    def test_code_apps_preflight_accepts_published_group_inheritance(self):
+    def test_enable_code_apps_updates_only_the_code_apps_setting(self):
+        target = "abcdef12-3456-7890-abcd-ef1234567890"
+        reader = SettingsReader({"objectResult": []})
+
+        enable_code_apps(
+            reader,
+            target,
+            self.contract["prerequisites"]["codeApps"],
+        )
+
+        self.assertEqual(
+            reader.calls,
+            [
+                (
+                    "update",
+                    target,
+                    "2024-10-01",
+                    {"powerApps_AllowCodeApps": True},
+                )
+            ],
+        )
+
+    def test_code_apps_preflight_rejects_unmaterialized_group_inheritance(self):
         target = "abcdef12-3456-7890-abcd-ef1234567890"
         group = "12345678-1234-1234-1234-123456789012"
         reader = SettingsReader(
@@ -180,15 +213,13 @@ class ValidateCleanInstallTests(unittest.TestCase):
             },
         )
 
-        result = validate_code_apps_preflight(
-            reader,
-            target,
-            self.contract["prerequisites"]["codeApps"],
-            "tenant",
-        )
-
-        self.assertEqual(result["enablementSource"], "environmentGroup")
-        self.assertEqual(result["environmentGroupId"], group)
+        with self.assertRaisesRegex(RuntimeError, "has not materialized"):
+            validate_code_apps_preflight(
+                reader,
+                target,
+                self.contract["prerequisites"]["codeApps"],
+                "tenant",
+            )
 
     def test_code_apps_preflight_rejects_unresolved_ungrouped_setting(self):
         target = "abcdef12-3456-7890-abcd-ef1234567890"

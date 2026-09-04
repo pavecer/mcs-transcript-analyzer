@@ -13,6 +13,25 @@ performing this procedure.
 
 ## Verified fresh-environment result
 
+On 2026-09-04, authoritative code-app-only candidate run `33846423134` produced Code App `2.2.0.3`
+from merged commit `1250dcdb106ed1949f8970a6dbf9d9427704a593`, SHA-256
+`70192c08dc2dab240fc695e7faa69590e94bc82e135ec31e1f99aeb7d3f718b9`. A disposable authorized
+Sandbox was reset to a new Dataverse organization, confirmed to contain no PVCI solutions, and had
+Code Apps enabled with the documented Settings API before any package import. Exact core `2.1.0.0`,
+Credits `2.0.0.5`, and Code App `2.2.0.3` bytes then imported synchronously in order. Structural
+validation passed with 79/6/1 components, 18 tables, 4 roles, 7 flows, 5 connection references,
+3 Custom APIs, and one active target-generated Code App. Normal Power Apps launch rendered a visible
+authenticated iframe with Sessions, Trends, Operations, Inventory, and Credits.
+
+The same investigation reproduced why earlier attempts behaved inconsistently. Adding a fresh
+managed Sandbox to an environment group with an already-applied Code Apps rule left the environment
+setting null/Off until the rule was edited and applied again. Importing the Code App while only the
+group policy intent existed created an app that continued returning
+`CodeAppOperationNotAllowedInEnvironment` after later enablement and upgrade-style reimport. The
+reliable sequence is: update Code Apps, require literal true from the exact environment Settings
+API, and only then perform the first Code App import. A grouped policy remains useful for governance,
+but does not replace the literal-true pre-import assertion in this tenant.
+
 On 2026-08-28, the exact candidate packages imported synchronously from scratch into a second new
 unmanaged Sandbox with Dataverse in the authorized test tenant, in this order: core `2.1.0.0`,
 Credits `2.0.0.5`, and code app `2.1.0.0`.
@@ -122,10 +141,26 @@ python scripts/validate_clean_install.py `
 The selected PAC profile must belong to the authorized tenant. The command deliberately uses PAC's
 Power Platform token rather than Azure CLI's active account because those auth stores can point at
 different tenants. Continue only when it returns `effectiveValue: true` for the exact target ID.
-Direct enablement reports `enablementSource: environment`. A grouped environment can return a null
-local setting; the command then verifies exact group membership, Managed Environment protection,
-and one published `CodeAppsFeature` rule set with `PowerApps_AllowCodeApps: true` before reporting
-`enablementSource: environmentGroup`.
+Direct or successfully materialized group enablement reports `enablementSource: environment`. A
+grouped environment can initially return a null local setting even when its published
+`CodeAppsFeature` rule says `PowerApps_AllowCodeApps: true`. That is intended policy, not effective
+runtime readiness. Apply the group rules after adding the new member and rerun preflight until the
+exact environment Settings API returns literal true. Do not import while the local value is null.
+
+To remove per-environment UI clicking, an authorized operator can explicitly update and verify only
+this setting through the documented Settings API:
+
+```powershell
+python scripts/validate_clean_install.py `
+   --preflight-only `
+   --enable-code-apps `
+   --environment-id "<target-environment-guid>" `
+   --config config/transcript_solution_config.dev.json
+```
+
+This write path is opt-in, tenant-ID guarded, and immediately followed by the same literal-true
+read-back. It requires delegated `EnvironmentManagement.Settings.ReadWrite`. It does not modify
+groups, other environment settings, packages, or Dataverse data.
 
 The preflight uses the preview
 [Power Platform Environment Management Settings API](https://learn.microsoft.com/rest/api/power-platform/environmentmanagement/environment-management-settings/list-environment-management-settings?view=power-platform-latest):
