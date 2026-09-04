@@ -2,8 +2,9 @@
 
 ## What the managed solution includes
 
-The stable `2.1.0.0` release retains the package ownership introduced in `2.0.0.5` without moving
-the security or data model. Core and code app are `2.1.0.0`; Credits remains unchanged at `2.0.0.5`.
+The stable `2.1.0.0` release identity retains the package ownership introduced in `2.0.0.5`
+without moving the security or data model. The current mixed stable set is core `2.1.0.0`, Code App
+`2.2.0.3`, and unchanged Credits `2.0.0.5`; the Git tag remains `v2.1.0.0`.
 Required `pvConversationInsights` core still owns all four roles, all tables, plugins, Custom APIs,
 the model-driven app, and transcript/inventory runtime. Optional `pvConversationInsightsCredits`
 owns only the three credit flows and `pvci_licensinghttp` plus `pvci_powerplatformapi`. Optional
@@ -147,9 +148,10 @@ solution import. Grouped Managed Environments must also have the effective, publ
 group rule enabled. The complete mandatory/conditional policy matrix is in the
 [clean-install runbook](clean-install.md).
 
-For a clean `2.1.0.0` installation, import core, optional credits, then optional code app. For an
-upgrade from stable `2.0.0.5`, upgrade core and the optional code app without reimporting unchanged
-Credits. For a
+For a clean installation, import core `2.1.0.0`, optional Credits `2.0.0.5`, then optional Code App
+`2.2.0.3`. Existing code-app users should upgrade only the Code App to `2.2.0.3`; core and Credits
+are unchanged for this code-app-only update. For an upgrade from stable `2.0.0.5`, upgrade core and
+the optional code app without reimporting unchanged Credits. For a
 manual upgrade from `1.4.0.15`, import credits first, apply the core managed upgrade second, and
 upgrade the code app last. This preserves existing credit workflow identities while transferring
 their solution ownership additively. Do not perform TPM imports or connection changes through

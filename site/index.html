@@ -549,6 +549,11 @@
         </div>
         <div class="tracking-list" data-reveal>
             <div class="tracking-item">
+              <h3>Code App 2.2.0.3</h3>
+              <p>Adds flow operations, environment-grouped agent and session inventory, and masked ESS HR Workday transcript download with controlled reveal. Core and Credits are unchanged.</p>
+              <div class="tracking-meta"><span>Released 2026-09-04</span><a href="https://github.com/pavecer/mcs-transcript-analyzer/blob/main/CHANGELOG.md">Full changelog</a></div>
+            </div>
+            <div class="tracking-item">
               <h3>2.1.0.0</h3>
               <p>Adds a decision-first conversation overview, clearer knowledge and failure timelines, availability-aware telemetry, and more reliable reprocessing. The separate optional code app is maintainer-supported.</p>
               <div class="tracking-meta"><span>Released 2026-08-28</span><a href="https://github.com/pavecer/mcs-transcript-analyzer/blob/main/CHANGELOG.md">Full changelog</a></div>
@@ -590,13 +595,12 @@
         </div>
         <div class="tracking-grid" data-reveal>
           <div class="tracking-list">
-            <article class="tracking-item"><h3>Telemetry flow operations</h3><p>Bring packaged-flow readiness, health, recent outcomes, pending work, diagnostics, and direct maker links into one operational workspace.</p><div class="tracking-meta"><span>Now · In progress</span><a href="https://github.com/pavecer/mcs-transcript-analyzer/blob/main/docs/operations.md#telemetry-flow-operations">Tracking</a></div></article>
+            <article class="tracking-item"><h3>Audited flow execution</h3><p>Add a bounded, authorized Run now request and outcome workflow without treating recurrence-only flows as directly invokable.</p><div class="tracking-meta"><span>Now · Design complete</span><a href="https://github.com/pavecer/mcs-transcript-analyzer/blob/main/docs/operations.md#audited-run-now-contract">Tracking</a></div></article>
             <article class="tracking-item"><h3>Easier central transcript collection</h3><p>Make approved cross-environment collection easier to start and maintain without repeated manual role setup.</p><div class="tracking-meta"><span>Next · Planned</span><a href="https://github.com/pavecer/mcs-transcript-analyzer/blob/main/docs/cross-environment-credit-consumption-design.md">Tracking</a></div></article>
             <article class="tracking-item"><h3>Agent and user behavior trends</h3><p>Add privacy-aware operational trends by agent, environment, channel, topic, and approved user dimensions, with drill-down to supporting sessions.</p><div class="tracking-meta"><span>Next · Discovery</span><a href="https://github.com/pavecer/mcs-transcript-analyzer/blob/main/docs/operations.md">Tracking</a></div></article>
             <article class="tracking-item"><h3>Deeper flow-run details</h3><p>Bring Power Automate action and loop details into the investigation experience where platform policy permits.</p><div class="tracking-meta"><span>Next · Planned</span><a href="https://github.com/pavecer/mcs-transcript-analyzer/blob/main/docs/flow-run-detail-findings.md">Tracking</a></div></article>
           </div>
           <div>
-            <article class="tracking-item"><h3>Agent and session inventory</h3><p>Show discovered agents by environment, distinguish authorship evidence from managed deployment, and expose qualified collected-session evidence only where collection is available.</p><div class="tracking-meta"><span>Now · In progress</span><a href="https://github.com/pavecer/mcs-transcript-analyzer/blob/main/docs/permissions-and-inventory.md#discovered-agent-inventory">Tracking</a></div></article>
             <article class="tracking-item"><h3>Zero-touch source onboarding</h3><p>Automate least-privilege setup only after the external reconciler and dedicated collector identity pass production validation.</p><div class="tracking-meta"><span>Later · Paused</span><a href="https://github.com/pavecer/mcs-transcript-analyzer/blob/main/docs/administrator-bootstrap-reconciler.md">Tracking</a></div></article>
             <div class="tracking-item"><h3>More governance controls</h3><p>Add controls only when documented platform APIs support secure authorization, auditing, conflict checks, and recovery guidance.</p><div class="tracking-meta"><span>Later · Discovery</span><a href="https://github.com/pavecer/mcs-transcript-analyzer/blob/main/docs/credit-reporting.md">Tracking</a></div></div>
           </div>
@@ -614,7 +618,8 @@
         <div class="install-layout">
           <div class="steps" data-reveal>
             <article class="step"><h3>Fresh install</h3><p>Enable <strong>Power Apps Code Apps &gt; Enable code apps</strong> only if you will install the optional code app. Import core, then optional Credits, then the code app. Configure connections and roles, smoke-test the apps and connections, then activate the scheduled flows.</p></article>
-            <article class="step"><h3>Upgrade from 2.0.0.5</h3><p>Upgrade core and, if installed, the optional code app. Credits is unchanged and should not be reimported.</p></article>
+            <article class="step"><h3>Upgrade from 2.1.0.0</h3><p>Core and Credits are unchanged. Existing code-app users upgrade only the optional Code App to 2.2.0.3.</p></article>
+            <article class="step"><h3>Upgrade from 2.0.0.5</h3><p>Existing code-app users upgrade it to 2.2.0.3. Also upgrade core to 2.1.0.0. Credits is unchanged and should not be reimported.</p></article>
             <article class="step"><h3>Upgrade from 1.4.0.15</h3><p>Import Credits first, apply the core managed upgrade second, and upgrade the code app last if you use it.</p></article>
           </div>
           <aside class="package" data-reveal aria-label="Download package details">
@@ -684,7 +689,7 @@
           <div class="codeapp-copy">
             <span class="section-kicker">Optional code app</span>
             <h3>Conversation Insights Explorer code app</h3>
-            <p>The React code app adds conversation replay, trends, tool and flow drill-down, a visual execution map, and scoped Copilot Credit analysis. It is packaged separately for optional installation and an independent application lifecycle.</p>
+            <p>The React code app adds conversation replay, trends, tool and flow drill-down, a visual execution map, flow operations, environment-grouped agent and session inventory, scoped Copilot Credit analysis, and masked ESS HR Workday transcript download with controlled reveal. It is packaged separately for optional installation and an independent application lifecycle.</p>
             <ul>
               <li>Enable Code Apps in the environment before importing any package, then import the core managed solution first.</li>
               <li>Power Apps Premium is required for every runner.</li>
@@ -696,7 +701,7 @@
           <aside class="package codeapp-package" aria-label="Optional supported code app download details">
             <span class="codeapp-badge">Optional · supported</span>
             <h3>Conversation Insights Explorer</h3>
-            <div class="package-meta">Managed code-app solution · version <span data-release-version="codeApp">2.1.0.0</span></div>
+            <div class="package-meta">Managed code-app solution · version <span data-release-version="codeApp">2.2.0.3</span></div>
             <div class="trust-panel">
               <div class="trust-head"><i data-lucide="shield-alert" aria-hidden="true"></i><strong>Review the supported code app</strong></div>
               <p>This maintainer-supported code app uses fully supported Microsoft technologies and contains custom code that runs with permissions granted in your environment.</p>

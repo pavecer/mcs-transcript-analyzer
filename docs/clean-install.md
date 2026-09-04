@@ -32,9 +32,10 @@ reliable sequence is: update Code Apps, require literal true from the exact envi
 API, and only then perform the first Code App import. A grouped policy remains useful for governance,
 but does not replace the literal-true pre-import assertion in this tenant.
 
-On 2026-08-28, the exact candidate packages imported synchronously from scratch into a second new
-unmanaged Sandbox with Dataverse in the authorized test tenant, in this order: core `2.1.0.0`,
-Credits `2.0.0.5`, and code app `2.1.0.0`.
+For comparison, the prior `2.1.0.0` release evidence remains historical: on 2026-08-28, those exact
+candidate packages imported synchronously from scratch into a second new unmanaged Sandbox with
+Dataverse in the authorized test tenant, in this order: core `2.1.0.0`, Credits `2.0.0.5`, and code
+app `2.1.0.0`.
 
 Before any import, **Enable code apps** was changed from its default **Off** to **On** in the Power
 Platform admin center, saved, and independently reloaded until it remained On and **Save** was

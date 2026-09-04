@@ -1,57 +1,51 @@
 {
   "schemaVersion": 2,
-  "version": "2.1.0.0",
-  "sourceCommit": "10bb561a32829fb37886cac633288450eebd64c2",
+  "version": "2.2.0.3",
+  "sourceCommit": "1250dcdb106ed1949f8970a6dbf9d9427704a593",
   "artifacts": [
-    "core",
     "codeApp"
   ],
   "candidate": {
-    "sourceCommit": "10bb561a32829fb37886cac633288450eebd64c2",
+    "sourceCommit": "1250dcdb106ed1949f8970a6dbf9d9427704a593",
     "artifacts": {
-      "core": {
-        "filename": "pvConversationInsights-managed-2.1.0.0.zip",
-        "sha256": "34c83d1d622f19fa0ff458db4d0acb76a5e9b17e67317234d6f25b227337f0a6",
-        "candidateRunId": 33154920938
-      },
       "codeApp": {
-        "filename": "pvConversationInsightsCodeApp-managed-2.1.0.0.zip",
-        "sha256": "48c4adb96177de45512fe9c5bab5364c18b930d3828a396485340e06f6ce3ecb",
-        "candidateRunId": 33155263930
+        "filename": "pvConversationInsightsCodeApp-managed-2.2.0.3.zip",
+        "sha256": "70192c08dc2dab240fc695e7faa69590e94bc82e135ec31e1f99aeb7d3f718b9",
+        "candidateRunId": 33846423134
       }
     }
   },
   "gates": {
     "pvePackageAndRuntime": {
       "status": "passed",
-      "completedAtUtc": "2026-08-27T13:06:54Z",
+      "completedAtUtc": "2026-09-04T07:03:52Z",
       "evidence": {
         "path": "CHANGELOG.md",
-        "contains": "PVE package/runtime validation passed on 2026-08-27"
+        "contains": "PVE package/runtime validation passed for Code App 2.2.0.3 on 2026-09-04."
       }
     },
     "hostedUiSmoke": {
       "status": "passed",
-      "completedAtUtc": "2026-08-27T13:06:54Z",
+      "completedAtUtc": "2026-09-04T07:03:52Z",
       "evidence": {
         "path": "CHANGELOG.md",
-        "contains": "signed-in PVE hosted scenario matrix"
+        "contains": "Signed-in hosted UI validation passed for Code App 2.2.0.3 on 2026-09-04."
       }
     },
     "tpmManualUpgrade": {
       "status": "passed",
-      "completedAtUtc": "2026-08-27T13:06:54Z",
+      "completedAtUtc": "2026-09-04T08:57:50Z",
       "evidence": {
         "path": "CHANGELOG.md",
-        "contains": "Manual target-tenant upgrade from stable `2.0.0.5` was user-approved"
+        "contains": "Manual Contoso TPM exact-byte approval was user-confirmed for Code App 2.2.0.3 on 2026-09-04."
       }
     },
     "cleanInstall": {
       "status": "passed",
-      "completedAtUtc": "2026-08-28T08:35:00Z",
+      "completedAtUtc": "2026-09-04T07:38:25Z",
       "evidence": {
         "path": "CHANGELOG.md",
-        "contains": "Exact retained bytes then passed a fresh authorized Sandbox clean installation"
+        "contains": "Exact Code App 2.2.0.3 bytes passed a fresh Sandbox clean installation on 2026-09-04."
       }
     }
   }

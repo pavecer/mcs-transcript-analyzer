@@ -4,7 +4,7 @@ This roadmap describes product direction, not a promise of delivery dates. The p
 this file must agree about supported behavior and boundaries. Use the status and exit criteria to
 keep work testable.
 
-Last reviewed: 2026-08-28
+Last reviewed: 2026-09-04
 
 ## Shipped in 2.1.0.0
 
@@ -75,28 +75,48 @@ in the current product documentation.
 - **Exit criteria:** Multi-plan and single-plan sessions group correctly; completed, incomplete, and Knowledge-answered steps are distinct; argument values remain behind raw evidence; representative test and production sessions pass signed-in desktop and mobile visual smokes; and the changed code-app candidate passes package validation and the manual target-tenant upgrade.
 - **Tracking:** [Architecture reasoning model](docs/architecture.md), [operations](docs/operations.md), and `codeapp/src/components/ReasoningFlow.tsx`
 
-## Now
+## Shipped in Code App 2.2.0.3
+
+The optional supported Code App `2.2.0.3` shipped on 2026-09-04 as a code-app-only update; core
+remains `2.1.0.0`, Credits remains `2.0.0.5`, and the overall stable identity and Git tag remain
+`v2.1.0.0`. Authoritative candidate run `33846423134` completed PVE package, deployment, and runtime
+validation at `2026-09-04T07:03:52Z` and produced
+`pvConversationInsightsCodeApp-managed-2.2.0.3.zip` from source commit
+`1250dcdb106ed1949f8970a6dbf9d9427704a593` with SHA-256
+`70192c08dc2dab240fc695e7faa69590e94bc82e135ec31e1f99aeb7d3f718b9`. Signed-in hosted PVE
+validation covered the non-HR product boundary, and the user supplied representative TPM HR privacy
+validation. The user approved those exact workflow bytes in Contoso TPM at
+`2026-09-04T08:57:50Z`. The exact bytes also passed a fresh Sandbox clean install after the exact
+environment Settings API returned literal `powerApps_AllowCodeApps: true` before import; structural
+checks passed and normal Power Apps launch rendered the authenticated iframe at desktop and narrow
+empty states. Cleanup completed with the target absent from tenant inventory and its Dataverse DNS
+unreachable. The shipped scope includes the Operations workspace, environment-grouped agent and
+session inventory with drill-through, and ESS HR Workday masking with always-masked download and
+direct Privacy Approver membership reveal confirmation. UI masking and reveal remain defense in
+depth, not server-enforced authorization or audit for raw Dataverse payload access.
 
 ### ESS HR Workday transcript privacy
 
-- **Status:** In progress for code app `2.2.0.3` and not shipped. Read-only Contoso TPM structural inspection on 2026-09-03 confirmed substantive Workday PII repeated across retained activities, embedded Workday responses, tool output, planner observations, and turn text without recording source values. The code app now has a tenant-neutral exact-agent policy, recursive masked projection, always-masked JSON download, and fail-closed Privacy Approver reveal control. All 69 code-app tests, lint, build, PVE deployment, and non-HR desktop/narrow boundary validation pass; PVE has no representative HR row for the privacy-state visual smoke. Authoritative code-app-only candidate run `33846423134` built, deployed, exported, validated, and uploaded `pvConversationInsightsCodeApp-managed-2.2.0.3.zip` from merged commit `1250dcdb106ed1949f8970a6dbf9d9427704a593`; SHA-256 is `70192c08dc2dab240fc695e7faa69590e94bc82e135ec31e1f99aeb7d3f718b9`. Those exact bytes passed a pristine authorized Sandbox install after an opt-in tenant-guarded Settings API update returned literal `powerApps_AllowCodeApps: true` before any import. Core `2.1.0.0`, Credits `2.0.0.5`, and Code App `2.2.0.3` imported synchronously in order; structural validation passed with 79/6/1 components, 18 tables, 4 roles, 7 flows, 5 connection references, 3 Custom APIs, and one active target-generated Code App. Normal Power Apps launch accepted the fresh app and rendered a visible authenticated iframe with all five primary views. Investigation proved that adding a fresh environment to an already-published Code Apps group rule did not materialize the setting until the group rule was reapplied; importing while the local value was null created app registrations that continued returning `CodeAppOperationNotAllowedInEnvironment` even after later enablement and upgrade-style reimport. Uninstall/fresh import after true enablement, and the final pristine API-enable-before-import sequence, both generated new app IDs; only the correctly ordered fresh sequence passed launch. Manual TPM import/validation and a server-enforced restricted raw-payload/audit boundary remain open.
+- **Status:** Shipped in Code App `2.2.0.3` after PVE package/runtime and non-HR hosted-boundary validation, representative TPM HR privacy validation, exact-byte user approval, and exact-byte fresh clean installation. Server-enforced restricted raw-payload authorization and audit remain future core work.
 - **Goal:** Prevent accidental disclosure of Workday employee data during normal transcript investigation and provide an export that remains masked regardless of on-screen reveal state.
 - **Exit criteria:** Exact ESS HR Workday sessions are masked consistently across navigator, overview, replay, tool/knowledge/flow/reasoning evidence, and raw JSON; masked exports contain no synthetic fixture PII and remain independent of filters/reveal; ordinary analysts cannot reveal; approved privacy administrators must explicitly confirm reveal; PVE Dev passes signed-in `1440x1000` and `390x844` validation; changed artifacts pass candidate/package and manual target-tenant gates; and enforced raw-data authorization/audit limitations remain explicit until a core backend boundary ships.
 - **Tracking:** [Operations guide](docs/operations.md), [permissions](docs/permissions-and-inventory.md), and the [code app](codeapp/)
 
 ### Telemetry flow operations workspace
 
-- **Status:** In progress for code app `2.2.0.1`. The source now consolidates configuration readiness, health, last attempt/success, failure streak, duration regression, pending/overdue requests, and retained run evidence for all seven packaged flows; it adds review filters, visibility-aware auto-refresh, payload-free diagnostic copy, top-positioned review, direct maker links, and Inventory/Credits remediation. All 52 code-app tests, lint, build, PVE Dev redeployment, and direct deployed-asset checks pass at `1440x1000` and `390x844`, including filter counts, auto-refresh control, diagnostic copy, review ordering, local-only filter scrolling, and document/container geometry. The first `2.2.0.0` refresh exported successfully but package validation exposed that runtime-only system data sources were conflated with managed solution dependencies; `2.2.0.1` separates those contracts and adds regression coverage. Candidate run `33600510038` passed deployment, managed export, package validation, and upload for the code-app-only artifact `pvConversationInsightsCodeApp-managed-2.2.0.1.zip`; its source commit is `8635ae2ff5a028a6d936ddd29707b34de1850397` and SHA-256 is `4a03b8c3563a41dec9cdc394c7e76785a2e7f9fcdf06662c84132e98afcf7ea7`. The audited Run now backend contract is documented but intentionally not implemented against recurrence-only flows. The signed-in Power Apps shell still hides the runtime iframe at `0x0`, so representative authenticated configuration/run data states and manual target-tenant upgrade remain open.
+- **Status:** Shipped in Code App `2.2.0.3`. The workspace consolidates readiness, health, attempts and successes, failure streaks, duration changes, pending or overdue work, retained outcomes, review filters, optional auto-refresh, payload-free diagnostics, direct maker links, and Inventory/Credits remediation for all seven packaged flows. Audited **Run now** remains separate unfinished backend work.
 - **Goal:** Let an operator identify failed or overdue telemetry collection, inspect recent retained evidence, and reach the correct remediation workspace without scanning separate pages or mistaking data refresh for flow execution.
 - **Exit criteria:** All seven packaged flows appear with truthful freshness and availability states; observed zero remains distinct from unavailable; one failed, stale, optional-add-on-absent, loading, and empty/requestless state passes the signed-in PVE Dev matrix at `1440x1000` and `390x844`; the app never labels recurrence-only flows as directly invokable; and the changed code-app candidate passes package validation plus manual target-tenant upgrade.
 - **Tracking:** [Operations guide](docs/operations.md) and the [code app](codeapp/)
 
 ### Tenant agent and session inventory
 
-- **Status:** In progress for code app `2.2.0.2`. Inventory now lists discovered agents by environment, distinguishes Microsoft-reserved agents from user-created agents with direct creator evidence independently from managed deployment, filters authorship/deployment/collection state, exposes exact or clearly qualified candidate sessions only for collection-capable environments, and drills visible sessions into their full Sessions overview. All 64 code-app tests, lint, and build pass, including strict tenant/environment/Bot ID exact matching and an explicit session-loading state. The authenticated PVE Dev matrix covered 176 agents across 13 environments, three simultaneous User-created + Managed agents, environment drill-in, Microsoft-provided ESS candidate sessions, unavailable-source detail suppression, and session drill-through with filter reset at `1440x1000` and `390x844`. Candidate run `33654512447` passed main-branch deployment, managed export, package validation, and upload for `pvConversationInsightsCodeApp-managed-2.2.0.2.zip`; source commit `5f77e0536104c8372de7e7fb5dbdf16f50cfe108`, package SHA-256 `70e317c4e4218d49fdcdbc3300f7e01f1b6b344f22d4b88d1606b96163fe7a28`. The user approved the manual Contoso TPM test on 2026-09-03. Stable promotion remains blocked by the exact-byte clean-install gate: in a new authorized Sandbox, PPAC reported Saved twice but **Enable code apps** reverted to Off on reload, so no package was imported. Cleanup is complete: the delete request succeeded, the target disappeared from tenant inventory, and its Dataverse organization no longer resolves.
+- **Status:** Shipped in Code App `2.2.0.3`. Inventory groups discovered agents by environment, keeps direct authorship evidence separate from managed deployment, filters collection state, exposes exact or clearly qualified candidate sessions only for collection-capable environments, and drills visible sessions into their full Sessions overview.
 - **Goal:** Let analysts understand which tenant agents were discovered, where they live, which are user-created even after managed import, and where collected conversation evidence can be reviewed without overstating identity correlation or unavailable sources.
 - **Exit criteria:** Duplicate environment/name resources remain distinct; user-created and managed states are independent; unavailable and observed-zero evidence remain distinct; exact, candidate, and ambiguous session matches are labeled truthfully; collection-ineligible environments reveal no session details; representative PVE agent/filter/session states pass desktop and narrow visual validation; and the changed code-app candidate passes package validation plus manual target-tenant upgrade.
 - **Tracking:** [Permissions and inventory](docs/permissions-and-inventory.md#discovered-agent-inventory) and [operations](docs/operations.md#agent-inventory-and-collected-sessions)
+
+## Now
 
 ### Audited telemetry flow execution
 

@@ -4,8 +4,8 @@
 
 Version `2.1.0.0` is the stable release identity for the three-package architecture after PVE
 deployment, tenant-neutral package validation, hosted UI smoke, manual target-tenant upgrade, and
-exact-byte clean installation. Core and code app are `2.1.0.0`; Credits remains unchanged at
-`2.0.0.5`.
+exact-byte clean installation. The current mixed stable set is core `2.1.0.0`, unchanged Credits
+`2.0.0.5`, and Code App `2.2.0.3`; the overall stable identity and Git tag remain `v2.1.0.0`.
 
 | Managed solution | Boundary |
 | --- | --- |
@@ -18,6 +18,8 @@ installations use core, optional credits, then optional code app. The code app r
 optional installation and an independent application lifecycle. Upgrades from `1.4.0.15` install
 credits first, apply the core managed upgrade second, and upgrade the code app last. The order lets
 the add-on claim the existing credit workflow identities before core relinquishes solution ownership.
+Existing code-app users upgrade only the Code App to `2.2.0.3` for the 2026-09-04 code-app-only
+update; core `2.1.0.0` and Credits `2.0.0.5` remain unchanged.
 
 The code app detects the optional runtime without making licensing access a transcript-analysis
 dependency. Credits remains a visible destination with `Unavailable`, `Setup required`, and

@@ -3,6 +3,41 @@
 Release history for MCS Transcript Analyzer. Each published package version is immutable; package
 checksums and source provenance are recorded in `site/downloads/release-manifest.json`.
 
+## Code App 2.2.0.3 - 2026-09-04
+
+Stable code-app-only update. The overall stable/core release identity and Git tag remain
+`v2.1.0.0`; core remains `2.1.0.0` and Credits remains `2.0.0.5`. Only the optional supported Code
+App changed.
+
+- Added the **Operations** workspace for configuration readiness, flow health, retained outcomes,
+  pending work, payload-free diagnostics, and direct maker links across all seven packaged flows.
+- Added environment-grouped agent inventory with separate authorship, managed-deployment, and
+  collection states, plus exact or qualified collected-session evidence and direct drill-through to
+  the Sessions workspace.
+- Masked ESS HR Workday sessions by default throughout the investigation workspace. Masked JSON
+  downloads remain masked regardless of on-screen reveal state, and reveal requires direct
+  **PVCI Privacy Approver** membership plus explicit confirmation.
+- Added a deterministic Code Apps Settings API preflight that requires literal
+  `powerApps_AllowCodeApps: true` in the exact target before the first Code App import.
+- UI masking and reveal are defense in depth against accidental disclosure; they do not provide
+  server-enforced authorization or auditing for direct access to raw Dataverse payload columns.
+
+PVE package/runtime validation passed for Code App 2.2.0.3 on 2026-09-04.
+
+Signed-in hosted UI validation passed for Code App 2.2.0.3 on 2026-09-04.
+
+Manual Contoso TPM exact-byte approval was user-confirmed for Code App 2.2.0.3 on 2026-09-04.
+
+Exact Code App 2.2.0.3 bytes passed a fresh Sandbox clean installation on 2026-09-04.
+
+Changed download:
+
+- Code app: `pvConversationInsightsCodeApp-managed-2.2.0.3.zip`
+
+Core `pvConversationInsights-managed-2.1.0.0.zip` and Credits
+`pvConversationInsightsCredits-managed-2.0.0.5.zip` are unchanged, with their published bytes,
+checksums, and source provenance preserved.
+
 ## 2.1.0.0 - 2026-08-28
 
 Stable conversation-investigation and deterministic-install release.
