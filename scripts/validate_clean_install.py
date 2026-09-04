@@ -147,6 +147,8 @@ def validate_contract(contract: dict, release: dict) -> None:
         set(enablement_paths) != {"direct", "environmentGroup"}
         or not isinstance(code_apps.get("preflightCommand"), str)
         or "--preflight-only" not in code_apps["preflightCommand"]
+        or not isinstance(code_apps.get("enableAndVerifyCommand"), str)
+        or "--enable-code-apps" not in code_apps["enableAndVerifyCommand"]
         or group_rule
         != {
             "catalogNumber": 23,
@@ -156,7 +158,10 @@ def validate_contract(contract: dict, release: dict) -> None:
             "policyApiVersion": "2021-10-01-preview",
             "publishedRulesEnforced": True,
             "locksEnvironmentSetting": True,
-            "canSatisfyPerEnvironmentEnablement": True,
+            "canSatisfyPerEnvironmentEnablement": (
+                "Only after the group rule is applied to the member and the exact "
+                "environment setting API returns true."
+            ),
         }
     ):
         raise ValueError("clean-install contract Code Apps enablement paths are invalid")
@@ -360,6 +365,22 @@ class PowerPlatformSettingsReader:
         response.raise_for_status()
         return response.json()
 
+    def update_settings(
+        self,
+        target_environment_id: str,
+        api_version: str,
+        settings: dict[str, object],
+    ) -> dict:
+        response = self.session.patch(
+            f"https://api.powerplatform.com/environmentmanagement/environments/{target_environment_id}/settings",
+            params={"api-version": api_version},
+            json=settings,
+            headers=self.headers,
+            timeout=90,
+        )
+        response.raise_for_status()
+        return response.json()
+
     def get_environment(self, target_environment_id: str, api_version: str) -> dict:
         response = self.session.get(
             "https://api.powerplatform.com/environmentmanagement/environments",
@@ -472,15 +493,28 @@ def validate_code_apps_preflight(
     )
     if inherited_value is not True:
         raise RuntimeError("Code Apps environment-group policy does not enable code apps")
-    return {
-        "status": "ok",
-        "environmentId": returned_id,
-        "setting": setting,
-        "effectiveValue": True,
-        "enablementSource": "environmentGroup",
-        "environmentGroupId": group_id,
-        "source": "Power Platform Environment Management Settings API",
-    }
+    raise RuntimeError(
+        "Code Apps group policy is published On but has not materialized on the target; "
+        "apply the group rules after adding the environment, then rerun preflight until "
+        "the exact environment setting API returns true"
+    )
+
+
+def enable_code_apps(
+    reader: PowerPlatformSettingsReader,
+    target_environment_id: str,
+    code_apps_contract: dict,
+) -> None:
+    official_api = code_apps_contract["officialApi"]
+    setting = official_api["property"]
+    response = reader.update_settings(
+        target_environment_id,
+        official_api["apiVersion"],
+        {setting: True},
+    )
+    errors = response.get("errors")
+    if errors:
+        raise RuntimeError(f"Code Apps enable operation returned errors: {errors}")
 
 
 class DataverseReader:
@@ -702,6 +736,7 @@ def main() -> None:
     parser.add_argument("--environment-url", type=environment_url)
     parser.add_argument("--environment-id", type=environment_id)
     parser.add_argument("--preflight-only", action="store_true")
+    parser.add_argument("--enable-code-apps", action="store_true")
     parser.add_argument("--config", type=Path, default=DEFAULT_CONFIG)
     parser.add_argument("--contract", type=Path, default=DEFAULT_CONTRACT)
     args = parser.parse_args()
@@ -714,6 +749,8 @@ def main() -> None:
     config = json.loads(config_path.read_text(encoding="utf-8"))
     release = json.loads(RELEASE_CONFIG.read_text(encoding="utf-8"))
     contract = load_contract(args.contract.resolve(), release)
+    if args.enable_code_apps and not args.preflight_only:
+        parser.error("--enable-code-apps requires --preflight-only")
     if args.preflight_only:
         if not args.environment_id:
             parser.error("--preflight-only requires --environment-id")
@@ -723,12 +760,20 @@ def main() -> None:
                 "PAC Power Platform token tenant does not match the authorized configuration; "
                 "select the authorized PAC profile before preflight"
             )
+        settings_reader = PowerPlatformSettingsReader(token)
+        if args.enable_code_apps:
+            enable_code_apps(
+                settings_reader,
+                args.environment_id,
+                contract["prerequisites"]["codeApps"],
+            )
         result = validate_code_apps_preflight(
-            PowerPlatformSettingsReader(token),
+            settings_reader,
             args.environment_id,
             contract["prerequisites"]["codeApps"],
             config["tenantId"],
         )
+        result["enableRequested"] = args.enable_code_apps
         print(json.dumps(result, indent=2))
         return
     if not args.environment_url:

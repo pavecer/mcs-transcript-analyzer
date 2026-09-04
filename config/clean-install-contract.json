@@ -63,6 +63,7 @@
       },
       "verification": "Run the read-only effective-state preflight and require powerApps_AllowCodeApps to be true for the exact environment ID before importing any package.",
       "preflightCommand": "python scripts/validate_clean_install.py --preflight-only --environment-id <environment-guid> --config <authorized-config>",
+      "enableAndVerifyCommand": "python scripts/validate_clean_install.py --preflight-only --enable-code-apps --environment-id <environment-guid> --config <authorized-config>",
       "environmentGroupRule": {
         "catalogNumber": 23,
         "name": "Power Apps code apps",
@@ -71,7 +72,7 @@
         "policyApiVersion": "2021-10-01-preview",
         "publishedRulesEnforced": true,
         "locksEnvironmentSetting": true,
-        "canSatisfyPerEnvironmentEnablement": true
+        "canSatisfyPerEnvironmentEnablement": "Only after the group rule is applied to the member and the exact environment setting API returns true."
       },
       "officialApi": {
         "property": "powerApps_AllowCodeApps",
