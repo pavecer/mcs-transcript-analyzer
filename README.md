@@ -79,7 +79,9 @@ connection is hardcoded.
 
 The session workspace opens on a plain-language **Overview**. Replay, exact tool traces, knowledge
 retrieval, candidate Power Automate runs, reasoning, and raw JSON remain available as progressively
-deeper evidence.
+deeper evidence. Sessions from the Microsoft ESS HR Workday agent are masked by default across the
+selected-session workspace and can be downloaded as a masked JSON transcript. Approved privacy
+administrators can explicitly reveal the current session; downloads remain masked.
 
 - **End user** — resolved from `from.aadObjectId` to a real `systemuser`
 - **Latency** — first / average / slowest reply, in milliseconds, and per turn

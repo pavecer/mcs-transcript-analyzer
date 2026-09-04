@@ -20,7 +20,9 @@ to the model-driven app and apply to the same Dataverse data sources used by the
 - **PVCI Privacy Approver** has the same read access plus organization-level write on
    `pvci_creditprivacysetting` and `pvci_credituserusage`, and read on `systemuser`. These privileges
    let the synchronous disclosure plug-in record the initiating user/time and resolve or revoke all
-   stored names.
+   stored names. The code app also resolves the current `systemuser` and requires an exact direct
+   membership in a business-unit copy of this role before offering ESS HR Workday transcript reveal.
+   Team-inherited role assignments fail closed in the current implementation.
 - **PVCI Credit Administrator** has Analyst read access plus organization-level write on
    `pvci_environmentinventory` for collector enablement, and create/read with the narrow append
    privileges required to bind audited threshold and transcript-access requests. It cannot update
@@ -52,6 +54,7 @@ There are three independent permission boundaries:
 | Read detailed agent configuration in every environment | Inventory identity with appropriate Dataverse access in every source environment | Detailed enrichment not implemented in `1.3.0.0` |
 | Open the apps as an analyst | **PVCI Analyst** plus model-driven/code-app sharing | Role packaged; assignments and code-app sharing external; Operations reads packaged workflow/configuration metadata and shows unavailable when platform access is withheld |
 | Reveal or revoke stored user names | **PVCI Privacy Approver** plus app sharing | Role and audited plug-in packaged; assignment external |
+| Reveal masked ESS HR Workday transcript values in the code app | **PVCI Privacy Approver** plus app sharing | Role packaged; reveal confirmation is client-side and does not replace direct Dataverse raw-column authorization |
 
 Do not assign Global Administrator for routine collection. Use a dedicated account, the least
 privileged roles that satisfy the required scope, and Privileged Identity Management where your
@@ -291,8 +294,9 @@ the required role. Power Automate runs with the identities bound to its connecti
    Approver**, or **PVCI Credit Administrator** according to duty.
 2. Share the code app separately through **Apps** > **Manage access**. The sharing dialog lists its
    Dataverse data sources; users still need one of the same packaged roles.
-3. Give **PVCI Privacy Approver** only to users authorized to disclose names. The app confirmation
-   is not the security boundary; Dataverse write privilege is.
+3. Give **PVCI Privacy Approver** only to users authorized to disclose credit names or inspect ESS HR
+   Workday PII. Credit-name approval is server-audited; transcript reveal is a fail-closed code-app
+   safeguard, not authorization for direct access to raw Dataverse columns.
 4. Verify the Privacy Approval record after every reveal/revoke. `Approved By`, `Approved On`, and
    `Revoked On` are stamped by the server-side plug-in, not trusted from the browser.
 5. Give **PVCI Credit Administrator** only to collection and threshold-change operators. The role

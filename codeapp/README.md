@@ -16,6 +16,14 @@ available. Environment-scoped display-name matches are always labeled candidate 
 exact. Each visible session can open its full retained Sessions workspace record. The inventory
 session view is bounded to the 2,000 most recent retained sessions.
 
+Sessions attributed exactly to `msdyn_copilotforemployeeselfservicehr` or its Workday topic prefix
+are masked by default across the session navigator, overview, replay, diagnostics, and JSON views.
+The app can download a fresh masked JSON bundle independently of the current filter or reveal state.
+Reveal is fail-closed and available only when the current Dataverse user has a direct assignment to
+a business-unit copy of the packaged **PVCI Privacy Approver** role. Team-inherited assignments are
+not resolved by this version and remain masked. This UI safeguard reduces accidental disclosure; it
+does not revoke direct Dataverse/API access to stored raw payload columns.
+
 ## Prerequisites
 
 - Node.js 22 and npm.
@@ -25,9 +33,10 @@ session view is bounded to the 2,000 most recent retained sessions.
   fresh code-app solution import. It defaults Off.
 - Power Apps Premium for every runner.
 - App sharing plus an appropriate packaged Dataverse role, normally **PVCI Analyst**.
+- **PVCI Privacy Approver** for users authorized to reveal ESS HR Workday PII in the session UI.
 
 If the target is a Managed Environment in an environment group, the effective and published group
-rule 22, **Power Apps code apps**, must also allow the feature. See the authoritative
+rule 23, **Power Apps code apps**, can centrally enable and lock the feature. See the authoritative
 [clean-install runbook](../docs/clean-install.md) for the complete mandatory and conditional policy
 matrix.
 

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "productSourceDigest": "1e72761e138bc47fd06835f243214fcf4ec877501095c77749d1836e5c276140",
+  "productSourceDigest": "a1212c0793a8253cddc8ea1a38c40b4e8dd0b5a0aeff81c477f360b92667ae56",
   "productInputs": [
     "config/clean-install-contract.json",
     "config/release-packages.json",
@@ -270,7 +270,7 @@
       "optional supported surface",
       "fully supported Microsoft technologies",
       "Enable code apps",
-      "group rule 22",
+      "group rule 23",
       "Power Apps Premium",
       "EnvironmentManagement.Settings.ReadWrite",
       "within an hour in most cases",
