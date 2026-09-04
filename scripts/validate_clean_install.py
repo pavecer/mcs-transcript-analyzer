@@ -6,6 +6,8 @@ from __future__ import annotations
 import argparse
 import base64
 import json
+import re
+import subprocess
 import sys
 from pathlib import Path
 from urllib.parse import urlparse
@@ -33,6 +35,11 @@ EXPECTED_CLEANUP_CONVERGENCE = {
     "concurrentDeletesAllowed": False,
     "verificationMode": "one-later-verification",
 }
+ENVIRONMENT_ID_PATTERN = re.compile(
+    r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+    re.IGNORECASE,
+)
+JWT_PATTERN = re.compile(r"eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+")
 
 
 def _require_object(value: object, location: str) -> dict:
@@ -129,6 +136,27 @@ def validate_contract(contract: dict, release: dict) -> None:
     official_api = _require_object(
         code_apps.get("officialApi"), "prerequisites.codeApps.officialApi"
     )
+    enablement_paths = _require_object(
+        code_apps.get("enablementPaths"), "prerequisites.codeApps.enablementPaths"
+    )
+    group_rule = _require_object(
+        code_apps.get("environmentGroupRule"),
+        "prerequisites.codeApps.environmentGroupRule",
+    )
+    if (
+        set(enablement_paths) != {"direct", "environmentGroup"}
+        or not isinstance(code_apps.get("preflightCommand"), str)
+        or "--preflight-only" not in code_apps["preflightCommand"]
+        or group_rule
+        != {
+            "catalogNumber": 23,
+            "name": "Power Apps code apps",
+            "publishedRulesEnforced": True,
+            "locksEnvironmentSetting": True,
+            "canSatisfyPerEnvironmentEnablement": True,
+        }
+    ):
+        raise ValueError("clean-install contract Code Apps enablement paths are invalid")
     permissions = _require_object(
         official_api.get("delegatedPermissions"),
         "prerequisites.codeApps.officialApi.delegatedPermissions",
@@ -262,6 +290,106 @@ def environment_url(value: str) -> str:
     ):
         raise argparse.ArgumentTypeError("environment URL must be an HTTPS origin without a path")
     return f"https://{parsed.netloc}"
+
+
+def environment_id(value: str) -> str:
+    if not ENVIRONMENT_ID_PATTERN.fullmatch(value):
+        raise argparse.ArgumentTypeError("environment ID must be a GUID")
+    return value.lower()
+
+
+def extract_access_token(output: str) -> str:
+    match = JWT_PATTERN.search(output)
+    if not match:
+        raise RuntimeError("PAC did not return a Power Platform access token")
+    return match.group(0)
+
+
+def get_pac_power_platform_token() -> str:
+    try:
+        result = subprocess.run(
+            ["pac", "auth", "token"],
+            check=False,
+            capture_output=True,
+            text=True,
+            timeout=60,
+        )
+    except (FileNotFoundError, subprocess.TimeoutExpired) as exc:
+        raise RuntimeError("PAC token acquisition failed") from exc
+    if result.returncode != 0:
+        detail = (result.stderr or result.stdout).strip()
+        raise RuntimeError(f"PAC token acquisition failed: {detail}")
+    return extract_access_token(result.stdout)
+
+
+def _case_insensitive_value(row: dict, key: str) -> object:
+    normalized = key.lower()
+    for candidate, value in row.items():
+        if candidate.lower() == normalized:
+            return value
+    return None
+
+
+class PowerPlatformSettingsReader:
+    def __init__(self, token: str) -> None:
+        self.headers = {"Authorization": f"Bearer {token}", "Accept": "application/json"}
+        self.session = requests.Session()
+        self.session.mount(
+            "https://",
+            HTTPAdapter(
+                max_retries=Retry(
+                    total=3,
+                    connect=3,
+                    read=3,
+                    status=3,
+                    status_forcelist=(429, 500, 502, 503, 504),
+                )
+            ),
+        )
+
+    def get_settings(self, target_environment_id: str, api_version: str, setting: str) -> dict:
+        response = self.session.get(
+            f"https://api.powerplatform.com/environmentmanagement/environments/{target_environment_id}/settings",
+            params={"$select": f"id,{setting}", "api-version": api_version},
+            headers=self.headers,
+            timeout=90,
+        )
+        response.raise_for_status()
+        return response.json()
+
+
+def validate_code_apps_preflight(
+    reader: PowerPlatformSettingsReader,
+    target_environment_id: str,
+    code_apps_contract: dict,
+) -> dict:
+    official_api = code_apps_contract["officialApi"]
+    setting = official_api["property"]
+    response = reader.get_settings(
+        target_environment_id,
+        official_api["apiVersion"],
+        setting,
+    )
+    rows = response.get("objectResult")
+    if not isinstance(rows, list) or len(rows) != 1 or not isinstance(rows[0], dict):
+        raise RuntimeError("Code Apps preflight did not return exactly one environment setting row")
+    row = rows[0]
+    returned_id = _case_insensitive_value(row, "id")
+    if not isinstance(returned_id, str) or returned_id.lower() != target_environment_id.lower():
+        raise RuntimeError("Code Apps preflight response environment does not match the target")
+    effective_value = _case_insensitive_value(row, setting)
+    if effective_value is not True:
+        raise RuntimeError(
+            "Code Apps effective setting is not On; set it directly or add the managed "
+            "environment to a group with the published Power Apps code apps rule"
+        )
+    return {
+        "status": "ok",
+        "environmentId": returned_id,
+        "setting": setting,
+        "effectiveValue": True,
+        "source": "Power Platform Environment Management Settings API",
+    }
 
 
 class DataverseReader:
@@ -480,7 +608,9 @@ def validate(reader: DataverseReader, release: dict, contract: dict) -> dict:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--environment-url", required=True, type=environment_url)
+    parser.add_argument("--environment-url", type=environment_url)
+    parser.add_argument("--environment-id", type=environment_id)
+    parser.add_argument("--preflight-only", action="store_true")
     parser.add_argument("--config", type=Path, default=DEFAULT_CONFIG)
     parser.add_argument("--contract", type=Path, default=DEFAULT_CONTRACT)
     args = parser.parse_args()
@@ -493,6 +623,24 @@ def main() -> None:
     config = json.loads(config_path.read_text(encoding="utf-8"))
     release = json.loads(RELEASE_CONFIG.read_text(encoding="utf-8"))
     contract = load_contract(args.contract.resolve(), release)
+    if args.preflight_only:
+        if not args.environment_id:
+            parser.error("--preflight-only requires --environment-id")
+        token = get_pac_power_platform_token()
+        if token_tenant_id(token) != config["tenantId"]:
+            raise RuntimeError(
+                "PAC Power Platform token tenant does not match the authorized configuration; "
+                "select the authorized PAC profile before preflight"
+            )
+        result = validate_code_apps_preflight(
+            PowerPlatformSettingsReader(token),
+            args.environment_id,
+            contract["prerequisites"]["codeApps"],
+        )
+        print(json.dumps(result, indent=2))
+        return
+    if not args.environment_url:
+        parser.error("--environment-url is required unless --preflight-only is used")
     token = get_token(
         config["tenantId"],
         config["oauth"]["clientId"],
