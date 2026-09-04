@@ -31,18 +31,25 @@ workflow and must not be used for Sandbox creation. Wait synchronously for Datav
 
 If the optional code app will be imported, do this before importing any package:
 
-1. In PPAC, open **Manage** > **Environments** > exact target > **Settings** > **Product** >
-   **Features** > **Power Apps Code Apps**.
-2. Set **Enable code apps** from its default Off to On and save.
-3. Independently reload the exact target until the setting remains On and Save is disabled.
-4. If this is a grouped Managed Environment, confirm environment-group rule 22, **Power Apps code
-   apps**, is enabled and published.
+Use one supported enablement path:
 
-The supported PPAC UI is mandatory. An optional independent read may call the Power Platform API
-`GET /environmentmanagement/environments/{environmentId}/settings?api-version=2024-10-01` and
-confirm `powerApps_AllowCodeApps: true` with delegated
-`EnvironmentManagement.Settings.Read`. API mutation requires
-`EnvironmentManagement.Settings.ReadWrite`; do not use it to bypass an unresolved UI state.
+1. Direct: in PPAC, open **Manage** > **Environments** > exact target > **Settings** > **Product** >
+  **Features** > **Power Apps Code Apps**, set **Enable code apps** On, and save; or
+2. Group: add the managed target to a validation environment group whose published rule 23,
+  **Power Apps code apps**, is configured On. Published group rules enforce and lock the setting.
+
+Then run the mandatory read-only effective-state check:
+
+```text
+python scripts/validate_clean_install.py --preflight-only --environment-id <target-guid> --config <authorized-config>
+```
+
+The command gets a Power Platform token from the selected PAC profile, validates the authorized
+tenant claim, and queries the exact environment ID. It accepts either a direct setting of true or a
+null local setting backed by exact Managed Environment group membership and one published
+`CodeAppsFeature` rule with `PowerApps_AllowCodeApps: true`. Do not import any package when this
+check fails. API mutation requires `EnvironmentManagement.Settings.ReadWrite`; the repository
+preflight is read-only.
 
 Also confirm Dataverse Ready, importer System Administrator, Power Apps Premium for intended code
 app runners, packaged app sharing/Dataverse role plans, and applicable group governance.
@@ -127,8 +134,8 @@ runtime loading as authenticated smoke.
 
 ## 7. Classify failure signatures
 
-- `CodeAppOperationNotAllowedInEnvironment`: exact-target Code Apps toggle or effective group rule;
-  verify saved/reloaded On before import, published rule 22, and target-generated app ID, then
+- `CodeAppOperationNotAllowedInEnvironment`: exact-target effective Code Apps setting or group rule;
+  rerun the API preflight, verify published rule 23 and the target-generated app ID, then
   escalate to Microsoft support if effective state is On and 403 persists.
 - `Access to the Dataverse API is restricted for this application ID.`: app access control, not the
   Code Apps environment toggle.

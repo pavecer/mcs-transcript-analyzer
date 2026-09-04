@@ -22,7 +22,10 @@ export * as Pvci_thresholdchangerequestsModel from './models/Pvci_thresholdchang
 export * as Pvci_transcriptaccessrequestsModel from './models/Pvci_transcriptaccessrequestsModel';
 export * as Pvci_transcriptsessionsModel from './models/Pvci_transcriptsessionsModel';
 export * as Pvci_transcriptturnsModel from './models/Pvci_transcriptturnsModel';
+export * as RolesModel from './models/RolesModel';
 export * as SolutionsModel from './models/SolutionsModel';
+export * as SystemuserrolescollectionModel from './models/SystemuserrolescollectionModel';
+export * as SystemusersModel from './models/SystemusersModel';
 export * as WorkflowsModel from './models/WorkflowsModel';
 
 // Services
@@ -43,5 +46,8 @@ export * from './services/Pvci_thresholdchangerequestsService';
 export * from './services/Pvci_transcriptaccessrequestsService';
 export * from './services/Pvci_transcriptsessionsService';
 export * from './services/Pvci_transcriptturnsService';
+export * from './services/RolesService';
 export * from './services/SolutionsService';
+export * from './services/SystemuserrolescollectionService';
+export * from './services/SystemusersService';
 export * from './services/WorkflowsService';

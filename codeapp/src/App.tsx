@@ -5,6 +5,9 @@ import { Pvci_transcriptturnsService } from "./generated/services/Pvci_transcrip
 import { Pvci_environmentinventoriesService } from "./generated/services/Pvci_environmentinventoriesService";
 import { Pvci_creditsyncrunsService } from "./generated/services/Pvci_creditsyncrunsService";
 import { SolutionsService } from "./generated/services/SolutionsService";
+import { SystemusersService } from "./generated/services/SystemusersService";
+import { RolesService } from "./generated/services/RolesService";
+import { SystemuserrolescollectionService } from "./generated/services/SystemuserrolescollectionService";
 import { JsonTree } from "./components/JsonTree";
 import { Timeline } from "./components/Timeline";
 import { ToolCalls } from "./components/ToolCalls";
@@ -21,6 +24,14 @@ import { formatObservedPair } from "./lib/telemetryAvailability";
 import { buildSessionAlerts } from "./lib/sessionAlerts";
 import { isFlowTelemetryAvailable } from "./lib/flowTelemetryAvailability";
 import { isCrossEnvironmentCollectionEnabled, scopeRowsToHost } from "./lib/transcriptScope";
+import {
+  TRANSCRIPT_PRIVACY_POLICY_VERSION,
+  buildMaskedTranscriptExport,
+  hasTranscriptRevealRole,
+  isWorkdayHrSession,
+  maskedTranscriptFilename,
+  maskTranscriptData,
+} from "./lib/transcriptPrivacy";
 import {
   fmtDuration,
   fmtMs,
@@ -73,6 +84,7 @@ type Tab = "essops" | "replay" | "tools" | "knowledge" | "flows" | "conversation
 type Theme = "light" | "dark";
 type View = "sessions" | "trends" | "operations" | "inventory" | "credits";
 type CreditCapabilityState = "idle" | "checking" | "error" | CreditCapability;
+type TranscriptRevealCapability = "checking" | "allowed" | "denied" | "unavailable";
 
 const THEME_STORAGE_KEY = "pvci-theme";
 
@@ -118,6 +130,8 @@ export default function App() {
   const [theme, setTheme] = useState<Theme>(initialTheme);
   const [hostEnvironmentId, setHostEnvironmentId] = useState<string>();
   const [enabledCollectorEnvironmentIds, setEnabledCollectorEnvironmentIds] = useState<string[]>([]);
+  const [transcriptRevealCapability, setTranscriptRevealCapability] = useState<TranscriptRevealCapability>("checking");
+  const [revealedSessionId, setRevealedSessionId] = useState<string | null>(null);
 
   const crossEnvironmentEnabled = useMemo(
     () => isCrossEnvironmentCollectionEnabled(enabledCollectorEnvironmentIds, hostEnvironmentId),
@@ -126,8 +140,42 @@ export default function App() {
 
   useEffect(() => {
     void getContext()
-      .then((context) => setHostEnvironmentId(context.app.environmentId))
-      .catch(() => undefined);
+      .then(async (context) => {
+        setHostEnvironmentId(context.app.environmentId);
+        if (!context.user.objectId) {
+          setTranscriptRevealCapability("unavailable");
+          return;
+        }
+        try {
+          const userResult = await withTimeout(SystemusersService.getAll({
+            select: ["systemuserid"],
+            filter: `azureactivedirectoryobjectid eq ${context.user.objectId}`,
+            top: 1,
+          }), 15_000);
+          const systemUserId = userResult.data?.[0]?.systemuserid;
+          if (!systemUserId) {
+            setTranscriptRevealCapability("denied");
+            return;
+          }
+          const [roleResult, assignmentResult] = await Promise.all([
+            withTimeout(RolesService.getAll({
+              select: ["roleid"],
+              filter: "name eq 'PVCI Privacy Approver'",
+              top: 100,
+            }), 15_000),
+            withTimeout(SystemuserrolescollectionService.getAll({
+              select: ["systemuserid", "roleid"],
+              filter: `systemuserid eq ${systemUserId}`,
+              top: 100,
+            }), 15_000),
+          ]);
+          const privacyRoleIds = (roleResult.data ?? []).map((role) => role.roleid);
+          setTranscriptRevealCapability(hasTranscriptRevealRole(systemUserId, privacyRoleIds, assignmentResult.data ?? []) ? "allowed" : "denied");
+        } catch {
+          setTranscriptRevealCapability("denied");
+        }
+      })
+      .catch(() => setTranscriptRevealCapability("unavailable"));
   }, []);
 
   useEffect(() => {
@@ -250,6 +298,19 @@ export default function App() {
     ? selected
     : filtered[0] ?? null;
 
+  const privacyApplies = Boolean(activeSession && isWorkdayHrSession(activeSession));
+  const revealSensitiveValues = revealedSessionId === activeSession?.pvci_transcriptsessionid;
+
+  const maskedTranscript = useMemo(() => {
+    if (!activeSession || !privacyApplies) return null;
+    return maskTranscriptData({ session: activeSession, detail, turns });
+  }, [activeSession, detail, privacyApplies, turns]);
+
+  const displayedTranscript = privacyApplies && !revealSensitiveValues ? maskedTranscript?.value : null;
+  const displaySession = displayedTranscript?.session ?? activeSession;
+  const displayDetail = displayedTranscript?.detail ?? detail;
+  const displayTurns = displayedTranscript?.turns ?? turns;
+
   useEffect(() => {
     const transcriptId = activeSession?.pvci_transcriptid;
     const sessionId = activeSession?.pvci_transcriptsessionid;
@@ -307,6 +368,7 @@ export default function App() {
   };
 
   const openSessionFromInventory = async (sessionId: string) => {
+    setRevealedSessionId(null);
     setError(null);
     try {
       const existing = sessions.find((session) => session.pvci_transcriptsessionid === sessionId);
@@ -322,6 +384,36 @@ export default function App() {
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : String(reason));
     }
+  };
+
+  const setSensitiveValueVisibility = (visible: boolean) => {
+    if (!visible) {
+      setRevealedSessionId(null);
+      return;
+    }
+    if (transcriptRevealCapability !== "allowed") return;
+    const confirmed = window.confirm("Reveal original Workday and employee PII for this session? Keep the screen and any screenshots within approved privacy controls.");
+    if (confirmed && activeSession) setRevealedSessionId(activeSession.pvci_transcriptsessionid);
+  };
+
+  const navigateToView = (destination: View) => {
+    if (destination !== "sessions") setRevealedSessionId(null);
+    setView(destination);
+  };
+
+  const downloadMaskedTranscript = () => {
+    if (!activeSession) return;
+    const bundle = buildMaskedTranscriptExport(
+      { session: activeSession, detail, turns },
+      new Date().toISOString(),
+    );
+    const blob = new Blob([JSON.stringify(bundle, null, 2)], { type: "application/json;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = maskedTranscriptFilename(activeSession.pvci_transcriptsessionid);
+    link.click();
+    URL.revokeObjectURL(url);
   };
 
   return (
@@ -340,11 +432,11 @@ export default function App() {
                 : "Usage and governance"}</span>
         </div>
         <nav className="viewswitch app-navigation" aria-label="Primary navigation">
-          <button type="button" className={view === "sessions" ? "on" : ""} aria-current={view === "sessions" ? "page" : undefined} onClick={() => setView("sessions")}>Sessions</button>
-          <button type="button" className={view === "trends" ? "on" : ""} aria-current={view === "trends" ? "page" : undefined} onClick={() => setView("trends")}>Trends</button>
-          <button type="button" className={view === "operations" ? "on" : ""} aria-current={view === "operations" ? "page" : undefined} onClick={() => setView("operations")}>Operations</button>
-          <button type="button" className={view === "inventory" ? "on" : ""} aria-current={view === "inventory" ? "page" : undefined} onClick={() => setView("inventory")}>Inventory</button>
-          <button type="button" className={view === "credits" ? "on" : ""} aria-current={view === "credits" ? "page" : undefined} onClick={() => setView("credits")}>Credits</button>
+          <button type="button" className={view === "sessions" ? "on" : ""} aria-current={view === "sessions" ? "page" : undefined} onClick={() => navigateToView("sessions")}>Sessions</button>
+          <button type="button" className={view === "trends" ? "on" : ""} aria-current={view === "trends" ? "page" : undefined} onClick={() => navigateToView("trends")}>Trends</button>
+          <button type="button" className={view === "operations" ? "on" : ""} aria-current={view === "operations" ? "page" : undefined} onClick={() => navigateToView("operations")}>Operations</button>
+          <button type="button" className={view === "inventory" ? "on" : ""} aria-current={view === "inventory" ? "page" : undefined} onClick={() => navigateToView("inventory")}>Inventory</button>
+          <button type="button" className={view === "credits" ? "on" : ""} aria-current={view === "credits" ? "page" : undefined} onClick={() => navigateToView("credits")}>Credits</button>
         </nav>
         <button
           className="theme-toggle"
@@ -369,17 +461,17 @@ export default function App() {
               className="search"
               placeholder="Search user, channel, first message…"
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e) => { setRevealedSessionId(null); setSearch(e.target.value); }}
             />
             <label className="checkline">
-              <input type="checkbox" checked={hideTest} onChange={(e) => setHideTest(e.target.checked)} />
+              <input type="checkbox" checked={hideTest} onChange={(e) => { setRevealedSessionId(null); setHideTest(e.target.checked); }} />
               Hide test-mode sessions
             </label>
             <label className="checkline">
-              <input type="checkbox" checked={essOnly} onChange={(e) => setEssOnly(e.target.checked)} />
+              <input type="checkbox" checked={essOnly} onChange={(e) => { setRevealedSessionId(null); setEssOnly(e.target.checked); }} />
               ESS agents only
             </label>
-            {crossEnvironmentEnabled && <select className="search" value={environmentFilter} onChange={(e) => setEnvironmentFilter(e.target.value)}>
+            {crossEnvironmentEnabled && <select className="search" value={environmentFilter} onChange={(e) => { setRevealedSessionId(null); setEnvironmentFilter(e.target.value); }}>
               <option value="*">All environments</option>
               {environmentOptions.map(([id, label]) => (
                 <option key={id} value={id}>{label}</option>
@@ -390,6 +482,9 @@ export default function App() {
               {loadingSessions && <div className="muted pad">Loading…</div>}
               {!loadingSessions && !filtered.length && <div className="muted pad">No sessions match.</div>}
               {filtered.map((s) => {
+                const displayRow = isWorkdayHrSession(s) && !(revealSensitiveValues && activeSession?.pvci_transcriptsessionid === s.pvci_transcriptsessionid)
+                  ? maskTranscriptData(s).value
+                  : s;
                 const flowTelemetryAvailable = isFlowTelemetryAvailable(s, hostEnvironmentId);
                 const alerts = buildSessionAlerts({
                   userErrorCount: s.pvci_usererrorcount,
@@ -403,11 +498,11 @@ export default function App() {
                   <button
                     key={s.pvci_transcriptsessionid}
                     className={`session-item${alerts.some((alert) => alert.kind === "error") ? " has-error" : ""}${activeSession?.pvci_transcriptsessionid === s.pvci_transcriptsessionid ? " active" : ""}`}
-                    onClick={() => { setSelected(s); setTab("essops"); }}
+                    onClick={() => { setRevealedSessionId(null); setSelected(s); setTab("essops"); }}
                   >
                     <div className="si-top">
-                      <span className="si-user">{s.pvci_userdisplayname ?? "Unknown user"}</span>
-                      <span className="chip">{s.pvci_channel ?? "—"}</span>
+                      <span className="si-user">{displayRow.pvci_userdisplayname ?? "Unknown user"}</span>
+                      <span className="chip">{displayRow.pvci_channel ?? "—"}</span>
                     </div>
                     {alerts.length > 0 && <div className="si-alerts" aria-label="Session alerts">
                       {alerts.map((alert) => <span key={alert.text} className={`si-alert ${alert.kind}`}>{alert.text}</span>)}
@@ -423,7 +518,7 @@ export default function App() {
                         <span className="lat none">{s.pvci_toolcallcount} tools</span>
                       )}
                     </div>
-                    {s.pvci_initialusermessage && <div className="si-snippet">{s.pvci_initialusermessage.slice(0, 90)}</div>}
+                    {displayRow.pvci_initialusermessage && <div className="si-snippet">{displayRow.pvci_initialusermessage.slice(0, 90)}</div>}
                     <div className="si-flags">
                       {s.pvci_istestmode && <span className="flag test">test</span>}
                       {s.pvci_multiuseranomaly && <span className="flag warn">multi-user</span>}
@@ -449,7 +544,7 @@ export default function App() {
           </>
         )}
 
-        {view === "operations" && <OperationsOverview hostEnvironmentId={hostEnvironmentId} onNavigate={(destination) => setView(destination)} />}
+        {view === "operations" && <OperationsOverview hostEnvironmentId={hostEnvironmentId} onNavigate={navigateToView} />}
 
         {view === "credits" && creditCapability === "checking" && (
           <div className="capability-state muted">Checking Copilot Credit availability…</div>
@@ -488,13 +583,13 @@ export default function App() {
 
         {view === "sessions" && !activeSession && !loadingSessions && <div className="muted pad">No sessions match the current filters.</div>}
 
-        {view === "sessions" && activeSession && (
+        {view === "sessions" && activeSession && displaySession && (
           <>
             <header className="detail-head">
               <div className="session-identity">
                 <div className="session-person">
-                  <h2>{activeSession.pvci_userdisplayname ?? "Unknown user"}</h2>
-                  <div className="muted small">{activeSession.pvci_userupn ?? activeSession.pvci_useraadobjectid ?? "—"}</div>
+                  <h2>{displaySession.pvci_userdisplayname ?? "Unknown user"}</h2>
+                  <div className="muted small">{displaySession.pvci_userupn ?? displaySession.pvci_useraadobjectid ?? "—"}</div>
                 </div>
                 <div className="session-context" aria-label="Session context">
                   <span>{activeSession.pvci_channel ?? "Unknown channel"}</span>
@@ -585,6 +680,39 @@ export default function App() {
               </details>
             </header>
 
+            {privacyApplies && (
+              <section className={`transcript-privacy-strip${revealSensitiveValues ? " revealed" : ""}`} aria-label="Transcript privacy controls">
+                <div className="transcript-privacy-copy">
+                  <strong>{revealSensitiveValues ? "Original PII visible" : "Masked by ESS HR privacy policy"}</strong>
+                  <span>
+                    Policy {TRANSCRIPT_PRIVACY_POLICY_VERSION} · {maskedTranscript?.replacementCount ?? 0} sensitive values masked
+                    {activeSession.pvci_payloadtruncated ? " · stored payload is truncated" : " · complete stored payload"}
+                  </span>
+                </div>
+                <div className="transcript-privacy-actions">
+                  <button type="button" className="privacy-action" onClick={downloadMaskedTranscript} disabled={loadingTurns || !detail}>
+                    Download masked transcript
+                  </button>
+                  {transcriptRevealCapability === "allowed" ? (
+                    <label className="checkline transcript-reveal-control">
+                      <input
+                        type="checkbox"
+                        checked={revealSensitiveValues}
+                        onChange={(event) => setSensitiveValueVisibility(event.target.checked)}
+                      />
+                      Reveal sensitive values
+                    </label>
+                  ) : (
+                    <span className="muted small">
+                      {transcriptRevealCapability === "checking"
+                        ? "Checking reveal permission…"
+                        : "Privacy administrator permission required to reveal"}
+                    </span>
+                  )}
+                </div>
+              </section>
+            )}
+
             <nav className="tabs">
               {(Object.keys(TAB_LABEL) as Tab[]).map((t) => (
                 <button key={t} className={tab === t ? "on" : ""} onClick={() => setTab(t)}>
@@ -596,30 +724,30 @@ export default function App() {
             <section className="pane">
               {tab === "essops" ? (
                 <EssOps
-                  session={detail ? { ...activeSession, ...detail } : activeSession}
-                  turns={turns}
+                  session={displayDetail ? { ...displaySession, ...displayDetail } : displaySession}
+                  turns={displayTurns}
                   loading={loadingTurns}
                   flowTelemetryAvailable={isFlowTelemetryAvailable(activeSession, hostEnvironmentId)}
                 />
               ) : tab === "replay" ? (
-                <Timeline turns={turns} loading={loadingTurns} />
+                <Timeline turns={displayTurns} loading={loadingTurns} />
               ) : tab === "tools" ? (
                 <ToolCalls
-                  json={detail?.pvci_toolcallsjson}
+                  json={displayDetail?.pvci_toolcallsjson}
                   loading={loadingTurns}
                   exactTelemetryAvailable={Boolean(activeSession.pvci_istestmode)}
-                  planEventsJson={detail?.pvci_planeventsjson}
+                  planEventsJson={displayDetail?.pvci_planeventsjson}
                 />
               ) : tab === "knowledge" ? (
-                <KnowledgeCalls json={detail?.pvci_knowledgecallsjson} loading={loadingTurns} />
+                <KnowledgeCalls json={displayDetail?.pvci_knowledgecallsjson} loading={loadingTurns} />
               ) : tab === "flows" ? (
                 <FlowRuns
-                  json={detail?.pvci_flowrunsjson}
+                  json={displayDetail?.pvci_flowrunsjson}
                   loading={loadingTurns}
                   telemetryAvailable={isFlowTelemetryAvailable(activeSession, hostEnvironmentId)}
                 />
               ) : tab === "reasoning" ? (
-                <ReasoningFlow json={detail?.pvci_planeventsjson} knowledgeJson={detail?.pvci_knowledgecallsjson} loading={loadingTurns} />
+                <ReasoningFlow json={displayDetail?.pvci_planeventsjson} knowledgeJson={displayDetail?.pvci_knowledgecallsjson} loading={loadingTurns} />
               ) : (
                 <>
                   <input
@@ -630,11 +758,11 @@ export default function App() {
                   />
                   <JsonPane
                     text={
-                      tab === "conversation" ? detail?.pvci_conversationjson : detail?.pvci_activitiesjson
+                      tab === "conversation" ? displayDetail?.pvci_conversationjson : displayDetail?.pvci_activitiesjson
                     }
                     filter={jsonFilter}
                     depth={tab === "raw" ? 2 : 3}
-                    extra={tab === "raw" ? detail?.pvci_metadatajson : undefined}
+                    extra={tab === "raw" ? displayDetail?.pvci_metadatajson : undefined}
                     loading={loadingTurns}
                   />
                 </>

@@ -5,10 +5,10 @@
  */
 
 export const dataSourcesInfo = {
-  "connectionreferences": {
+  "pvci_agentthresholdsnapshots": {
     "tableId": "",
     "version": "",
-    "primaryKey": "connectionreferenceid",
+    "primaryKey": "pvci_agentthresholdsnapshotid",
     "dataSourceType": "Dataverse",
     "apis": {}
   },
@@ -19,10 +19,17 @@ export const dataSourcesInfo = {
     "dataSourceType": "Dataverse",
     "apis": {}
   },
-  "pvci_agentthresholdsnapshots": {
+  "pvci_thresholdchangerequests": {
     "tableId": "",
     "version": "",
-    "primaryKey": "pvci_agentthresholdsnapshotid",
+    "primaryKey": "pvci_thresholdchangerequestid",
+    "dataSourceType": "Dataverse",
+    "apis": {}
+  },
+  "connectionreferences": {
+    "tableId": "",
+    "version": "",
+    "primaryKey": "connectionreferenceid",
     "dataSourceType": "Dataverse",
     "apis": {}
   },
@@ -30,6 +37,13 @@ export const dataSourcesInfo = {
     "tableId": "",
     "version": "",
     "primaryKey": "pvci_creditcapacitysnapshotid",
+    "dataSourceType": "Dataverse",
+    "apis": {}
+  },
+  "pvci_governancesyncruns": {
+    "tableId": "",
+    "version": "",
+    "primaryKey": "pvci_governancesyncrunid",
     "dataSourceType": "Dataverse",
     "apis": {}
   },
@@ -68,20 +82,6 @@ export const dataSourcesInfo = {
     "dataSourceType": "Dataverse",
     "apis": {}
   },
-  "pvci_flowrundetails": {
-    "tableId": "",
-    "version": "",
-    "primaryKey": "pvci_flowrundetailid",
-    "dataSourceType": "Dataverse",
-    "apis": {}
-  },
-  "pvci_governancesyncruns": {
-    "tableId": "",
-    "version": "",
-    "primaryKey": "pvci_governancesyncrunid",
-    "dataSourceType": "Dataverse",
-    "apis": {}
-  },
   "pvci_inventorysyncruns": {
     "tableId": "",
     "version": "",
@@ -89,24 +89,24 @@ export const dataSourcesInfo = {
     "dataSourceType": "Dataverse",
     "apis": {}
   },
+  "workflows": {
+    "tableId": "",
+    "version": "",
+    "primaryKey": "workflowid",
+    "dataSourceType": "Dataverse",
+    "apis": {}
+  },
+  "pvci_flowrundetails": {
+    "tableId": "",
+    "version": "",
+    "primaryKey": "pvci_flowrundetailid",
+    "dataSourceType": "Dataverse",
+    "apis": {}
+  },
   "pvci_syncstates": {
     "tableId": "",
     "version": "",
     "primaryKey": "pvci_syncstateid",
-    "dataSourceType": "Dataverse",
-    "apis": {}
-  },
-  "pvci_thresholdchangerequests": {
-    "tableId": "",
-    "version": "",
-    "primaryKey": "pvci_thresholdchangerequestid",
-    "dataSourceType": "Dataverse",
-    "apis": {}
-  },
-  "pvci_transcriptaccessrequests": {
-    "tableId": "",
-    "version": "",
-    "primaryKey": "pvci_transcriptaccessrequestid",
     "dataSourceType": "Dataverse",
     "apis": {}
   },
@@ -124,6 +124,13 @@ export const dataSourcesInfo = {
     "dataSourceType": "Dataverse",
     "apis": {}
   },
+  "roles": {
+    "tableId": "",
+    "version": "",
+    "primaryKey": "roleid",
+    "dataSourceType": "Dataverse",
+    "apis": {}
+  },
   "solutions": {
     "tableId": "",
     "version": "",
@@ -131,10 +138,17 @@ export const dataSourcesInfo = {
     "dataSourceType": "Dataverse",
     "apis": {}
   },
-  "workflows": {
+  "systemuserrolescollection": {
     "tableId": "",
     "version": "",
-    "primaryKey": "workflowid",
+    "primaryKey": "systemuserroleid",
+    "dataSourceType": "Dataverse",
+    "apis": {}
+  },
+  "systemusers": {
+    "tableId": "",
+    "version": "",
+    "primaryKey": "systemuserid",
     "dataSourceType": "Dataverse",
     "apis": {}
   }

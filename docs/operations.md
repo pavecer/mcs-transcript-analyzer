@@ -644,9 +644,25 @@ and two time-correlated successful flows: **ESS IT ServiceNow ITSM Common Orches
 
 PVE Dev also contains published Contoso ESS HR Workday topics and Workday cloud flows, including
 National IDs, certifications, visas, company code, employment information, and common execution.
-The available HR sessions are greeting-only and contain no plan, tool, or flow events. Workday
-session analysis therefore remains unvalidated until a representative completed and failed Workday
-conversation is retained and reviewed. Do not infer Workday behavior from ServiceNow evidence.
+The PVE Dev HR sessions remain greeting-only. A read-only Contoso TPM review on 2026-09-03 found
+three substantive `ESS_WD_Simplification` sessions for
+`msdyn_copilotforemployeeselfservicehr`, including `WorkdayEmployeeID` and `WorkdayGetVisas`.
+Sanitized structural inspection confirmed that Workday PII is repeated across activities, embedded
+raw and parsed Workday responses, tool output, plan observations, and turn text. No source PII value
+was written to repository evidence or logs.
+
+For this exact ESS HR/Workday identity, the code app masks the session navigator and every selected
+session view by default. **Download masked transcript** always produces a masked JSON bundle and
+never follows the on-screen reveal state. A privacy administrator must explicitly confirm **Reveal
+sensitive values** for the current session; changing sessions clears reveal. If authorization cannot
+be verified, reveal remains unavailable. The masking policy preserves orchestration structure and
+replaces known identity/contact/HR fields plus every scalar under recognized Workday response
+subtrees. It cannot guarantee detection of every context-specific value.
+
+UI masking is defense in depth, not storage authorization. Existing raw Dataverse memo columns and
+turn rows remain subject to their Dataverse table privileges, direct API access, backups, and prior
+exports. Organizations requiring enforced separation must add a core-owned restricted raw-payload
+boundary and audited server retrieval before treating reveal as a complete security control.
 
 The Overview is the first-stop session view. Use Replay to inspect user/agent turns, then open
 Knowledge, Tool Calls, or Flow Runs only when the overview indicates participation or when capture
@@ -707,8 +723,8 @@ Afterwards, in the target environment:
     allow Power Platform for Admins V2.
 5. Bind `pvci_powerplatformapi` to a target-local HTTP with Microsoft Entra ID connection whose
     Base Resource URL and resource audience are `https://licensing.powerplatform.microsoft.com/`.
-6. Assign **PVCI Analyst** to readers, **PVCI Privacy Approver** only to approved disclosure
-    operators, and **PVCI Credit Administrator** only to transcript-collection and threshold-change
+6. Assign **PVCI Analyst** to readers, **PVCI Privacy Approver** only to approved credit-name or
+    transcript-PII disclosure operators, and **PVCI Credit Administrator** only to transcript-collection and threshold-change
     operators. Share the code app separately with the same users/groups.
 7. Save and smoke-test all 7 flows, including a no-op governance request, then activate the
     intended schedules and processor.

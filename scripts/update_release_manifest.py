@@ -27,6 +27,8 @@ ARTIFACT_KEYS = ("core", "credits", "codeApp")
 
 
 def service_filename(table_name: str) -> str:
+    if table_name == "systemuserroles":
+        return "SystemuserrolescollectionService.ts"
     plural_name = f"{table_name[:-1]}ies" if table_name.endswith("y") else f"{table_name}s"
     return f"{plural_name[0].upper()}{plural_name[1:]}Service.ts"
 

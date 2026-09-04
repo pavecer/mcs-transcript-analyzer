@@ -15,9 +15,32 @@ from scripts.validate_clean_install import (
     DEFAULT_CONTRACT,
     RELEASE_CONFIG,
     environment_url,
+    environment_id,
+    extract_access_token,
     load_contract,
     token_tenant_id,
+    validate_code_apps_preflight,
 )
+
+
+class SettingsReader:
+    def __init__(self, response: dict, environment: dict | None = None, policies: dict | None = None):
+        self.response = response
+        self.environment = environment
+        self.policies = policies
+        self.calls = []
+
+    def get_settings(self, target_environment_id: str, api_version: str, setting: str) -> dict:
+        self.calls.append((target_environment_id, api_version, setting))
+        return self.response
+
+    def get_environment(self, target_environment_id: str, api_version: str) -> dict:
+        self.calls.append(("environment", target_environment_id, api_version))
+        return self.environment or {"value": []}
+
+    def get_group_policies(self, group_id: str, api_version: str) -> dict:
+        self.calls.append(("policies", group_id, api_version))
+        return self.policies or {"value": []}
 
 
 class ValidateCleanInstallTests(unittest.TestCase):
@@ -52,6 +75,24 @@ class ValidateCleanInstallTests(unittest.TestCase):
             with self.subTest(value=value), self.assertRaises(argparse.ArgumentTypeError):
                 environment_url(value)
 
+    def test_environment_id_accepts_guid_and_normalizes_case(self):
+        self.assertEqual(
+            environment_id("ABCDEF12-3456-7890-ABCD-EF1234567890"),
+            "abcdef12-3456-7890-abcd-ef1234567890",
+        )
+
+    def test_environment_id_rejects_non_guid(self):
+        with self.assertRaises(argparse.ArgumentTypeError):
+            environment_id("PVE Dev")
+
+    def test_extract_access_token_finds_jwt_in_pac_output(self):
+        token = "eyJheader.eyJpayload.signature"
+        self.assertEqual(extract_access_token(f"Access token:\n{token}\n"), token)
+
+    def test_extract_access_token_rejects_missing_jwt(self):
+        with self.assertRaisesRegex(RuntimeError, "did not return"):
+            extract_access_token("Connected as user")
+
     def test_token_tenant_id_extracts_tid_claim(self):
         claims = base64.urlsafe_b64encode(
             json.dumps({"tid": "tenant-id"}).encode("utf-8")
@@ -75,6 +116,14 @@ class ValidateCleanInstallTests(unittest.TestCase):
             ]
         )
         self.assertEqual(
+            contract["prerequisites"]["codeApps"]["environmentGroupRule"]["catalogNumber"],
+            23,
+        )
+        self.assertIn(
+            "--preflight-only",
+            contract["prerequisites"]["codeApps"]["preflightCommand"],
+        )
+        self.assertEqual(
             contract["evidence"]["cleanup"]["completionCriteria"],
             {
                 "allRequired": True,
@@ -82,6 +131,159 @@ class ValidateCleanInstallTests(unittest.TestCase):
                 "targetDataverseNoLongerResolves": True,
             },
         )
+
+    def test_code_apps_preflight_accepts_exact_effective_true(self):
+        target = "abcdef12-3456-7890-abcd-ef1234567890"
+        reader = SettingsReader(
+            {"objectResult": [{"Id": target.upper(), "PowerApps_AllowCodeApps": True}]}
+        )
+
+        result = validate_code_apps_preflight(
+            reader,
+            target,
+            self.contract["prerequisites"]["codeApps"],
+        )
+
+        self.assertTrue(result["effectiveValue"])
+        self.assertEqual(result["enablementSource"], "environment")
+        self.assertEqual(
+            reader.calls,
+            [(target, "2024-10-01", "powerApps_AllowCodeApps")],
+        )
+
+    def test_code_apps_preflight_accepts_published_group_inheritance(self):
+        target = "abcdef12-3456-7890-abcd-ef1234567890"
+        group = "12345678-1234-1234-1234-123456789012"
+        reader = SettingsReader(
+            {"objectResult": [{"id": target, "powerApps_AllowCodeApps": None}]},
+            {
+                "value": [
+                    {
+                        "id": target,
+                        "environmentGroupId": group,
+                        "protectionLevel": "Standard",
+                    }
+                ]
+            },
+            {
+                "value": [
+                    {
+                        "tenantId": "tenant",
+                        "ruleSets": [
+                            {
+                                "id": "CodeAppsFeature",
+                                "inputs": {"PowerApps_AllowCodeApps": True},
+                            }
+                        ],
+                    }
+                ]
+            },
+        )
+
+        result = validate_code_apps_preflight(
+            reader,
+            target,
+            self.contract["prerequisites"]["codeApps"],
+            "tenant",
+        )
+
+        self.assertEqual(result["enablementSource"], "environmentGroup")
+        self.assertEqual(result["environmentGroupId"], group)
+
+    def test_code_apps_preflight_rejects_unresolved_ungrouped_setting(self):
+        target = "abcdef12-3456-7890-abcd-ef1234567890"
+        with self.assertRaisesRegex(RuntimeError, "no environment group"):
+            validate_code_apps_preflight(
+                SettingsReader(
+                    {"objectResult": [{"id": target, "powerApps_AllowCodeApps": None}]},
+                    {"value": [{"id": target, "protectionLevel": "Standard"}]},
+                ),
+                target,
+                self.contract["prerequisites"]["codeApps"],
+            )
+
+    def test_code_apps_preflight_rejects_group_policy_off(self):
+        target = "abcdef12-3456-7890-abcd-ef1234567890"
+        group = "12345678-1234-1234-1234-123456789012"
+        reader = SettingsReader(
+            {"objectResult": [{"id": target, "powerApps_AllowCodeApps": None}]},
+            {
+                "value": [
+                    {
+                        "id": target,
+                        "environmentGroupId": group,
+                        "protectionLevel": "Standard",
+                    }
+                ]
+            },
+            {
+                "value": [
+                    {
+                        "ruleSets": [
+                            {
+                                "id": "CodeAppsFeature",
+                                "inputs": {"PowerApps_AllowCodeApps": False},
+                            }
+                        ]
+                    }
+                ]
+            },
+        )
+        with self.assertRaisesRegex(RuntimeError, "does not enable"):
+            validate_code_apps_preflight(
+                reader,
+                target,
+                self.contract["prerequisites"]["codeApps"],
+            )
+
+    def test_code_apps_preflight_rejects_false_setting(self):
+        target = "abcdef12-3456-7890-abcd-ef1234567890"
+        with self.assertRaisesRegex(RuntimeError, "effective setting is not On"):
+            validate_code_apps_preflight(
+                SettingsReader(
+                    {
+                        "objectResult": [
+                            {"id": target, "powerApps_AllowCodeApps": False}
+                        ]
+                    }
+                ),
+                target,
+                self.contract["prerequisites"]["codeApps"],
+            )
+
+    def test_code_apps_preflight_rejects_missing_setting_without_group_evidence(self):
+        target = "abcdef12-3456-7890-abcd-ef1234567890"
+        with self.assertRaisesRegex(RuntimeError, "exactly one target environment"):
+            validate_code_apps_preflight(
+                SettingsReader({"objectResult": [{"id": target}]}),
+                target,
+                self.contract["prerequisites"]["codeApps"],
+            )
+
+    def test_code_apps_preflight_rejects_wrong_environment(self):
+        with self.assertRaisesRegex(RuntimeError, "does not match the target"):
+            validate_code_apps_preflight(
+                SettingsReader(
+                    {
+                        "objectResult": [
+                            {
+                                "id": "00000000-0000-0000-0000-000000000000",
+                                "powerApps_AllowCodeApps": True,
+                            }
+                        ]
+                    }
+                ),
+                "abcdef12-3456-7890-abcd-ef1234567890",
+                self.contract["prerequisites"]["codeApps"],
+            )
+
+    def test_code_apps_preflight_rejects_ambiguous_response(self):
+        with self.assertRaisesRegex(RuntimeError, "exactly one"):
+            validate_code_apps_preflight(
+                SettingsReader({"objectResult": []}),
+                "abcdef12-3456-7890-abcd-ef1234567890",
+                self.contract["prerequisites"]["codeApps"],
+            )
 
     def test_contract_rejects_wrong_artifact_order(self):
         contract = copy.deepcopy(self.contract)
@@ -101,6 +303,12 @@ class ValidateCleanInstallTests(unittest.TestCase):
         contract = copy.deepcopy(self.contract)
         contract["structuralRequirements"]["customApis"] = "not-an-array"
         with self.assertRaisesRegex(ValueError, "customApis"):
+            load_contract(self.write_contract(contract), self.release)
+
+    def test_contract_rejects_stale_code_apps_group_rule_number(self):
+        contract = copy.deepcopy(self.contract)
+        contract["prerequisites"]["codeApps"]["environmentGroupRule"]["catalogNumber"] = 22
+        with self.assertRaisesRegex(ValueError, "enablement paths"):
             load_contract(self.write_contract(contract), self.release)
 
     def test_contract_rejects_missing_gate_separation(self):

@@ -282,6 +282,23 @@ body {
   border-bottom: 1px solid var(--line);
 }
 .detail-head h2 { margin: 0; font-size: 17px; }
+.transcript-privacy-strip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 9px 18px;
+  border-bottom: 1px solid var(--line);
+  border-left: 4px solid var(--accent);
+  background: var(--active);
+}
+.transcript-privacy-strip.revealed { border-left-color: var(--warn); background: var(--warn-bg); }
+.transcript-privacy-copy { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.transcript-privacy-copy strong { font-size: 12px; }
+.transcript-privacy-copy span { color: var(--muted); font-size: 11px; line-height: 1.35; }
+.transcript-privacy-strip.revealed .transcript-privacy-copy span { color: var(--warn-fg); }
+.transcript-privacy-actions { display: flex; align-items: center; justify-content: flex-end; gap: 14px; flex-wrap: wrap; }
+.transcript-reveal-control { color: var(--fg); white-space: nowrap; }
 .session-identity { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
 .session-person { min-width: 0; }
 .session-person .small { margin-top: 2px; overflow-wrap: anywhere; }
@@ -330,6 +347,8 @@ body {
 
 @media (max-width: 700px) {
   .detail-head { padding: 12px; }
+  .transcript-privacy-strip { align-items: flex-start; flex-direction: column; gap: 9px; padding: 10px 12px; }
+  .transcript-privacy-actions { align-items: flex-start; justify-content: flex-start; gap: 9px; width: 100%; }
   .session-identity { flex-direction: column; gap: 8px; }
   .session-context { justify-content: flex-start; }
   .conversation-signals, .observability-signals, .technical-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }

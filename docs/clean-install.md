@@ -48,8 +48,8 @@ authenticated data-tab smoke.
 
 | Category | Requirement | Decision rule |
 | --- | --- | --- |
-| Mandatory for the optional code app | **Enable code apps** | Set **On**, save, and independently reload before importing the code-app package. Microsoft documents the default as **Off**. |
-| Mandatory for the optional code app | Managed Environment group rule 22 | If the target is a Managed Environment in an environment group, the group's **Power Apps code apps** rule must be enabled and published so its effective state allows code apps. |
+| Mandatory for the optional code app | **Enable code apps** | The exact environment's effective value must be On before importing any package. Enable it directly or through published environment-group rule 23. Microsoft documents the default as Off. |
+| Supported centralized enablement | Managed Environment group rule 23 | A published **Power Apps code apps** rule configured On applies to every member and locks the environment setting. This can replace repeated per-environment clicking for disposable validation environments. |
 | Mandatory for the optional code app | Runner license | Every intended runner needs Power Apps Premium. |
 | Mandatory for the optional code app | Sharing and data roles | Share the target-generated app with the intended users/groups and assign an appropriate packaged Dataverse role, normally **PVCI Analyst**. App sharing alone does not grant table access. |
 | Mandatory for package/configuration | Dataverse readiness | Wait until the new environment has a ready Dataverse organization before authentication or import. |
@@ -99,17 +99,35 @@ before continuing.
 
 ## Mandatory Code Apps preflight
 
-When the optional code app will be installed, complete this before importing any solution:
+When the optional code app will be installed, complete this before importing any solution.
 
-1. In Power Platform admin center, open **Manage** > **Environments** > the exact target >
+Choose one enablement path:
+
+1. **Direct environment setting:** In Power Platform admin center, open **Manage** > **Environments** > the exact target >
    **Settings** > **Product** > **Features** > **Power Apps Code Apps**.
-2. Set **Enable code apps** to **On** and select **Save**.
-3. Leave or reload the settings page independently. Continue only when the same target still shows
-   On and Save is disabled.
-4. If the target is a Managed Environment in a group, confirm rule 22, **Power Apps code apps**, is
-   enabled and published for that group. The group-effective state must allow the feature.
+   Set **Enable code apps** On and save; or
+2. **Environment group:** Add the managed target to a dedicated validation group with published
+   rule 23, **Power Apps code apps**, configured On. Microsoft states published group rules are
+   enforced across members and lock the corresponding environment setting.
 
-The supported UI is the primary verification path. As an optional independent read, use the preview
+In both cases, verify effective state with the repository preflight:
+
+```powershell
+python scripts/validate_clean_install.py `
+  --preflight-only `
+  --environment-id "<target-environment-guid>" `
+  --config config/transcript_solution_config.dev.json
+```
+
+The selected PAC profile must belong to the authorized tenant. The command deliberately uses PAC's
+Power Platform token rather than Azure CLI's active account because those auth stores can point at
+different tenants. Continue only when it returns `effectiveValue: true` for the exact target ID.
+Direct enablement reports `enablementSource: environment`. A grouped environment can return a null
+local setting; the command then verifies exact group membership, Managed Environment protection,
+and one published `CodeAppsFeature` rule set with `PowerApps_AllowCodeApps: true` before reporting
+`enablementSource: environmentGroup`.
+
+The preflight uses the preview
 [Power Platform Environment Management Settings API](https://learn.microsoft.com/rest/api/power-platform/environmentmanagement/environment-management-settings/list-environment-management-settings?view=power-platform-latest):
 
 ```http
@@ -118,7 +136,8 @@ GET https://api.powerplatform.com/environmentmanagement/environments/{environmen
 
 The delegated read scope is `EnvironmentManagement.Settings.Read`; mutation requires
 `EnvironmentManagement.Settings.ReadWrite`. The response must show `powerApps_AllowCodeApps: true`.
-Do not add API mutation to this repository workflow merely to bypass the supported UI preflight.
+The repository command is read-only; central group configuration is a one-time tenant governance
+action, not something each package import should silently mutate.
 
 ## Hash and import exact packages
 
@@ -202,8 +221,8 @@ into a package failure or claim full authenticated data smoke.
 For HTTP 403 `CodeAppOperationNotAllowedInEnvironment`:
 
 1. Confirm the browser, PAC profile, and settings page all target the exact new environment.
-2. Confirm **Enable code apps** was saved and independently reloaded as On before code-app import.
-3. If the environment is managed and grouped, confirm group rule 22 is effective and published.
+2. Rerun the effective-state preflight and require `powerApps_AllowCodeApps: true` for the target.
+3. If the environment is grouped, confirm group rule 23 is configured On and published.
 4. Resolve and launch the target-generated app ID/open URI from the live validator, never the source
    app ID.
 5. If effective state is On and 403 persists, preserve request/correlation evidence and escalate to
@@ -258,7 +277,7 @@ not this documentation change.
 - [Power Apps code apps overview and prerequisites](https://learn.microsoft.com/power-apps/developer/code-apps/overview)
 - [Code Apps feedback and standard Microsoft Support paths](https://learn.microsoft.com/power-apps/developer/code-apps/feedback-support)
 - [Power Apps Code Apps environment setting and default](https://learn.microsoft.com/power-platform/admin/settings-features#power-apps-code-apps)
-- [Environment group rules, including rule 22](https://learn.microsoft.com/power-platform/admin/environment-groups-rules)
+- [Environment group rules, including rule 23](https://learn.microsoft.com/power-platform/admin/environment-groups-rules)
 - [Environment Management Settings API](https://learn.microsoft.com/rest/api/power-platform/environmentmanagement/environment-management-settings/list-environment-management-settings?view=power-platform-latest)
 - [Power Platform API permissions](https://learn.microsoft.com/power-platform/admin/programmability-permission-reference)
 - [Code Apps architecture and Power Apps host](https://learn.microsoft.com/power-apps/developer/code-apps/architecture)

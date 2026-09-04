@@ -57,7 +57,22 @@
       "defaultValue": "Off",
       "requiredValue": "On",
       "requiredBefore": "codeApp import",
-      "verification": "Save, reload independently, and confirm the value remains On with Save disabled.",
+      "enablementPaths": {
+        "direct": "Set the environment toggle On and save.",
+        "environmentGroup": "Add the managed environment to a group with published rule 23, Power Apps code apps, configured On."
+      },
+      "verification": "Run the read-only effective-state preflight and require powerApps_AllowCodeApps to be true for the exact environment ID before importing any package.",
+      "preflightCommand": "python scripts/validate_clean_install.py --preflight-only --environment-id <environment-guid> --config <authorized-config>",
+      "environmentGroupRule": {
+        "catalogNumber": 23,
+        "name": "Power Apps code apps",
+        "ruleSetId": "CodeAppsFeature",
+        "environmentApiVersion": "2024-10-01",
+        "policyApiVersion": "2021-10-01-preview",
+        "publishedRulesEnforced": true,
+        "locksEnvironmentSetting": true,
+        "canSatisfyPerEnvironmentEnablement": true
+      },
       "officialApi": {
         "property": "powerApps_AllowCodeApps",
         "apiVersion": "2024-10-01",
@@ -139,6 +154,7 @@
     "capture": [
       "Exact artifact filenames, versions, hashes, and synchronous import order",
       "Preflight setting save and independent reload result",
+      "Read-only effective Code Apps setting result for the exact environment ID",
       "Import warnings and final success state",
       "Structural validator JSON, including component counts and target-generated app open URI",
       "Hosted launch status, runtime document status, rendered views, and browser limitations"

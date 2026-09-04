@@ -58,8 +58,8 @@
   },
   "codeApp": {
     "solutionUniqueName": "pvConversationInsightsCodeApp",
-    "version": "2.2.0.2",
-    "filename": "pvConversationInsightsCodeApp-managed-2.2.0.2.zip",
+    "version": "2.2.0.3",
+    "filename": "pvConversationInsightsCodeApp-managed-2.2.0.3.zip",
     "dependsOn": [
       "core"
     ],
@@ -68,7 +68,10 @@
     "requiredSystemTables": [
       "solution",
       "workflow",
-      "connectionreference"
+      "connectionreference",
+      "systemuser",
+      "role",
+      "systemuserroles"
     ],
     "requiredPackageSystemTables": [
       "connectionreference"
