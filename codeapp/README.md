@@ -71,12 +71,16 @@ Candidate versions and filenames come from
 `output/candidate/` until all target-tenant and release gates pass; never overwrite a published ZIP
 at an existing version.
 
+The current mixed stable set is core `2.1.0.0`, unchanged Credits `2.0.0.5`, and Code App
+`2.2.0.3`; the overall stable identity and Git tag remain `v2.1.0.0`. Existing code-app users should
+upgrade only the Code App to `2.2.0.3` for this code-app-only update.
+
 For a fresh install:
 
 1. Enable Code Apps in the exact target before any import.
-2. Import core.
-3. Import optional Credits.
-4. Import the code-app package last.
+2. Import core `pvConversationInsights-managed-2.1.0.0.zip`.
+3. Import optional Credits `pvConversationInsightsCredits-managed-2.0.0.5.zip`.
+4. Import `pvConversationInsightsCodeApp-managed-2.2.0.3.zip` last.
 
 Source app IDs are not portable. Resolve the target-generated managed Code App row and open URI
 with `scripts/validate_clean_install.py`; do not launch a source environment ID in the target.

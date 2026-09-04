@@ -34,8 +34,9 @@ the preauthorized HTTP connection with both licensing-service URLs first.
 ### 2.1.0.0 stable package architecture
 
 The current stable release contains core `2.1.0.0`, unchanged Credits `2.0.0.5`, and code app
-`2.1.0.0` after hosted PVE UI validation, tenant-neutral package validation, manual target-tenant
-upgrade, and exact-byte clean-install validation.
+`2.2.0.3`. The overall stable release identity and Git tag remain `v2.1.0.0`; the 2026-09-04
+code-app-only update passed hosted PVE UI validation, tenant-neutral package validation, manual
+target-tenant approval, and exact-byte clean-install validation.
 
 | Package | Required? | Ownership |
 | --- | --- | --- |
@@ -43,8 +44,10 @@ upgrade, and exact-byte clean-install validation.
 | `pvConversationInsightsCredits` | Optional | Only the three credit collection/governance flows, licensing references `pvci_licensinghttp` and `pvci_powerplatformapi`, and required `pvci_CreditReportingTenantId` definition |
 | `pvConversationInsightsCodeApp` | Optional supported | Only the maintainer-supported code app and its declared core dependencies |
 
-For a clean `2.1.0.0` installation, pre-enable Code Apps when that optional package will be used,
-then import core, optional credits, and optional code app in that order. To
+For a clean installation, pre-enable Code Apps when that optional package will be used, then import
+core `2.1.0.0`, optional Credits `2.0.0.5`, and optional Code App `2.2.0.3` in that order. Existing
+code-app users should upgrade the Code App to `2.2.0.3`; core and Credits are unchanged for this
+code-app-only update. To
 upgrade from `1.4.0.15`, import the credits add-on first, apply the core managed upgrade second,
 and upgrade the code app last. This additive ownership transfer preserves the existing credit flow
 identities while core retains schema and data ownership. Core does not contain or request the credit
