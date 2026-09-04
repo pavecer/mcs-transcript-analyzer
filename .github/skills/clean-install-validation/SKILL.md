@@ -45,9 +45,11 @@ python scripts/validate_clean_install.py --preflight-only --environment-id <targ
 ```
 
 The command gets a Power Platform token from the selected PAC profile, validates the authorized
-tenant claim, queries the exact environment ID, and requires `powerApps_AllowCodeApps: true` through
-the Environment Management Settings API. Do not import any package when this check fails. API
-mutation requires `EnvironmentManagement.Settings.ReadWrite`; the repository preflight is read-only.
+tenant claim, and queries the exact environment ID. It accepts either a direct setting of true or a
+null local setting backed by exact Managed Environment group membership and one published
+`CodeAppsFeature` rule with `PowerApps_AllowCodeApps: true`. Do not import any package when this
+check fails. API mutation requires `EnvironmentManagement.Settings.ReadWrite`; the repository
+preflight is read-only.
 
 Also confirm Dataverse Ready, importer System Administrator, Power Apps Premium for intended code
 app runners, packaged app sharing/Dataverse role plans, and applicable group governance.

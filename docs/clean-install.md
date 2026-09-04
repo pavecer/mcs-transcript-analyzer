@@ -122,6 +122,10 @@ python scripts/validate_clean_install.py `
 The selected PAC profile must belong to the authorized tenant. The command deliberately uses PAC's
 Power Platform token rather than Azure CLI's active account because those auth stores can point at
 different tenants. Continue only when it returns `effectiveValue: true` for the exact target ID.
+Direct enablement reports `enablementSource: environment`. A grouped environment can return a null
+local setting; the command then verifies exact group membership, Managed Environment protection,
+and one published `CodeAppsFeature` rule set with `PowerApps_AllowCodeApps: true` before reporting
+`enablementSource: environmentGroup`.
 
 The preflight uses the preview
 [Power Platform Environment Management Settings API](https://learn.microsoft.com/rest/api/power-platform/environmentmanagement/environment-management-settings/list-environment-management-settings?view=power-platform-latest):
