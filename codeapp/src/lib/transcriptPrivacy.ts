@@ -168,9 +168,11 @@ export function isWorkdayHrSession(session: SessionRow): boolean {
     || Boolean(topicId?.startsWith(`${WORKDAY_HR_AGENT}.topic.workday`));
 }
 
-export function maskTranscriptData<T>(value: T): TranscriptMaskingResult<T> {
+export function maskTranscriptData<T>(value: T, additionalHarvestSources: unknown[] = []): TranscriptMaskingResult<T> {
   const state: MaskingState = { harvested: new Map(), replacementCount: 0, categoryCounts: {} };
   harvest(value, state);
+  // Lets a projection be masked with values only present in the wider transcript it was derived from.
+  additionalHarvestSources.forEach((source) => harvest(source, state));
   return {
     value: maskNode(value, state) as T,
     replacementCount: state.replacementCount,
