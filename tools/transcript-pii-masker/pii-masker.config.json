@@ -1,0 +1,96 @@
+{
+  "schemaVersion": 1,
+  "policyVersion": "workday-hr-v1",
+  "sensitiveFields": [
+    {
+      "category": "WORKDAY_DATA",
+      "fields": [
+        "workdayresponse", "parsedworkdayresponse", "workdayresult", "workdayoutput", "workdaydata",
+        "finalizedresponsetabledata", "finalizedemergencycontactdata", "finalizeddata"
+      ]
+    },
+    {
+      "category": "PERSON",
+      "fields": [
+        "firstname", "middlename", "lastname", "fullname", "displayname", "userdisplayname",
+        "preferredname", "legalname", "workerdescriptor", "descriptor", "employeename", "contactname"
+      ]
+    },
+    {
+      "category": "IDENTIFIER",
+      "fields": [
+        "employeeid", "employeenumber", "workerid", "personid", "personnumber", "workdayid", "wid",
+        "aadobjectid", "useraadobjectid", "userid", "upn", "userupn", "nationalid", "nationalidentifier",
+        "passportid", "passportnumber", "visaid", "taxid", "addressid"
+      ]
+    },
+    {
+      "category": "CONTACT",
+      "fields": [
+        "email", "emailaddress", "businessemail", "personalemail", "primarycontactemail", "phone",
+        "phonenumber", "mobile", "mobilephone", "telephone", "primarycontactphone"
+      ]
+    },
+    {
+      "category": "ADDRESS",
+      "fields": [
+        "address", "addressline1", "addressline2", "addressline3", "street", "city", "postalcode",
+        "postcode", "zipcode", "homeaddress", "workaddress", "contactaddress", "formattedaddress",
+        "countryofresidence"
+      ]
+    },
+    {
+      "category": "DATE_OF_BIRTH",
+      "fields": ["dateofbirth", "birthdate", "dob"]
+    },
+    {
+      "category": "FINANCIAL",
+      "fields": [
+        "bankaccount", "bankaccountnumber", "iban", "swift", "sortcode", "routingnumber", "salary",
+        "compensation", "payrate", "basepay", "bonus", "amount", "currency"
+      ]
+    },
+    {
+      "category": "HR_DATA",
+      "fields": [
+        "gender", "maritalstatus", "ethnicity", "religion", "disability", "medical", "absencereason",
+        "leavebalance", "managername", "managerid", "relationshiptoemployee", "emergencycontacts",
+        "employmentdata", "languageinfo", "visainformation", "passportinformation"
+      ]
+    },
+    {
+      "category": "SECRET",
+      "fields": ["accesstoken", "refreshtoken", "authorization", "clientsecret", "password", "secret"]
+    }
+  ],
+  "textPatterns": [
+    {
+      "category": "EMAIL",
+      "pattern": "(?<![\\w.+-])[A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,}(?![\\w.-])"
+    },
+    {
+      "category": "UK_NINO",
+      "pattern": "(?<![A-Z0-9])[A-CEGHJ-PR-TW-Z]{2}\\s?\\d{6}\\s?[A-D](?![A-Z0-9])"
+    },
+    {
+      "category": "US_SSN",
+      "pattern": "(?<!\\d)\\d{3}-\\d{2}-\\d{4}(?!\\d)"
+    },
+    {
+      "category": "IBAN",
+      "pattern": "(?<![A-Z0-9])[A-Z]{2}\\d{2}(?:\\s?[A-Z0-9]){11,30}(?![A-Z0-9])"
+    },
+    {
+      "category": "PHONE",
+      "pattern": "(?<![\\w\\d])(?:\\+\\d{1,3}(?:[ .-]?\\d){7,14}|\\(?0\\d{2,4}\\)?[ .-]\\d(?:[ .-]?\\d){5,10})(?![\\w\\d])"
+    },
+    {
+      "category": "UK_POSTCODE",
+      "pattern": "(?<![A-Z0-9])[A-Z]{1,2}\\d[A-Z\\d]?\\s*\\d[A-Z]{2}(?![A-Z0-9])"
+    },
+    {
+      "category": "IP_ADDRESS",
+      "pattern": "(?<![\\d.])(?:25[0-5]|2[0-4]\\d|1?\\d?\\d)(?:\\.(?:25[0-5]|2[0-4]\\d|1?\\d?\\d)){3}(?![\\d.])"
+    }
+  ]
+}
