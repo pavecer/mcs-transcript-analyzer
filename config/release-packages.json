@@ -58,8 +58,8 @@
   },
   "codeApp": {
     "solutionUniqueName": "pvConversationInsightsCodeApp",
-    "version": "2.2.0.3",
-    "filename": "pvConversationInsightsCodeApp-managed-2.2.0.3.zip",
+    "version": "2.3.0.0",
+    "filename": "pvConversationInsightsCodeApp-managed-2.3.0.0.zip",
     "dependsOn": [
       "core"
     ],

@@ -15,6 +15,7 @@ import { KnowledgeCalls } from "./components/KnowledgeCalls";
 import { ReasoningFlow } from "./components/ReasoningFlow";
 import { FlowRuns } from "./components/FlowRuns";
 import { EssOps } from "./components/EssOps";
+import { EssEvidence } from "./components/EssEvidence";
 import { Trends } from "./components/Trends";
 import { Credits } from "./components/Credits";
 import { InventoryManagement } from "./components/InventoryManagement";
@@ -24,6 +25,7 @@ import { formatObservedPair } from "./lib/telemetryAvailability";
 import { buildSessionAlerts } from "./lib/sessionAlerts";
 import { isFlowTelemetryAvailable } from "./lib/flowTelemetryAvailability";
 import { isCrossEnvironmentCollectionEnabled, scopeRowsToHost } from "./lib/transcriptScope";
+import { resolveViewAfterEssEvidenceChange, isEssEvidenceSession, selectEssEvidenceSessions } from "./lib/essEvidence";
 import {
   TRANSCRIPT_PRIVACY_POLICY_VERSION,
   buildMaskedTranscriptExport,
@@ -82,7 +84,7 @@ const TURN_FIELDS = [
 
 type Tab = "essops" | "replay" | "tools" | "knowledge" | "flows" | "conversation" | "reasoning" | "raw";
 type Theme = "light" | "dark";
-type View = "sessions" | "trends" | "operations" | "inventory" | "credits";
+type View = "sessions" | "essevidence" | "trends" | "operations" | "inventory" | "credits";
 type CreditCapabilityState = "idle" | "checking" | "error" | CreditCapability;
 type TranscriptRevealCapability = "checking" | "allowed" | "denied" | "unavailable";
 
@@ -123,7 +125,7 @@ export default function App() {
   const [environmentFilter, setEnvironmentFilter] = useState("*");
   const [tab, setTab] = useState<Tab>("essops");
   const [jsonFilter, setJsonFilter] = useState("");
-  const [view, setView] = useState<View>("sessions");
+  const [requestedView, setRequestedView] = useState<View>("sessions");
   const [creditsSidebarTarget, setCreditsSidebarTarget] = useState<HTMLDivElement | null>(null);
   const [creditCapability, setCreditCapability] = useState<CreditCapabilityState>("idle");
   const [creditCheckVersion, setCreditCheckVersion] = useState(0);
@@ -132,11 +134,23 @@ export default function App() {
   const [enabledCollectorEnvironmentIds, setEnabledCollectorEnvironmentIds] = useState<string[]>([]);
   const [transcriptRevealCapability, setTranscriptRevealCapability] = useState<TranscriptRevealCapability>("checking");
   const [revealedSessionId, setRevealedSessionId] = useState<string | null>(null);
+  const [essEvidenceFocusSessionId, setEssEvidenceFocusSessionId] = useState<string | null>(null);
 
   const crossEnvironmentEnabled = useMemo(
     () => isCrossEnvironmentCollectionEnabled(enabledCollectorEnvironmentIds, hostEnvironmentId),
     [enabledCollectorEnvironmentIds, hostEnvironmentId],
   );
+
+  const visibleSessions = useMemo(
+    () => scopeRowsToHost(sessions, hostEnvironmentId, crossEnvironmentEnabled),
+    [sessions, hostEnvironmentId, crossEnvironmentEnabled],
+  );
+
+  // ESS Evidence activates only from collected transcript sessions classified as ESS, and the
+  // workspace closes back to Sessions as soon as that evidence leaves the current scope.
+  const essEvidenceSessions = useMemo(() => selectEssEvidenceSessions(visibleSessions), [visibleSessions]);
+  const essEvidenceAvailable = essEvidenceSessions.length > 0;
+  const view = resolveViewAfterEssEvidenceChange(requestedView, essEvidenceAvailable, "essevidence", "sessions");
 
   useEffect(() => {
     void getContext()
@@ -272,11 +286,6 @@ export default function App() {
     })();
   }, []);
 
-  const visibleSessions = useMemo(
-    () => scopeRowsToHost(sessions, hostEnvironmentId, crossEnvironmentEnabled),
-    [sessions, hostEnvironmentId, crossEnvironmentEnabled],
-  );
-
   const activeEnvironmentFilter = crossEnvironmentEnabled ? environmentFilter : "*";
 
   const filtered = useMemo(() => {
@@ -380,7 +389,7 @@ export default function App() {
       setEssOnly(false);
       setEnvironmentFilter("*");
       setTab("essops");
-      setView("sessions");
+      setRequestedView("sessions");
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : String(reason));
     }
@@ -398,7 +407,14 @@ export default function App() {
 
   const navigateToView = (destination: View) => {
     if (destination !== "sessions") setRevealedSessionId(null);
-    setView(destination);
+    if (destination !== "essevidence") setEssEvidenceFocusSessionId(null);
+    setRequestedView(destination);
+  };
+
+  const prepareEssEvidence = (sessionId: string) => {
+    setRevealedSessionId(null);
+    setEssEvidenceFocusSessionId(sessionId);
+    setRequestedView("essevidence");
   };
 
   const downloadMaskedTranscript = () => {
@@ -423,7 +439,9 @@ export default function App() {
           <strong>Conversation Insights</strong>
           <span>{view === "sessions"
             ? `${sessions.length} sessions`
-            : view === "trends"
+            : view === "essevidence"
+              ? "ESS support packages"
+              : view === "trends"
               ? "Quality and latency"
               : view === "operations"
                 ? "Flow health and runs"
@@ -433,6 +451,7 @@ export default function App() {
         </div>
         <nav className="viewswitch app-navigation" aria-label="Primary navigation">
           <button type="button" className={view === "sessions" ? "on" : ""} aria-current={view === "sessions" ? "page" : undefined} onClick={() => navigateToView("sessions")}>Sessions</button>
+          {essEvidenceAvailable && <button type="button" className={view === "essevidence" ? "on" : ""} aria-current={view === "essevidence" ? "page" : undefined} onClick={() => navigateToView("essevidence")}>ESS Evidence</button>}
           <button type="button" className={view === "trends" ? "on" : ""} aria-current={view === "trends" ? "page" : undefined} onClick={() => navigateToView("trends")}>Trends</button>
           <button type="button" className={view === "operations" ? "on" : ""} aria-current={view === "operations" ? "page" : undefined} onClick={() => navigateToView("operations")}>Operations</button>
           <button type="button" className={view === "inventory" ? "on" : ""} aria-current={view === "inventory" ? "page" : undefined} onClick={() => navigateToView("inventory")}>Inventory</button>
@@ -546,6 +565,16 @@ export default function App() {
 
         {view === "operations" && <OperationsOverview hostEnvironmentId={hostEnvironmentId} onNavigate={navigateToView} />}
 
+        {view === "essevidence" && essEvidenceAvailable && (
+          <EssEvidence
+            key={essEvidenceFocusSessionId ?? "all"}
+            sessions={essEvidenceSessions}
+            loading={loadingSessions}
+            hostEnvironmentId={hostEnvironmentId}
+            focusSessionId={essEvidenceFocusSessionId}
+          />
+        )}
+
         {view === "credits" && creditCapability === "checking" && (
           <div className="capability-state muted">Checking Copilot Credit availability…</div>
         )}
@@ -595,6 +624,15 @@ export default function App() {
                   <span>{activeSession.pvci_channel ?? "Unknown channel"}</span>
                   <span>{sourceEnvironmentLabel(activeSession)}</span>
                   <span>{activeSession.pvci_istestmode ? "Test chat" : "Production"}</span>
+                  {isEssEvidenceSession(activeSession) && (
+                    <button
+                      type="button"
+                      className="privacy-action session-action"
+                      onClick={() => prepareEssEvidence(activeSession.pvci_transcriptsessionid)}
+                    >
+                      Prepare ESS evidence
+                    </button>
+                  )}
                 </div>
               </div>
 

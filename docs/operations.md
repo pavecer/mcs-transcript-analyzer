@@ -391,6 +391,70 @@ fails, session details remain unavailable rather than appearing as zero. Use **O
 visible item to switch directly to that retained record's Sessions overview; candidate attribution
 remains candidate after navigation.
 
+## ESS Evidence packages
+
+> **Status: not shipped.** This workspace is implemented and unit-tested in the code app source,
+> but it has not completed PVE Dev visual validation, representative ESS evidence review, or the
+> candidate/package release gates. Do not treat it as available in a published package.
+
+**ESS Evidence** is a dedicated workspace for building standardized support evidence packages for
+currently supported Employee Self-Service agent solutions. It is deliberately isolated from
+Sessions, Trends, Credits, Inventory, and Operations, and it changes none of their behavior.
+
+Activation is evidence-driven. The **ESS Evidence** navigation entry appears only when at least one
+*collected transcript session* in the current scope is positively classified as ESS by the
+repository's canonical ESS session classification. Agent Inventory discovery, a candidate name
+match, configured collection, credit activity, or an agent name that merely exists in inventory do
+not activate it. When no qualifying session exists the workspace is absent — there is no disabled
+tab, empty placeholder, promotional card, or setup prompt — and no additional queries are issued.
+If qualifying evidence disappears after a refresh or scope change while the workspace is open, the
+app returns to Sessions.
+
+The workspace lists only qualifying ESS sessions, with agent, environment, start time, test-mode,
+and outcome context so an analyst can pick the correct example. Search and the agent, environment,
+mode, and user-error filters narrow that list; the search deliberately excludes conversation text so
+the picker cannot surface transcript content. From a Sessions record classified as ESS,
+**Prepare ESS evidence** opens this workspace with that session already selected. Non-ESS sessions
+cannot be selected or exported.
+
+The analyst then classifies the example as **Working** or **Non-working**. Required analyst context
+follows the classification: a non-working example needs a title, observed behavior, and expected
+behavior; a working example needs a title and the observed behavior only, and its expected behavior
+is recorded as `not-applicable` rather than missing. Referenced knowledge URLs, expected knowledge
+URLs, and investigation notes are optional context in both cases.
+
+**Download evidence package (JSON)** produces a `schemaVersion: 1` package with a sanitized,
+deterministic filename. It contains generation metadata, the analyst-supplied context, ESS agent /
+environment / channel / session provenance, transcript and activity timestamps, the conversation
+replay, reasoning, knowledge, tool, candidate-flow and error evidence, telemetry availability, an
+evidence-completeness checklist, and privacy and masking metadata.
+
+Evidence integrity rules the package preserves:
+
+- `exact`, `correlated`, `candidate`, `unknown`, `unavailable`, and `observed-zero` remain distinct
+  states. Observed zero is never reported as unavailable, and unavailable is never reported as zero.
+- Cited knowledge values are recorded as knowledge-source *identifiers*. The package explicitly
+  states that they are not URLs.
+- The stored native transcript ID is exported as-is. The maker Debug conversation ID is reported as
+  `unverified`, because this repository has no evidence that the two are the same value.
+- Payload truncation is surfaced in the workspace and as the first entry in the package warnings.
+- A stored-but-unparseable payload is reported as `unavailable` with a bounded warning. It is never
+  silently omitted, and it is never confused with `not-stored`.
+
+The package always reports evidence it cannot contain, so an empty section is never mistaken for a
+clean result: response screenshot, referenced source screenshot and document copy, expected source
+screenshot and document copy, a HAR capture for citation issues, and the exact Debug conversation ID.
+
+Privacy: every ESS evidence export is masked by default and independently of any on-screen reveal
+state, including for privacy administrators. ESS HR Workday evidence therefore always leaves the app
+masked. Masking uses the Workday HR field and pattern detector policy — the package records it as
+that policy, not as a general ESS policy. User principal names, Azure AD object IDs, tenant IDs,
+credentials, tokens, and raw tool outputs are excluded from the package entirely; only tool output
+*key names* are exported.
+
+The workspace is scoped to ESS today. The package carries an `evidenceFamily` discriminator so a
+future agent family could get its own workspace, but no generic or non-ESS packaging is exposed.
+
 ## VS Code Power Platform admin skill
 
 The installed Power Platform plugins provide product-specific flow and Dataverse administration,

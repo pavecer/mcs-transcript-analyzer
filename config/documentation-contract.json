@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "productSourceDigest": "00d3688f1da6c6a8d2eb2ac0072d02590787c6ce89043cbaa876510925c4c884",
+  "productSourceDigest": "87e39b7f25aef577d5c553a000723b1ae105351104ed46781ff5aaa92611b3df",
   "productInputs": [
     "config/clean-install-contract.json",
     "config/release-packages.json",
@@ -17,6 +17,12 @@
     "codeapp/src/lib/creditCapability.ts",
     "codeapp/src/lib/telemetryAvailability.ts",
     "codeapp/src/components/EssOps.tsx",
+    "codeapp/src/components/EssEvidence.tsx",
+    "codeapp/src/components/EssEvidencePicker.tsx",
+    "codeapp/src/components/EssEvidenceForm.tsx",
+    "codeapp/src/components/EssEvidenceCompleteness.tsx",
+    "codeapp/src/lib/essEvidence.ts",
+    "codeapp/src/lib/transcriptPrivacy.ts",
     "codeapp/src/components/KnowledgeCalls.tsx",
     "codeapp/src/components/ReasoningFlow.tsx",
     "codeapp/src/components/Trends.tsx",
@@ -104,6 +110,8 @@
       "clears stale nullable",
       "Detailed cross-environment agent enrichment",
       "Explicitly out of scope for the current product boundary",
+      "ESS Evidence workspace",
+      "not shipped",
       "CHANGELOG.md"
     ],
     "README.md": [
@@ -211,6 +219,10 @@
       ,"status never imply this consent"
       ,"Credits resource reporting to the host environment"
       ,"instead of defaulting absent counters to zero"
+      ,"ESS Evidence packages"
+      ,"Status: not shipped"
+      ,"they are not URLs"
+      ,"masked by default and independently of any on-screen reveal"
     ],
     "docs/permissions-and-inventory.md": [
       "clean-install runbook",

@@ -118,6 +118,14 @@ depth, not server-enforced authorization or audit for raw Dataverse payload acce
 
 ## Now
 
+### ESS Evidence workspace
+
+- **Status:** Implemented in the code-app source and covered by unit tests, and staged as code-app candidate `2.3.0.0` for manual target-tenant upgrade testing. It is **not shipped**: agent-run PVE Dev visual validation, representative ESS evidence review, manual TPM upgrade, and the remaining release gates are outstanding, and it is not present in any published package. The shared VS Code browser currently aborts the hosted app runtime iframe in PVE Dev, so the `1440x1000` and `390x844` matrix remains unproven by the agent.
+- **Goal:** Give an analyst a standardized, privacy-safe support evidence package for a single currently supported Employee Self-Service agent session, without touching Sessions, Trends, Credits, Inventory, or Operations behavior.
+- **Exit criteria:** The navigation entry appears only when a collected transcript session is positively classified as ESS by the canonical classification, and is fully absent otherwise with no disabled tab, placeholder, promotional card, setup prompt, or extra query; an active workspace returns to Sessions when qualifying evidence disappears; non-ESS sessions cannot be selected or exported; the `schemaVersion` 1 package is deterministic, has a sanitized filename, and preserves exact, correlated, candidate, unknown, unavailable, and observed-zero as distinct states; cited source identifiers are never presented as URLs and the native transcript ID is never claimed to be the maker Debug conversation ID; truncation is prominent and malformed payloads are reported as unavailable with a bounded warning; missing external evidence is always enumerated; every export is masked independently of on-screen reveal, including Workday HR sessions, and excludes UPNs, AAD object IDs, tenant IDs, credentials, tokens, and raw tool outputs; the existing Sessions, Trends, Credits, Inventory, and Operations suites still pass; and PVE Dev passes signed-in `1440x1000` and `390x844` validation for both the ESS-telemetry-present and no-ESS-telemetry states before any release claim.
+- **Limitations:** ESS is the only exposed evidence family. Screenshots, source document copies, and HAR captures cannot be produced by the app and are reported as external evidence. Masking remains client-side defense in depth, not server-enforced authorization or audit for raw Dataverse payload access.
+- **Tracking:** [Operations guide](docs/operations.md#ess-evidence-packages) and the [code app](codeapp/)
+
 ### Audited telemetry flow execution
 
 - **Status:** Design complete; implementation not started. The current seven collectors are recurrence-triggered and expose no supported shared execution unit or audited command surface.
