@@ -15,6 +15,12 @@ a few of the rules below exist to stop a well-meaning change from corrupting som
    Change one, change the other, and verify both produce identical counts.
 4. **No broad exception swallowing.** A silent `except Exception: pass` once caused every flow
    correlation to return zero with no error. Catch specific exceptions and surface a warning.
+5. **Keep `output/` disposable.** `output/` is gitignored scratch for package exports, extracted
+   solution trees, and probe captures. Only the managed packages named by
+   `config/release-packages.json` and `site/downloads/release-manifest.json`, their candidate
+   manifests, and captures referenced from tracked files are worth keeping. Never treat `output/`
+   as an archive, and never point a runbook at a run-scoped subfolder — the current candidate
+   always belongs in `output/candidate/`.
 
 ## Development setup
 
@@ -59,6 +65,7 @@ python3 scripts/validate_release_evidence.py
 python3 scripts/validate_documentation.py
 python3 scripts/validate_site.py
 python3 scripts/validate_browser_policy.py
+python3 scripts/clean_output.py          # reports stale output/ scratch; --apply removes it
 ```
 
 If you changed sync or correlation logic, also prove parity against a real environment:
