@@ -266,8 +266,12 @@ Administrator role is the submission authorization boundary.
 
 ## Routine operation
 
-Once the transcript sync flow is active, it calls the Custom API hourly and loops until a batch
-returns fewer records than `MaxRecords`, so a transcript backlog clears in one run. Each correlated
+Once the transcript sync flow is active, it calls the Custom API hourly and loops (up to 12
+batches per trigger) until a batch reads fewer rows from Dataverse than `MaxRecords`, so a
+transcript backlog clears in one run. The drain signal is `RowsFetched` — the count of rows the
+query actually returned — not `TranscriptsProcessed`, which only counts rows that synced without
+error; comparing against the success count would let a single mid-batch failure look like a short
+final batch and stop the loop while a full backlog remained. Each correlated
 flow run also creates a pending `pvci_flowrundetail` row.
 
 Full run bodies are a separate operation because the Power Automate API needs a different token

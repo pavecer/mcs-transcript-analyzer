@@ -1,8 +1,8 @@
 {
   "core": {
     "solutionUniqueName": "pvConversationInsights",
-    "version": "2.1.0.0",
-    "filename": "pvConversationInsights-managed-2.1.0.0.zip",
+    "version": "2.1.1.0",
+    "filename": "pvConversationInsights-managed-2.1.1.0.zip",
     "requiredTables": [
       "pvci_agentinventory",
       "pvci_agentthresholdsnapshot",

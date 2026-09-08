@@ -26,8 +26,8 @@ API_NAME = "pvci_SyncConversationTranscripts"
 BATCH = 50
 
 
-def build_clientdata(conn_ref_logical: str, frequency: str, interval: int) -> str:
-    definition: dict[str, Any] = {
+def build_definition(frequency: str, interval: int) -> dict[str, Any]:
+    return {
         "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
         "contentVersion": "1.0.0.0",
         "parameters": {
@@ -50,7 +50,10 @@ def build_clientdata(conn_ref_logical: str, frequency: str, interval: int) -> st
             "Until_backlog_drained": {
                 "type": "Until",
                 "runAfter": {"Initialise_batch_counter": ["Succeeded"]},
-                # A short batch means nothing is left to read.
+                # A short batch means nothing is left to read. Compare against RowsFetched, the
+                # count of rows the query returned, not TranscriptsProcessed, which only counts
+                # rows that synced without error - a single mid-batch failure would otherwise
+                # look like a short (final) batch and stop the loop while backlog remains.
                 "expression": f"@less(variables('LastProcessed'), {BATCH})",
                 "limit": {"count": 12, "timeout": "PT1H"},
                 "actions": {
@@ -78,7 +81,7 @@ def build_clientdata(conn_ref_logical: str, frequency: str, interval: int) -> st
                         "runAfter": {"Sync_transcripts": ["Succeeded"]},
                         "inputs": {
                             "name": "LastProcessed",
-                            "value": "@body('Sync_transcripts')?['TranscriptsProcessed']",
+                            "value": "@body('Sync_transcripts')?['RowsFetched']",
                         },
                     },
                 },
@@ -86,6 +89,8 @@ def build_clientdata(conn_ref_logical: str, frequency: str, interval: int) -> st
         },
     }
 
+
+def build_clientdata(conn_ref_logical: str, frequency: str, interval: int) -> str:
     return json.dumps({
         "properties": {
             "connectionReferences": {
@@ -95,7 +100,7 @@ def build_clientdata(conn_ref_logical: str, frequency: str, interval: int) -> st
                     "api": {"name": "shared_commondataserviceforapps"},
                 }
             },
-            "definition": definition,
+            "definition": build_definition(frequency, interval),
         },
         "schemaVersion": "1.0.0.0",
     })

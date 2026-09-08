@@ -1,0 +1,8 @@
+<customapiresponseproperty uniquename="RowsFetched">
+  <displayname default="Rows fetched from Dataverse">
+    <label description="Rows fetched from Dataverse" languagecode="1033" />
+  </displayname>
+  <iscustomizable>1</iscustomizable>
+  <name>RowsFetched</name>
+  <type>7</type>
+</customapiresponseproperty>

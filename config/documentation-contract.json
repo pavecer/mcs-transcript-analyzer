@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "productSourceDigest": "add8f3ae9cbc61ef55d8a8d8cb847ff1cf40b61c53d3af647d2aab45c9d124ad",
+  "productSourceDigest": "538669bafa11b202595ff515eb4d7f0ad668848d7e9679bac052bb38f939024a",
   "productInputs": [
     "config/clean-install-contract.json",
     "config/release-packages.json",

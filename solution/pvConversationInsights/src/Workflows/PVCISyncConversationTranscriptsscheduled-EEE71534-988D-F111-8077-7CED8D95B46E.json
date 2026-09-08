@@ -93,7 +93,7 @@
               "type": "SetVariable",
               "inputs": {
                 "name": "LastProcessed",
-                "value": "@body('Sync_transcripts')?['TranscriptsProcessed']"
+                "value": "@body('Sync_transcripts')?['RowsFetched']"
               }
             }
           },
