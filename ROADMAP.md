@@ -118,6 +118,15 @@ depth, not server-enforced authorization or audit for raw Dataverse payload acce
 
 ## Now
 
+### Transcript sync drain-loop correctness fix
+
+- **Status:** Implemented and covered by a new unit test, and staged as core candidate `2.1.1.0` for manual target-tenant upgrade testing. It is **not shipped**: the manual TPM upgrade and remaining release gates are outstanding, and it is not present in any published package.
+- **Goal:** Let `PVCI Sync Conversation Transcripts (scheduled)` reliably drain a large transcript backlog across its hourly batches instead of silently stopping after roughly one batch whenever any single transcript in that batch fails to parse.
+- **Root cause:** The flow's drain loop compared its `LastProcessed` variable, set from the Custom API's `TranscriptsProcessed` output, against the `MaxRecords` batch size (50) to decide whether the backlog was drained. `TranscriptsProcessed` counts only transcripts that synced without error, not the number of rows the query actually read. A single mid-batch parsing failure made a full batch look short, so the loop concluded the backlog was drained and stopped after one batch, leaving the remainder for later hourly triggers to rediscover one batch at a time.
+- **Fix:** The plugin now reports a new `RowsFetched` output — the count of rows the query returned, independent of per-row success — and the flow's drain signal compares against `RowsFetched` instead of `TranscriptsProcessed`, so a partial-success batch no longer masquerades as a short final batch.
+- **Exit criteria:** `dotnet build -c Release` remains warning-free; the new Python test proves the flow definition reads `RowsFetched`, not `TranscriptsProcessed`, and preserves the existing batch size and 12-iteration bound; the packaged workflow JSON and the flow-creation script agree; and the corrected candidate passes package validation and the manual target-tenant upgrade.
+- **Tracking:** [Operations guide](docs/operations.md#routine-operation) and `plugin/SyncConversationTranscripts.cs`
+
 ### ESS Evidence workspace
 
 - **Status:** Implemented in the code-app source and covered by unit tests, and staged as code-app candidate `2.3.0.1` for manual target-tenant upgrade testing. Candidate `2.3.0.0` was imported into the target tenant and is superseded: representative Workday HR evidence showed the shared masker harvesting three-letter Workday country codes and replacing them as unbounded substrings, which corrupted structural identifiers such as `canonical`, `candidate-flow-evidence` and plan-step GUIDs, and showed the tenant ID reaching the export through the composite native transcript ID, the data-source stamp, and untreated free text. It is **not shipped**: agent-run PVE Dev visual validation, representative ESS evidence review, manual TPM upgrade of the corrected candidate, and the remaining release gates are outstanding, and it is not present in any published package. The shared VS Code browser currently aborts the hosted app runtime iframe in PVE Dev, so the `1440x1000` and `390x844` matrix remains unproven by the agent.

@@ -50,6 +50,10 @@ namespace PvciTranscripts
             if (maxRecords <= 0) maxRecords = DefaultMaxRecords;
 
             int processed = 0, created = 0, updated = 0, skipped = 0, turns = 0, anomalies = 0;
+            // Counts every row the query returned, independent of per-row success. The caller's
+            // drain loop must compare this to MaxRecords: a mid-batch failure must not look like
+            // a short (final) batch and stop the loop while a full backlog remains.
+            int rowsFetched = 0;
             var errors = new List<string>();
             DateTime? watermark = null;
             bool watermarkFrozen = false;
@@ -82,6 +86,7 @@ namespace PvciTranscripts
             foreach (Entity transcript in QueryTranscripts(service, since, maxRecords))
             {
                 Guid transcriptId = transcript.Id;
+                rowsFetched++;
                 try
                 {
                     SyncResult r = SyncOne(service, tracing, transcript, userCache, botNameCache,
@@ -112,6 +117,7 @@ namespace PvciTranscripts
             WriteSyncState(service, syncState, watermark, status, processed, errors);
 
             SetOutput(context, "TranscriptsProcessed", processed);
+            SetOutput(context, "RowsFetched", rowsFetched);
             SetOutput(context, "SessionsCreated", created);
             SetOutput(context, "SessionsUpdated", updated);
             SetOutput(context, "SessionsSkipped", skipped);

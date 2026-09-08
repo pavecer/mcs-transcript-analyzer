@@ -37,6 +37,7 @@ REQUEST_PARAMS = [
 
 RESPONSE_PROPS = [
     ("TranscriptsProcessed", "Transcripts processed", INTEGER),
+    ("RowsFetched", "Rows fetched from Dataverse", INTEGER),
     ("SessionsCreated", "Sessions created", INTEGER),
     ("SessionsUpdated", "Sessions updated", INTEGER),
     ("SessionsSkipped", "Sessions skipped (already ingested)", INTEGER),
