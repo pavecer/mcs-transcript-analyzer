@@ -107,6 +107,27 @@ function Try-ParseEmbeddedJson {
     }
 }
 
+# Country/language codes such as "CAN" or "IND" live inside Workday and HR subtrees; harvesting
+# them would mask every occurrence of "canonical", "candidate", or "Bind" elsewhere in the transcript.
+function Test-Harvestable {
+    param(
+        [string]$Value,
+        [string]$Category
+    )
+
+    $trimmed = $Value.Trim()
+    if ($trimmed.Length -ge $script:State.MinHarvestLength) {
+        return $true
+    }
+    if ($trimmed.Length -lt 3) {
+        return $false
+    }
+    if ($trimmed -match '\d') {
+        return $true
+    }
+    return -not $script:State.CodeBearingCategories.Contains($Category)
+}
+
 function Add-HarvestedValue {
     param(
         [object]$Value,
@@ -118,7 +139,7 @@ function Add-HarvestedValue {
     }
 
     $candidate = $Value.Trim()
-    if ($candidate.Length -lt 3) {
+    if (-not (Test-Harvestable -Value $candidate -Category $Category)) {
         return
     }
 
@@ -216,23 +237,31 @@ function Add-ReplacementCount {
     $script:State.Stats.CategoryCounts[$Category] += $Count
 }
 
+function Get-HarvestedValuePattern {
+    param([string]$Value)
+
+    $escaped = [Text.RegularExpressions.Regex]::Escape($Value)
+    # Word-bounded so a harvested value never replaces a fragment inside an unrelated word or ID.
+    return "(?<![A-Za-z0-9])$escaped(?![A-Za-z0-9])"
+}
+
 function Replace-HarvestedValues {
     param([string]$Text)
 
     $result = $Text
     foreach ($entry in $script:State.HarvestedEntries) {
-        $escaped = [Text.RegularExpressions.Regex]::Escape($entry.Value)
+        $pattern = Get-HarvestedValuePattern -Value $entry.Value
 
         $matches = [Text.RegularExpressions.Regex]::Matches(
             $result,
-            $escaped,
+            $pattern,
             [Text.RegularExpressions.RegexOptions]::IgnoreCase
         )
         if ($matches.Count -gt 0) {
             $token = Get-MaskToken -Value $entry.Value -Category $entry.Category
             $result = [Text.RegularExpressions.Regex]::Replace(
                 $result,
-                $escaped,
+                $pattern,
                 $token,
                 [Text.RegularExpressions.RegexOptions]::IgnoreCase
             )
@@ -283,11 +312,18 @@ function Mask-String {
     return $result
 }
 
+function Test-StructuralField {
+    param([string]$Name)
+
+    return $script:State.StructuralFields.Contains((Get-NormalizedFieldName -Name $Name))
+}
+
 function Mask-Node {
     param(
         [object]$Node,
         [string]$Path,
-        [string]$ForcedCategory
+        [string]$ForcedCategory,
+        [switch]$Structural
     )
 
     if ($null -eq $Node) {
@@ -306,6 +342,10 @@ function Mask-Node {
             Add-ReplacementCount -Category $ForcedCategory
             return Get-MaskToken -Value $Node -Category $ForcedCategory
         }
+        # Structural identifiers, enum states and topic/tool names never carry transcript content.
+        if ($Structural) {
+            return $Node
+        }
         return Mask-String -Value $Node -Path $Path
     }
 
@@ -319,7 +359,7 @@ function Mask-Node {
             if (-not $childCategory -and $fieldRule.Mode -eq 'Sensitive') {
                 $childCategory = $fieldRule.Category
             }
-            $maskedDictionary[$name] = Mask-Node -Node $Node[$key] -Path $childPath -ForcedCategory $childCategory
+            $maskedDictionary[$name] = Mask-Node -Node $Node[$key] -Path $childPath -ForcedCategory $childCategory -Structural:(Test-StructuralField -Name $name)
         }
         return [pscustomobject]$maskedDictionary
     }
@@ -333,7 +373,7 @@ function Mask-Node {
             if (-not $childCategory -and $fieldRule.Mode -eq 'Sensitive') {
                 $childCategory = $fieldRule.Category
             }
-            $maskedObject[$property.Name] = Mask-Node -Node $property.Value -Path $childPath -ForcedCategory $childCategory
+            $maskedObject[$property.Name] = Mask-Node -Node $property.Value -Path $childPath -ForcedCategory $childCategory -Structural:(Test-StructuralField -Name $property.Name)
         }
         return [pscustomobject]$maskedObject
     }
@@ -342,7 +382,7 @@ function Mask-Node {
         $maskedItems = New-Object System.Collections.ArrayList
         $index = 0
         foreach ($item in $Node) {
-            $maskedItem = Mask-Node -Node $item -Path ($Path + '[' + $index + ']') -ForcedCategory $ForcedCategory
+            $maskedItem = Mask-Node -Node $item -Path ($Path + '[' + $index + ']') -ForcedCategory $ForcedCategory -Structural:$Structural
             [void]$maskedItems.Add($maskedItem)
             $index++
         }
@@ -372,7 +412,7 @@ function Get-ResidualCount {
     foreach ($entry in $script:State.HarvestedEntries) {
         $count += [Text.RegularExpressions.Regex]::Matches(
             $Json,
-            [Text.RegularExpressions.Regex]::Escape($entry.Value),
+            (Get-HarvestedValuePattern -Value $entry.Value),
             [Text.RegularExpressions.RegexOptions]::IgnoreCase
         ).Count
     }
@@ -403,14 +443,19 @@ if (-not [string]::IsNullOrWhiteSpace($AuditReportPath)) {
 }
 
 $config = Get-Content -LiteralPath $resolvedConfig -Raw | ConvertFrom-Json
-if ($config.schemaVersion -ne 1) {
-    throw "Unsupported config schemaVersion '$($config.schemaVersion)'. Expected 1."
+if ($config.schemaVersion -ne 2) {
+    throw "Unsupported config schemaVersion '$($config.schemaVersion)'. Expected 2."
 }
 
 $script:State = @{
     Config = $config
     Harvested = @{}
     HarvestedEntries = @()
+    MinHarvestLength = [int]$config.minHarvestLength
+    CodeBearingCategories = [System.Collections.Generic.HashSet[string]]::new([string[]]@($config.codeBearingCategories))
+    StructuralFields = [System.Collections.Generic.HashSet[string]]::new(
+        [string[]](@($config.structuralFields) | ForEach-Object { Get-NormalizedFieldName -Name $_ })
+    )
     Stats = @{
         ReplacementCount = 0
         EmbeddedJsonCount = 0

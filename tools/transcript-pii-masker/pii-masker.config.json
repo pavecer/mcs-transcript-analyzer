@@ -1,6 +1,8 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "policyVersion": "workday-hr-v1",
+  "minHarvestLength": 5,
+  "codeBearingCategories": ["WORKDAY_DATA", "HR_DATA", "ADDRESS"],
   "sensitiveFields": [
     {
       "category": "WORKDAY_DATA",
@@ -21,7 +23,7 @@
       "fields": [
         "employeeid", "employeenumber", "workerid", "personid", "personnumber", "workdayid", "wid",
         "aadobjectid", "useraadobjectid", "userid", "upn", "userupn", "nationalid", "nationalidentifier",
-        "passportid", "passportnumber", "visaid", "taxid", "addressid"
+        "passportid", "passportnumber", "visaid", "taxid", "addressid", "tenantid"
       ]
     },
     {
@@ -36,7 +38,7 @@
       "fields": [
         "address", "addressline1", "addressline2", "addressline3", "street", "city", "postalcode",
         "postcode", "zipcode", "homeaddress", "workaddress", "contactaddress", "formattedaddress",
-        "countryofresidence"
+        "countryofresidence", "location", "worklocation"
       ]
     },
     {
@@ -92,5 +94,16 @@
       "category": "IP_ADDRESS",
       "pattern": "(?<![\\d.])(?:25[0-5]|2[0-4]\\d|1?\\d?\\d)(?:\\.(?:25[0-5]|2[0-4]\\d|1?\\d?\\d)){3}(?![\\d.])"
     }
+  ],
+  "structuralFields": [
+    "id", "type", "valuetype", "name", "channelid", "textformat", "contenttype",
+    "timestamp", "timestampms", "replytoid", "conversationid",
+    "nodeid", "nodetype", "nodename", "nodeexit", "nodeexitreason",
+    "stepid", "actionid", "taskdialogid", "targetdialogid", "targetdialogtype",
+    "conditiongroupid", "conditionbranchid", "conditionbranchdisplayname", "conditionexpression",
+    "topicdisplayname", "planidentifier", "planid", "intentid", "intenttitle", "intenttype",
+    "entityname", "state", "completionstate", "numberofturns", "hasrecommendations",
+    "displayedcost", "starttime", "endtime", "executiontime", "isknowledgesearched",
+    "citedknowledgesources", "failedknowledgesourcestypes"
   ]
 }
