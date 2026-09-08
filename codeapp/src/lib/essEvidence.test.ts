@@ -315,8 +315,119 @@ describe("ESS Evidence privacy", () => {
     expect((privacy.replacementCount as number)).toBeGreaterThan(0);
   });
 
-  it("never exports UPNs, AAD object IDs, tenant IDs, or raw tool output", () => {
+  it("does not let short Workday country codes corrupt unrelated words, IDs, or structural fields", () => {
     const session = essSession({
+      pvci_botname: "msdyn_copilotforemployeeselfservicehr",
+      pvci_topicid: "msdyn_copilotforemployeeselfservicehr.topic.WorkdayGetPassports",
+      pvci_istestmode: true,
+    });
+    const detail: SessionRow = {
+      ...session,
+      // Country references in Workday passport/visa records are three-letter codes.
+      pvci_activitiesjson: JSON.stringify([{
+        value: {
+          workdayResponse: {
+            PassportId: [{ Country_Reference: "CAN" }, { Country_Reference: "IND" }],
+            EmployeeName: "Alex Example",
+          },
+        },
+      }]),
+      pvci_planeventsjson: JSON.stringify([
+        { name: "DynamicPlanStepTriggered", at: "2026-09-05T09:00:02Z", value: { planIdentifier: "p1", stepId: "51cc0e90-65af-4f00-ad2f-bc57372cane2", taskDialogId: "topic.WorkdayGetPassports", type: "CustomTopic" } },
+      ]),
+    };
+    const turns: TurnRow[] = [
+      { pvci_transcriptturnid: "t1", pvci_turnindex: 0, pvci_activitytype: "event", pvci_eventname: "DynamicPlanStepBindUpdate", pvci_timestamputc: "2026-09-05T09:00:02Z" },
+      { pvci_transcriptturnid: "t2", pvci_turnindex: 1, pvci_activitytype: "message", pvci_timestamputc: "2026-09-05T09:00:03Z", pvci_turntext: "I can help you find that." },
+    ];
+
+    const result = buildPackage(session, detail, turns);
+    const serialized = JSON.stringify(result);
+    const provenance = result.provenance as Record<string, Record<string, unknown>>;
+    const evidence = result.evidence as Record<string, Record<string, unknown>>;
+    const plans = evidence.reasoning.plans as Array<{ steps: Array<{ id: string }> }>;
+    const replay = (result.conversation as { replay: Array<{ eventName: string | null; text: string | null }> }).replay;
+
+    expect(provenance.agent.classificationSource).toBe("canonical ESS transcript-session classification");
+    expect(evidence.candidateFlows.attributionNote).toMatch(/^Candidate flow correlation/);
+    expect(plans[0].steps[0].id).toBe("51cc0e90-65af-4f00-ad2f-bc57372cane2");
+    expect(replay[0].eventName).toBe("DynamicPlanStepBindUpdate");
+    expect(replay[1].text).toBe("I can help you find that.");
+    expect(checklistEntry(result, "candidate-flow-evidence").label).toBe("Candidate flow evidence");
+    expect(serialized).not.toContain("[MASKED:WORKDAY_DATA]onical");
+    expect(serialized).not.toContain("[MASKED:WORKDAY_DATA]didate");
+    // The real employee name must still be masked.
+    expect(serialized).not.toContain("Alex Example");
+  });
+
+  it("exports response timing and conversation volume evidence", () => {
+    const session = essSession({
+      pvci_istestmode: true,
+      pvci_firstresponsems: 115_395,
+      pvci_avgresponsems: 59_354,
+      pvci_maxresponsems: 115_395,
+      pvci_maxtoolms: 14_545,
+      pvci_tooltotalms: 0,
+      pvci_messagecount: 5,
+      pvci_userturncount: 2,
+      pvci_agentturncount: 3,
+    });
+    const responsiveness = buildPackage(session).responsiveness as Record<string, { state: string; ms: number | null }>;
+    const conversation = buildPackage(session).conversation as Record<string, { state: string; count: number | null }>;
+
+    expect(responsiveness.firstReply).toMatchObject({ state: "exact", ms: 115_395 });
+    expect(responsiveness.slowestExactTool).toMatchObject({ state: "exact", ms: 14_545 });
+    expect(responsiveness.totalExactToolTime).toMatchObject({ state: "observed-zero", ms: 0 });
+    expect(responsiveness.averageReply).toMatchObject({ state: "exact", ms: 59_354 });
+    expect(conversation.messageCount).toMatchObject({ state: "exact", count: 5 });
+    expect(conversation.userTurnCount).toMatchObject({ state: "exact", count: 2 });
+
+    const missing = buildPackage(essSession()).responsiveness as Record<string, { state: string }>;
+    expect(missing.firstReply.state).toBe("unavailable");
+    expect(missing.slowestExactTool.state).toBe("unavailable");
+  });
+
+  it("redacts the tenant ID from the composite transcript ID, the data-source stamp, and the session name", () => {
+    const tenantId = "6936469c-696e-4fe2-a0c8-dd16f54b1b45";
+    const environmentId = "aa58895e-548b-ea31-b748-4a7cc046661e";
+    const session = essSession({
+      pvci_tenantid: tenantId,
+      pvci_environmentid: environmentId,
+      pvci_transcriptid: `${tenantId}:${environmentId}:4f244907-ead4-4fa6-bbd7-0e53bad048bb`,
+      pvci_datasource: `plugin_v9.x_conversationtranscripts|tenant:${tenantId}|env:${environmentId}|envName:ESS_WD_Simplification`,
+      pvci_name: "Alex Example · pva-studio · 2026-09-03T09:39:52Z",
+      pvci_userdisplayname: "Alex Example",
+      pvci_botname: "msdyn_copilotforemployeeselfservicehr",
+    });
+
+    const result = buildPackage(session);
+    const serialized = JSON.stringify(result);
+    const provenance = result.provenance as Record<string, Record<string, unknown>>;
+    const sessionBlock = provenance.session as Record<string, unknown>;
+
+    expect(serialized).not.toContain(tenantId);
+    expect(sessionBlock.nativeTranscriptId).toBe(`[REDACTED:TENANT]:${environmentId}:4f244907-ead4-4fa6-bbd7-0e53bad048bb`);
+    expect(provenance.environment.dataSourceStamp).not.toContain(tenantId);
+    // The environment segment stays exact so support can still correlate the source.
+    expect(provenance.environment.dataSourceStamp).toContain(environmentId);
+    expect(sessionBlock.sessionName).not.toContain("Alex Example");
+  });
+
+  it("masks the tenant ID when it appears in free text, not only in known identifier fields", () => {
+    const tenantId = "6936469c-696e-4fe2-a0c8-dd16f54b1b45";
+    const session = essSession({ pvci_tenantid: tenantId, pvci_botname: "msdyn_copilotforemployeeselfservicehr" });
+    const detail: SessionRow = {
+      ...session,
+      pvci_primaryerrormessage: `Workday call failed for tenant ${tenantId}.`,
+    };
+    const turns: TurnRow[] = [
+      { pvci_transcriptturnid: "t1", pvci_turnindex: 0, pvci_activitytype: "message", pvci_timestamputc: "2026-09-05T09:00:00Z", pvci_turntext: `Trace shows tenant ${tenantId} in the request.` },
+    ];
+
+    expect(JSON.stringify(buildPackage(session, detail, turns))).not.toContain(tenantId);
+  });
+
+  it("never exports UPNs, AAD object IDs, tenant IDs, or raw tool output", () => {    const session = essSession({
       pvci_userupn: "worker@contoso.example",
       pvci_useraadobjectid: "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
       pvci_tenantid: "tttttttt-tttt-tttt-tttt-tttttttttttt",

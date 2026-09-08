@@ -39,7 +39,7 @@ const WHOLE_SUBTREE_FIELDS = new Set([
 
 const CATEGORY_FIELDS: Array<[string, Set<string>]> = [
   ["PERSON", new Set(["firstname", "middlename", "lastname", "fullname", "displayname", "userdisplayname", "preferredname", "legalname", "workerdescriptor", "descriptor", "employeename", "contactname"])],
-  ["IDENTIFIER", new Set(["employeeid", "employeenumber", "workerid", "personid", "personnumber", "workdayid", "wid", "aadobjectid", "useraadobjectid", "userid", "upn", "userupn", "nationalid", "nationalidentifier", "passportid", "passportnumber", "visaid", "taxid", "addressid"])],
+  ["IDENTIFIER", new Set(["employeeid", "employeenumber", "workerid", "personid", "personnumber", "workdayid", "wid", "aadobjectid", "useraadobjectid", "userid", "upn", "userupn", "tenantid", "nationalid", "nationalidentifier", "passportid", "passportnumber", "visaid", "taxid", "addressid"])],
   ["CONTACT", new Set(["email", "emailaddress", "businessemail", "personalemail", "primarycontactemail", "phone", "phonenumber", "mobile", "mobilephone", "telephone", "primarycontactphone"])],
   ["ADDRESS", new Set(["address", "addressline1", "addressline2", "addressline3", "street", "city", "postalcode", "postcode", "zipcode", "homeaddress", "workaddress", "contactaddress", "formattedaddress", "countryofresidence"])],
   ["DATE_OF_BIRTH", new Set(["dateofbirth", "birthdate", "dob"])],
@@ -62,6 +62,26 @@ interface MaskingState {
   harvested: Map<string, string>;
   replacementCount: number;
   categoryCounts: Record<string, number>;
+}
+
+export interface TranscriptMaskingOptions {
+  /** Values only present in the wider transcript a projection was derived from. */
+  additionalHarvestSources?: unknown[];
+  /** Fields whose string values are structural identifiers, never free text. */
+  preserveFields?: Iterable<string>;
+}
+
+// Country and language codes such as "CAN" or "IND" live inside Workday and HR subtrees.
+// Harvesting them would mask every occurrence of "canonical", "candidate", or "Bind".
+const MIN_HARVEST_LENGTH = 5;
+const CODE_BEARING_CATEGORIES = new Set(["WORKDAY_DATA", "HR_DATA", "ADDRESS"]);
+
+function isHarvestable(value: string, category: string): boolean {
+  const trimmed = value.trim();
+  if (trimmed.length >= MIN_HARVEST_LENGTH) return true;
+  if (trimmed.length < 3) return false;
+  // Short names still matter; short alphabetic codes do not.
+  return /\d/.test(trimmed) || !CODE_BEARING_CATEGORIES.has(category);
 }
 
 function normalizeField(name: string): string {
@@ -94,7 +114,7 @@ function harvest(node: unknown, state: MaskingState, forcedCategory?: string): v
     const embedded = tryParseEmbeddedJson(node);
     if (embedded !== undefined) {
       harvest(embedded, state, forcedCategory);
-    } else if (forcedCategory && node.trim().length >= 3) {
+    } else if (forcedCategory && isHarvestable(node, forcedCategory)) {
       state.harvested.set(node.trim().toLowerCase(), forcedCategory);
     }
     return;
@@ -120,7 +140,9 @@ function replaceText(value: string, state: MaskingState): string {
   let result = value;
   const harvested = [...state.harvested.entries()].sort(([left], [right]) => right.length - left.length);
   for (const [source, category] of harvested) {
-    const expression = new RegExp(source.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "gi");
+    const escaped = source.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    // Word-bounded so a harvested value never replaces a fragment inside an unrelated word or ID.
+    const expression = new RegExp(`(?<![A-Za-z0-9])${escaped}(?![A-Za-z0-9])`, "gi");
     const matches = result.match(expression);
     if (matches?.length) {
       result = result.replace(expression, recordReplacement(state, category, matches.length));
@@ -136,25 +158,26 @@ function replaceText(value: string, state: MaskingState): string {
   return result;
 }
 
-function maskNode(node: unknown, state: MaskingState, forcedCategory?: string): unknown {
+function maskNode(node: unknown, state: MaskingState, forcedCategory?: string, preserve?: Set<string>, structural = false): unknown {
   if (node === null || node === undefined) return node;
   if (typeof node === "string") {
     const embedded = tryParseEmbeddedJson(node);
     if (embedded !== undefined) {
-      return JSON.stringify(maskNode(embedded, state, forcedCategory));
+      return JSON.stringify(maskNode(embedded, state, forcedCategory, preserve));
     }
     if (forcedCategory) return recordReplacement(state, forcedCategory);
+    if (structural) return node;
     return replaceText(node, state);
   }
   if (typeof node === "number" || typeof node === "boolean") {
     return forcedCategory ? recordReplacement(state, forcedCategory) : node;
   }
-  if (Array.isArray(node)) return node.map((item) => maskNode(item, state, forcedCategory));
+  if (Array.isArray(node)) return node.map((item) => maskNode(item, state, forcedCategory, preserve, structural));
   if (typeof node === "object") {
     return Object.fromEntries(
       Object.entries(node).map(([key, value]) => [
         key,
-        maskNode(value, state, forcedCategory ?? fieldCategory(key)),
+        maskNode(value, state, forcedCategory ?? fieldCategory(key), preserve, Boolean(preserve?.has(normalizeField(key)))),
       ]),
     );
   }
@@ -168,13 +191,15 @@ export function isWorkdayHrSession(session: SessionRow): boolean {
     || Boolean(topicId?.startsWith(`${WORKDAY_HR_AGENT}.topic.workday`));
 }
 
-export function maskTranscriptData<T>(value: T, additionalHarvestSources: unknown[] = []): TranscriptMaskingResult<T> {
+export function maskTranscriptData<T>(value: T, options: TranscriptMaskingOptions = {}): TranscriptMaskingResult<T> {
   const state: MaskingState = { harvested: new Map(), replacementCount: 0, categoryCounts: {} };
   harvest(value, state);
-  // Lets a projection be masked with values only present in the wider transcript it was derived from.
-  additionalHarvestSources.forEach((source) => harvest(source, state));
+  options.additionalHarvestSources?.forEach((source) => harvest(source, state));
+  const preserve = options.preserveFields
+    ? new Set([...options.preserveFields].map(normalizeField))
+    : undefined;
   return {
-    value: maskNode(value, state) as T,
+    value: maskNode(value, state, undefined, preserve) as T,
     replacementCount: state.replacementCount,
     categoryCounts: state.categoryCounts,
   };

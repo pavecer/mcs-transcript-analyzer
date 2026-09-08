@@ -28,6 +28,18 @@ const WARNING_MAX_LENGTH = 240;
 const MAX_REPLAY_TURNS = 400;
 const MAX_TEXT_LENGTH = 4_000;
 
+// Structural identifiers, enum states and static app copy. Masking these corrupts the schema
+// without protecting anything, because they never carry transcript content.
+const STRUCTURAL_FIELDS = [
+  "id", "sessionId", "stepId", "actionId", "actionType", "activityType",
+  "eventName", "speaker", "label", "state", "note", "detail", "producer", "packageKind",
+  "evidenceFamily", "classification", "classificationSource", "attributionNote", "attributionState",
+  "rawOutputNote", "citedSourceIdentifierNote", "payloadState", "nativeTranscriptId",
+  "nativeTranscriptIdState", "activityTimestampState", "outcome", "agentId", "environmentId",
+  "topicId", "task", "type", "outputKeys", "observationKeys", "argumentNames", "warnings",
+  "citedSourceIdentifiers", "failedSourceTypes", "excludedFields",
+];
+
 /** Distinct attribution strengths. Never collapse these into a boolean. */
 export type EvidenceState =
   | "exact"
@@ -45,6 +57,12 @@ export type EssEvidenceOutcome = "working" | "non-working";
 export interface EvidenceCount {
   state: EvidenceState;
   count: number | null;
+  note?: string;
+}
+
+export interface DurationEvidence {
+  state: EvidenceState;
+  ms: number | null;
   note?: string;
 }
 
@@ -98,6 +116,7 @@ export type EssEvidencePackage = {
   provenance: Record<string, unknown>;
   timestamps: Record<string, unknown>;
   conversation: Record<string, unknown>;
+  responsiveness: Record<string, unknown>;
   evidence: Record<string, unknown>;
   telemetryAvailability: Record<string, unknown>;
   completeness: { checklist: ChecklistItem[]; missingExternalEvidence: ExternalEvidenceItem[] };
@@ -347,8 +366,9 @@ export function buildEssEvidencePackage(input: EssEvidencePackageInput): EssEvid
   const flows = readPayload<Array<Record<string, unknown>>>(merged.pvci_flowrunsjson, "Candidate flow runs");
   const conversationPayload = readPayload<unknown>(merged.pvci_conversationjson, "Conversation JSON");
   const activitiesPayload = readPayload<unknown>(merged.pvci_activitiesjson, "Activities JSON");
+  const metadataPayload = readPayload<unknown>(merged.pvci_metadatajson, "Transcript metadata JSON");
 
-  [planEvents, knowledge, tools, flows, conversationPayload, activitiesPayload]
+  [planEvents, knowledge, tools, flows, conversationPayload, activitiesPayload, metadataPayload]
     .forEach((payload) => { if (payload.warning) warnings.push(payload.warning); });
 
   const knowledgeCalls = asArray(knowledge.value);
@@ -356,6 +376,8 @@ export function buildEssEvidencePackage(input: EssEvidencePackageInput): EssEvid
   const flowRuns = asArray(flows.value);
   const flowTelemetryAvailable = isFlowTelemetryAvailable(session, hostEnvironmentId);
   const exactToolTelemetry = Boolean(session.pvci_istestmode);
+  // The tenant ID is embedded in the composite transcript ID and the data-source stamp.
+  const redactTenant = tenantRedactor(session.pvci_tenantid);
 
   const replayTurns = turns.slice(0, MAX_REPLAY_TURNS);
   const replayTruncated = turns.length > replayTurns.length;
@@ -409,7 +431,7 @@ export function buildEssEvidencePackage(input: EssEvidencePackageInput): EssEvid
           && session.pvci_environmentid
           && session.pvci_environmentid.toLowerCase() === hostEnvironmentId.toLowerCase(),
         ),
-        dataSourceStamp: session.pvci_datasource ?? null,
+        dataSourceStamp: redactTenant(session.pvci_datasource),
       },
       channel: session.pvci_channel ?? null,
       execution: {
@@ -420,8 +442,9 @@ export function buildEssEvidencePackage(input: EssEvidencePackageInput): EssEvid
       session: {
         sessionId: session.pvci_transcriptsessionid,
         sessionName: session.pvci_name ?? null,
-        nativeTranscriptId: session.pvci_transcriptid ?? null,
+        nativeTranscriptId: redactTenant(session.pvci_transcriptid),
         nativeTranscriptIdState: session.pvci_transcriptid ? "exact" : "unavailable",
+        nativeTranscriptIdNote: "The tenant ID segment is redacted. Environment and conversation segments are exact.",
         debugConversationId: {
           state: "unverified",
           value: null,
@@ -442,12 +465,29 @@ export function buildEssEvidencePackage(input: EssEvidencePackageInput): EssEvid
       lastActivityUtc: activityTimestamps[activityTimestamps.length - 1] ?? null,
       activityTimestampState: activityTimestamps.length ? "exact" : "unavailable",
     },
+    responsiveness: {
+      firstReply: durationEvidence(session.pvci_firstresponsems),
+      averageReply: durationEvidence(session.pvci_avgresponsems),
+      slowestReply: durationEvidence(session.pvci_maxresponsems),
+      slowestExactTool: exactToolTelemetry
+        ? durationEvidence(session.pvci_maxtoolms)
+        : { state: "unavailable", ms: null, note: "Exact tool telemetry is not retained for this transcript source." },
+      totalExactToolTime: exactToolTelemetry
+        ? durationEvidence(session.pvci_tooltotalms)
+        : { state: "unavailable", ms: null },
+    },
     conversation: {
       state: turns.length ? "available" : "not-stored",
       retainedTurnCount: turns.length,
       exportedTurnCount: replayTurns.length,
+      messageCount: countEvidence(session.pvci_messagecount, "exact"),
+      userTurnCount: countEvidence(session.pvci_userturncount, "exact"),
+      agentTurnCount: countEvidence(session.pvci_agentturncount, "exact"),
+      activityCount: countEvidence(session.pvci_activitycount, "exact"),
+      eventCount: countEvidence(session.pvci_eventcount, "exact"),
       storedConversationPayloadState: conversationPayload.state,
       storedActivitiesPayloadState: activitiesPayload.state,
+      storedMetadataPayloadState: metadataPayload.state,
       replay: replayTurns.map((turn, index) => ({
         index: turn.pvci_turnindex ?? index,
         timestampUtc: turn.pvci_timestamputc ?? null,
@@ -468,13 +508,13 @@ export function buildEssEvidencePackage(input: EssEvidencePackageInput): EssEvid
           summary: plan.summary ?? null,
           isFinal: plan.isFinal,
           finished: plan.finished,
-          startedAt: plan.startedAt ?? null,
+          startedAtClockUtc: plan.startedAt ?? null,
           steps: plan.steps.map((step) => ({
             id: step.id,
             task: step.task ?? null,
             type: step.type ?? null,
             rationale: bounded(step.rationale, MAX_TEXT_LENGTH),
-            startedAt: step.startedAt ?? null,
+            startedAtClockUtc: step.startedAt ?? null,
             state: step.state ?? "unknown",
             executionMs: step.executionMs ?? null,
             argumentNames: step.argumentNames,
@@ -578,7 +618,10 @@ export function buildEssEvidencePackage(input: EssEvidencePackageInput): EssEvid
     },
   };
 
-  const masked = maskTranscriptData(draft, [merged, turns]);
+  const masked = maskTranscriptData(draft, {
+    additionalHarvestSources: [merged, turns],
+    preserveFields: STRUCTURAL_FIELDS,
+  });
 
   return {
     ...masked.value,
@@ -669,6 +712,21 @@ function countEvidence(value: number | null | undefined, presentState: EvidenceS
   if (value == null) return { state: "unavailable", count: null, ...(note ? { note } : {}) };
   const state: EvidenceState = value === 0 ? "observed-zero" : presentState;
   return { state, count: value, ...(note ? { note } : {}) };
+}
+
+function durationEvidence(value: number | null | undefined): DurationEvidence {
+  if (value == null) return { state: "unavailable", ms: null };
+  return { state: value === 0 ? "observed-zero" : "exact", ms: value };
+}
+
+function tenantRedactor(tenantId: string | undefined): (value: string | undefined) => string | null {
+  const normalized = tenantId?.trim();
+  return (value) => {
+    if (!value) return null;
+    if (!normalized) return value;
+    const expression = new RegExp(normalized.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "gi");
+    return value.replace(expression, "[REDACTED:TENANT]");
+  };
 }
 
 function readPayload<T>(text: string | undefined, label: string): PayloadRead<T> {
