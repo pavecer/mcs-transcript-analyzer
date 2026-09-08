@@ -425,9 +425,10 @@ URLs, and investigation notes are optional context in both cases.
 
 **Download evidence package (JSON)** produces a `schemaVersion: 1` package with a sanitized,
 deterministic filename. It contains generation metadata, the analyst-supplied context, ESS agent /
-environment / channel / session provenance, transcript and activity timestamps, the conversation
-replay, reasoning, knowledge, tool, candidate-flow and error evidence, telemetry availability, an
-evidence-completeness checklist, and privacy and masking metadata.
+environment / channel / session provenance, transcript and activity timestamps, response timing and
+conversation volume, the conversation replay, reasoning, knowledge, tool, candidate-flow and error
+evidence, telemetry availability, an evidence-completeness checklist, and privacy and masking
+metadata.
 
 Evidence integrity rules the package preserves:
 
@@ -450,7 +451,16 @@ state, including for privacy administrators. ESS HR Workday evidence therefore a
 masked. Masking uses the Workday HR field and pattern detector policy — the package records it as
 that policy, not as a general ESS policy. User principal names, Azure AD object IDs, tenant IDs,
 credentials, tokens, and raw tool outputs are excluded from the package entirely; only tool output
-*key names* are exported.
+*key names* are exported. The tenant ID is additionally redacted from the composite native
+transcript ID and the data-source stamp, which both embed it, while the environment and conversation
+segments stay exact so support can still correlate the source.
+
+Masking is value-directed, not blanket. Structural identifiers, enum states and the package's own
+static copy — step and checklist IDs, event names, action IDs, payload states and explanatory notes —
+are exempt from replacement so the schema stays readable, while every free-text surface (replay
+text, step rationale, error messages and analyst-supplied context) is masked. Detected values are
+replaced only on whole-word boundaries, so a short Workday country code such as `CAN` can never
+corrupt an unrelated word like `canonical`.
 
 The workspace is scoped to ESS today. The package carries an `evidenceFamily` discriminator so a
 future agent family could get its own workspace, but no generic or non-ESS packaging is exposed.
