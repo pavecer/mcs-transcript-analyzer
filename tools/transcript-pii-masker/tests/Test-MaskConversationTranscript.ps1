@@ -133,6 +133,66 @@ try {
     Assert-True ($maskedArray.Count -eq 1) 'single-item root arrays must remain arrays'
     Assert-True ($maskedArray[0].employeeId -eq '[MASKED:IDENTIFIER]') 'root-array fields must be masked'
 
+    # Regression fixture for the real-world over-masking / structural-field-corruption bugs found
+    # in a customer masked-transcript sample: short country codes, GUID substrings, trace IDs and
+    # topic names must survive, while a tenant ID must be masked even when it appears in free text.
+    $regressionInputPath = Join-Path $testDirectory 'regression-input.json'
+    $regressionOutputPath = Join-Path $testDirectory 'regression-output.json'
+    $regressionReportPath = Join-Path $testDirectory 'regression-report.json'
+
+    $regressionFixture = @'
+{
+  "activities": [
+    {
+      "id": "3c5499b930724a98a8fc26046495f175",
+      "type": "trace",
+      "replyToId": "candidate-flow-evidence-001",
+      "value": {
+        "nodeId": "conditionGroup_cane8x",
+        "nodeType": "ConditionGroup",
+        "topicDisplayName": "Redirect to Get CommonExecution",
+        "countryOfResidence": "IND",
+        "note": "The canonical candidate record was found in the binding table."
+      }
+    },
+    {
+      "id": "b3851b2239f8489cacaa9d386926e7d7",
+      "type": "message",
+      "text": "Tenant 3c5499b9-3072-4a98-a8fc-26046495f175 reported an error while binding the candidate record.",
+      "value": {
+        "tenantId": "3c5499b9-3072-4a98-a8fc-26046495f175"
+      }
+    }
+  ]
+}
+'@
+
+    [IO.File]::WriteAllText($regressionInputPath, $regressionFixture, (New-Object Text.UTF8Encoding($false)))
+
+    & $masker `
+        -InputPath $regressionInputPath `
+        -OutputPath $regressionOutputPath `
+        -ConfigPath $config `
+        -AuditReportPath $regressionReportPath `
+        -FailOnResidual
+
+    $regressionMaskedText = Get-Content -LiteralPath $regressionOutputPath -Raw
+    $regressionMasked = $regressionMaskedText | ConvertFrom-Json
+
+    Assert-True ($regressionMaskedText -match 'canonical') 'a short harvested code must not corrupt the unrelated word "canonical"'
+    Assert-True ($regressionMaskedText -match 'candidate') 'a short harvested code must not corrupt the unrelated word "candidate"'
+    Assert-True ($regressionMasked.activities[0].id -eq '3c5499b930724a98a8fc26046495f175') 'structural trace id must be preserved'
+    Assert-True ($regressionMasked.activities[0].replyToId -eq 'candidate-flow-evidence-001') 'structural replyToId must be preserved'
+    Assert-True ($regressionMasked.activities[0].value.nodeId -eq 'conditionGroup_cane8x') 'structural nodeId must be preserved even when it contains a harvested substring'
+    Assert-True ($regressionMasked.activities[0].value.topicDisplayName -eq 'Redirect to Get CommonExecution') 'topic display name must be preserved for diagnostics'
+    Assert-True ($regressionMasked.activities[0].value.countryOfResidence -eq '[MASKED:ADDRESS]') 'the harvested country code itself must still be masked'
+    Assert-True ($regressionMasked.activities[1].value.tenantId -eq '[MASKED:IDENTIFIER]') 'tenant ID field must be masked'
+    Assert-True ($regressionMasked.activities[1].text -match '\[MASKED:IDENTIFIER\]') 'tenant ID must be masked even when it recurs in free text'
+    Assert-True ($regressionMasked.activities[1].text -notmatch '3c5499b9-3072-4a98-a8fc-26046495f175') 'the raw tenant ID must not survive in free text'
+
+    $regressionReport = Get-Content -LiteralPath $regressionReportPath -Raw | ConvertFrom-Json
+    Assert-True ($regressionReport.residualHighConfidenceMatches -eq 0) 'regression fixture residual audit must pass'
+
     Write-Host 'PASS: transcript PII masker preserved orchestration and removed synthetic sensitive data.'
 }
 finally {

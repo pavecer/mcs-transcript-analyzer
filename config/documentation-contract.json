@@ -58,6 +58,7 @@
     ".github/skills/clean-install-validation/SKILL.md",
     ".github/skills/central-transcript-collector/SKILL.md",
     ".github/skills/linkedin-release/SKILL.md",
+    ".github/skills/transcript-pii-masking/SKILL.md",
     ".github/workflows/build.yml",
     ".github/workflows/candidate-release.yml",
     ".github/workflows/linkedin-release.yml",
