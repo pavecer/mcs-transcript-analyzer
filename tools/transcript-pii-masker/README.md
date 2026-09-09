@@ -16,8 +16,8 @@ both implementations enforce the same `workday-hr-v1` policy.
 ## Get the tool
 
 This folder is self-contained: `Mask-ConversationTranscript.ps1`, `pii-masker.config.json`,
-`README.md`, and `tests/` are everything required. It has no dependency on the rest of this
-repository and no build step.
+`README.md`, `skill/SKILL.md`, and `tests/` are everything required. It has no dependency on the
+rest of this repository and no build step.
 
 To hand it to a customer or attach it to a support ticket, zip this folder and share only the zip:
 
@@ -27,6 +27,17 @@ Compress-Archive -Path .\tools\transcript-pii-masker\* -DestinationPath .\transc
 
 Share the zip (or the extracted folder) directly. Do not share the rest of this repository, and do
 not ask the customer to clone it.
+
+The included `skill/SKILL.md` is optional. To install just the skill in a customer's workspace,
+copy the `skill` folder to `.github/skills/transcript-pii-masking/` in that workspace:
+
+```powershell
+Copy-Item -Recurse .\transcript-pii-masker\skill .\.github\skills\transcript-pii-masking
+```
+
+Keep the masker folder wherever the customer chooses and use its path when following the skill's
+commands. The skill is standalone and does not require the customer to clone or synchronize this
+repository.
 
 ## Requirements
 

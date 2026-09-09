@@ -5,11 +5,9 @@ description: "Mask an exported ESS HR Workday ConversationTranscript JSON file b
 
 # Transcript PII Masking
 
-**Audience:** this skill is for whoever has GitHub Copilot open in this repository (a maintainer or
-support engineer), not the end customer directly. The customer never sees this file or this repo;
-they only ever receive the `tools/transcript-pii-masker/` folder (as a zip) and its `README.md`. Use
-this skill to run the tool yourself on a customer's behalf, to prepare the zip you hand off, or to
-answer a customer's question about how the tool behaves.
+**Audience:** this repository copy is for maintainers and support engineers. The customer-facing,
+standalone copy is included at `tools/transcript-pii-masker/skill/SKILL.md`; give customers that
+file with the masker package when they want to install the skill in their own VS Code workspace.
 
 Use this workflow whenever someone needs to mask an exported Copilot Studio `ConversationTranscript`
 JSON file for the ESS HR Workday agent family before sharing it outside the customer's security
