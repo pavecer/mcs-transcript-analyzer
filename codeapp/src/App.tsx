@@ -26,6 +26,7 @@ import { buildSessionAlerts } from "./lib/sessionAlerts";
 import { isFlowTelemetryAvailable } from "./lib/flowTelemetryAvailability";
 import { isCrossEnvironmentCollectionEnabled, scopeRowsToHost } from "./lib/transcriptScope";
 import { resolveViewAfterEssEvidenceChange, isEssEvidenceSession, selectEssEvidenceSessions } from "./lib/essEvidence";
+import { groupSessionRows, mergeSessionDetails, mergeTurnRows } from "./lib/sessionPresentation";
 import {
   TRANSCRIPT_PRIVACY_POLICY_VERSION,
   buildMaskedTranscriptExport,
@@ -303,9 +304,17 @@ export default function App() {
     });
   }, [visibleSessions, search, hideTest, essOnly, activeEnvironmentFilter]);
 
-  const activeSession = selected && filtered.some((session) => session.pvci_transcriptsessionid === selected.pvci_transcriptsessionid)
-    ? selected
-    : filtered[0] ?? null;
+  const presentedSessions = useMemo(() => groupSessionRows(filtered), [filtered]);
+
+  const activeGroup = useMemo(() => {
+    if (selected) {
+      const match = presentedSessions.find((group) => group.sessionIds.includes(selected.pvci_transcriptsessionid));
+      if (match) return match;
+    }
+    return presentedSessions[0] ?? null;
+  }, [presentedSessions, selected]);
+
+  const activeSession = activeGroup?.primary ?? null;
 
   const privacyApplies = Boolean(activeSession && isWorkdayHrSession(activeSession));
   const revealSensitiveValues = revealedSessionId === activeSession?.pvci_transcriptsessionid;
@@ -321,12 +330,10 @@ export default function App() {
   const displayTurns = displayedTranscript?.turns ?? turns;
 
   useEffect(() => {
-    const transcriptId = activeSession?.pvci_transcriptid;
-    const sessionId = activeSession?.pvci_transcriptsessionid;
     let cancelled = false;
 
     void (async () => {
-      if (!transcriptId || !sessionId) {
+      if (!activeGroup || !activeGroup.sourceSessions.length) {
         if (!cancelled) {
           setTurns([]);
           setDetail(null);
@@ -336,18 +343,27 @@ export default function App() {
       setLoadingTurns(true);
       setDetail(null);
       try {
-        const [turnRes, detailRes] = await Promise.all([
-          Pvci_transcriptturnsService.getAll({
+        const transcriptIds = activeGroup.sourceSessions.map((s) => s.pvci_transcriptid).filter(Boolean) as string[];
+        const sessionIds = activeGroup.sessionIds;
+
+        const [turnResponses, detailResponses] = await Promise.all([
+          Promise.all(transcriptIds.map((tid) => Pvci_transcriptturnsService.getAll({
             select: TURN_FIELDS,
-            filter: `pvci_transcriptid eq '${transcriptId}'`,
+            filter: `pvci_transcriptid eq '${tid}'`,
             orderBy: ["pvci_turnindex asc"],
             top: 500,
-          }),
-          Pvci_transcriptsessionsService.get(sessionId, { select: SESSION_DETAIL_FIELDS }),
+          }))),
+          Promise.all(sessionIds.map((sid) => Pvci_transcriptsessionsService.get(sid, { select: SESSION_DETAIL_FIELDS }))),
         ]);
+
         if (!cancelled) {
-          setTurns((turnRes.data ?? []) as unknown as TurnRow[]);
-          setDetail((detailRes.data ?? null) as unknown as SessionRow | null);
+          const rawTurnsList = turnResponses.map((res) => (res.data ?? []) as unknown as TurnRow[]);
+          const mergedTurns = mergeTurnRows(rawTurnsList);
+          const rawDetailsList = detailResponses.map((res) => (res.data ?? null) as unknown as SessionRow | null);
+          const mergedDetail = mergeSessionDetails(rawDetailsList, activeGroup.primary);
+
+          setTurns(mergedTurns);
+          setDetail(mergedDetail);
         }
       } catch (e) {
         if (!cancelled) setError(e instanceof Error ? e.message : String(e));
@@ -359,7 +375,7 @@ export default function App() {
     return () => {
       cancelled = true;
     };
-  }, [activeSession]);
+  }, [activeGroup]);
 
   const environmentOptions = useMemo(() => {
     const options = new Map<string, string>();
@@ -474,7 +490,7 @@ export default function App() {
           <>
             <div className="sidebar-heading">
               <strong>Sessions</strong>
-              <span>{filtered.length} shown</span>
+              <span>{presentedSessions.length} shown</span>
             </div>
             <input
               className="search"
@@ -499,8 +515,9 @@ export default function App() {
 
             <div className="session-list">
               {loadingSessions && <div className="muted pad">Loading…</div>}
-              {!loadingSessions && !filtered.length && <div className="muted pad">No sessions match.</div>}
-              {filtered.map((s) => {
+              {!loadingSessions && !presentedSessions.length && <div className="muted pad">No sessions match.</div>}
+              {presentedSessions.map((group) => {
+                const s = group.primary;
                 const displayRow = isWorkdayHrSession(s) && !(revealSensitiveValues && activeSession?.pvci_transcriptsessionid === s.pvci_transcriptsessionid)
                   ? maskTranscriptData(s).value
                   : s;
@@ -515,8 +532,8 @@ export default function App() {
                 });
                 return (
                   <button
-                    key={s.pvci_transcriptsessionid}
-                    className={`session-item${alerts.some((alert) => alert.kind === "error") ? " has-error" : ""}${activeSession?.pvci_transcriptsessionid === s.pvci_transcriptsessionid ? " active" : ""}`}
+                    key={group.sessionIds.join("|")}
+                    className={`session-item${alerts.some((alert) => alert.kind === "error") ? " has-error" : ""}${group.sessionIds.includes(activeSession?.pvci_transcriptsessionid ?? "") ? " active" : ""}`}
                     onClick={() => { setRevealedSessionId(null); setSelected(s); setTab("essops"); }}
                   >
                     <div className="si-top">
@@ -527,12 +544,13 @@ export default function App() {
                       {alerts.map((alert) => <span key={alert.text} className={`si-alert ${alert.kind}`}>{alert.text}</span>)}
                     </div>}
                     <div className="si-sub muted small">
-                      {fmtTime(s.pvci_startdatetimeutc)} · {s.pvci_messagecount == null ? "messages unavailable" : `${s.pvci_messagecount} msg`} · {fmtDuration(s.pvci_durationseconds)}
+                      {fmtTime(group.start)} · {group.messageCount == null ? "messages unavailable" : `${group.messageCount} msg`} · {group.start && group.end ? fmtDuration(Math.max(0, Math.round((Date.parse(group.end) - Date.parse(group.start)) / 1000))) : fmtDuration(s.pvci_durationseconds)}
                     </div>
                     <div className="si-metrics">
                       <span className={`lat ${latencyBand(s.pvci_maxresponsems)}`}>
                         slowest reply {fmtMs(s.pvci_maxresponsems)}
                       </span>
+                      {group.sourceSessionCount > 1 && <span className="lat none">{group.sourceSessionCount} sources</span>}
                       {s.pvci_toolcallcount != null && s.pvci_toolcallcount > 0 && (
                         <span className="lat none">{s.pvci_toolcallcount} tools</span>
                       )}
@@ -624,6 +642,11 @@ export default function App() {
                   <span>{activeSession.pvci_channel ?? "Unknown channel"}</span>
                   <span>{sourceEnvironmentLabel(activeSession)}</span>
                   <span>{activeSession.pvci_istestmode ? "Test chat" : "Production"}</span>
+                  {activeGroup && activeGroup.sourceSessionCount > 1 && (
+                    <span className="chip" title={activeGroup.sessionIds.join(", ")}>
+                      {activeGroup.sourceSessionCount} source transcripts
+                    </span>
+                  )}
                   {isEssEvidenceSession(activeSession) && (
                     <button
                       type="button"
@@ -714,6 +737,9 @@ export default function App() {
                   <Fact k="Started (UTC)" v={fmtTime(activeSession.pvci_startdatetimeutc)} />
                   <Fact k="Outcome detail" v={activeSession.pvci_outcomereason} />
                   <Fact k="Implied resolved" v={activeSession.pvci_isresolvedimplied} />
+                  {activeGroup && activeGroup.sourceSessionCount > 1 && (
+                    <Fact k="Source transcripts" v={`${activeGroup.sourceSessionCount} merged (${activeGroup.sourceSessions.map((s) => s.pvci_transcriptid ?? s.pvci_transcriptsessionid).join(", ")})`} />
+                  )}
                 </dl>
               </details>
             </header>
