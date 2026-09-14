@@ -27,6 +27,7 @@ export interface SessionRow {
   pvci_payloadtruncated?: boolean;
   pvci_correlationstatus?: string;
   pvci_initialusermessage?: string;
+  pvci_lastagentmessage?: string;
   pvci_firstresponsems?: number;
   pvci_avgresponsems?: number;
   pvci_maxresponsems?: number;
